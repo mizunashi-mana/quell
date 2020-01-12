@@ -21,16 +21,18 @@ integralForInteger = Integral have
 fromInteger: forall a. Integral a => Integer -> a
 fromInteger %d = d.fromInteger
 
-fib : forall a. Integral a => a -> a
-fib @a %d n = go n a0 a1
-  where
-    a0 = fromInteger %integralForInteger 0
-    a1 = fromInteger 1 -- implicit dictionary inference
+module Fib begin
+  fib : forall a. Integral a => a -> a
+  fib @a %d n = go n a0 a1
+    where
+      a0 = fromInteger %integralForInteger 0
+      a1 = fromInteger 1 -- implicit dictionary inference
 
-    -- `go` can have a type `a -> a -> a -> a`
-    go m x y = \
-      | d.iszero m -> x
-      | else       -> go (m - 1) y (x d.+ y)
+      -- `go` can have a type `a -> a -> a -> a`
+      go m x y = \
+        | d.iszero m -> x
+        | else       -> go (m - 1) y (x d.+ y)
+end
 
 main :: IO ()
-main = print $ fib 10
+main = print $ Fib.fib 10
