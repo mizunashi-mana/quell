@@ -1,0 +1,36 @@
+module Main where
+
+dict Integral a = Integral {
+  fromInteger: Integer -> a,
+  +: a -> a -> a,
+  -: a -> a -> a,
+  iszero: a -> Bool,
+}
+
+impl integralForInteger: Integral Integer
+integralForInteger = Integral have
+  fromInteger x = x
+
+  x + y = x Main.+ y
+  x - y = x Main.- y
+
+  iszero = \
+    0 -> True
+    _ -> False
+
+fromInteger: forall a. Integral a => Integer -> a
+fromInteger %d = d.fromInteger
+
+fib : forall a. Integral a => a -> a
+fib @a %d n = go n a0 a1
+  where
+    a0 = fromInteger %integralForInteger 0
+    a1 = fromInteger 1 -- implicit dictionary inference
+
+    -- `go` can have a type `a -> a -> a -> a`
+    go m x y = \
+      | d.iszero m -> x
+      | else       -> go (m - 1) y (x d.+ y)
+
+main :: IO ()
+main = print $ fib 10
