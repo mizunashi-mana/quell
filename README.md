@@ -4,4 +4,4 @@ This is a survey programming language for me.
 
 ## License
 
-See [LICENSE.md].
+See [License Notice](LICENSE.md).
