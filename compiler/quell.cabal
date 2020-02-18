@@ -1,0 +1,151 @@
+cabal-version:       3.0
+build-type:          Custom
+
+name:                quell
+version:             0.1.0.0
+
+author:              Mizunashi Mana
+maintainer:          mizunashi-mana@noreply.git
+license:             Apache-2.0 OR MPL-2.0
+copyright:           Copyright 2020 Mizunashi Mana
+
+category:            Language
+synopsis:
+homepage:            https://github.com/mizunashi-mana/quell
+bug-reports:         https://github.com/mizunashi-mana/quell/issues
+description:
+
+license-file:
+  LICENSE.md
+extra-source-files:
+  README.md
+  CHANGELOG.md
+
+source-repository head
+  type:     git
+  location: https://github.com/mizunashi-mana/quell.git
+
+flag develop
+  default:     False
+  manual:      True
+  description: Turn on some options for development
+
+common general
+  default-language: Haskell2010
+  default-extensions:
+    NoImplicitPrelude
+    BangPatterns
+    BinaryLiterals
+    BlockArguments
+    ConstrainedClassMethods
+    ConstraintKinds
+    DataKinds
+    DefaultSignatures
+    DeriveFoldable
+    DeriveFunctor
+    DeriveGeneric
+    DeriveLift
+    DeriveTraversable
+    DerivingStrategies
+    DerivingVia
+    DuplicateRecordFields
+    EmptyCase
+    FlexibleContexts
+    FlexibleInstances
+    FunctionalDependencies
+    GADTs
+    GeneralisedNewtypeDeriving
+    InstanceSigs
+    LambdaCase
+    MagicHash
+    MultiParamTypeClasses
+    MultiWayIf
+    NamedFieldPuns
+    NegativeLiterals
+    NumericUnderscores
+    OverloadedLabels
+    PackageImports
+    PatternSynonyms
+    PolyKinds
+    QuantifiedConstraints
+    RankNTypes
+    RoleAnnotations
+    ScopedTypeVariables
+    StandaloneDeriving
+    Strict
+    TypeApplications
+    TypeFamilies
+    TypeFamilyDependencies
+    TypeOperators
+    TypeSynonymInstances
+    UnboxedSums
+    UnboxedTuples
+    ViewPatterns
+
+  if flag(develop)
+    ghc-options:
+      -Wall
+      -Wcompat
+      -Wincomplete-uni-patterns
+      -Wmonomorphism-restriction
+      -Wpartial-fields
+
+      -fprint-explicit-foralls
+      -fprint-potential-instances
+      -frefinement-level-hole-fits=1
+
+      -dcore-lint
+
+  build-depends:
+    base,
+    array,
+    bytestring,
+    mono-traversable,
+    prettyprinter,
+    prettyprinter-ansi-terminal,
+    text,
+    transformers,
+
+    megaparsec,
+
+  build-tool-depends:
+    happy:happy,
+
+  autogen-modules:
+    Paths_quell
+  other-modules:
+    Paths_quell
+
+common exe
+  import: general
+  build-depends:
+    quell,
+  ghc-options:
+    -rtsopts
+  ghc-prof-options:
+    -rtsopts
+    -with-rtsopts="-xc -p"
+
+custom-setup
+  setup-depends:
+    base,
+    Cabal,
+
+executable quellc
+  import:              exe
+  main-is:             Main.hs
+  hs-source-dirs:      app
+
+library
+  import:              general
+  hs-source-dirs:      src
+  exposed-modules:
+    Language.Quell.Prelude
+    Language.Quell.Type.Ast
+    Language.Quell.Parse.Type
+    Language.Quell.Parse.Lexer
+    Language.Quell.Parse.Parser
+  other-modules:
+    Language.Quell.Prelude.Core
+    Language.Quell.Prelude.FastString
+    Language.Quell.Prelude.Span

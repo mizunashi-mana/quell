@@ -1,38 +1,40 @@
-module Main where
+module Main {..} where
 
-type Integral: Type -> Type
-dict Integral a = Integral {
+-- kind signature can ignored: `type Natural: Type`
+data Natural where
+  Succ: Natural -> Natural
+  Zero: Natural
+
+type PlusNum: Type -> Type
+record PlusNum a = PlusNum {
   fromInteger: Integer -> a,
   +: a -> a -> a,
-  -: a -> a -> a,
-  iszero: a -> Bool,
 }
 
-impl integralForInteger: Integral Integer
-integralForInteger = Integral have
-  fromInteger x = x
+impl plusNumForNatural: PlusNum Natural
+plusNumForNatural = PlusNum {..} where
+  fromInteger = \
+    0 -> Zero
+    n -> Succ $ fromInteger (n - 1)
 
-  x + y = x Main.+ y
-  x - y = x Main.- y
+  x + y = case x of
+    Zero    -> y
+    Succ x' -> Succ $ x' + y
 
-  iszero = \
-    0 -> True
-    _ -> False
-
-fromInteger: forall a. Integral a => Integer -> a
+fromInteger: @a. PlusNum a => Integer -> a
 fromInteger %d = d.fromInteger
 
 module Fib begin
-  fib : a. Integral a => a -> a
+  fib: @a. PlusNum a => Natural -> a
   fib @a %d n = go n a0 a1
     where
-      a0 = fromInteger %integralForInteger 0
-      a1 = fromInteger 1 -- implicit dictionary inference
+      a0 = fromInteger %d 0
+      a1 = fromInteger 1 -- dictionary inference
 
-      -- `go` can have a type `a -> a -> a -> a`
-      go m x y = \
-        | d.iszero m -> x
-        | else       -> go (m - 1) y (x d.+ y)
+      go: a -> a -> a -> a
+      go m x y = case m of
+        Zero    -> x
+        Succ m' -> go m' y (x d.+ y)
 end
 
 main :: IO ()
