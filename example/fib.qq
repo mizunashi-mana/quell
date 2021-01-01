@@ -12,7 +12,7 @@ record PlusNum a = PlusNum {
 }
 
 impl plusNumForNatural: PlusNum Natural
-plusNumForNatural = PlusNum {..} where
+plusNumForNatural = PlusNum where
   fromInteger = \
     0 -> Zero
     n -> Succ $ fromInteger (n - 1)

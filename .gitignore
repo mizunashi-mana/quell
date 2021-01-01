@@ -9,3 +9,5 @@
 #  * `Thumb.db` (Windows Store File)
 #  * etc.
 #
+
+/dist*/

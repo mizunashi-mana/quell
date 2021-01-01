@@ -1,7 +1,7 @@
 cabal-version:       3.0
 build-type:          Custom
 
-name:                quell
+name:                quell-compiler
 version:             0.1.0.0
 
 author:              Mizunashi Mana
@@ -19,7 +19,6 @@ license-file:
   LICENSE.md
 extra-source-files:
   README.md
-  CHANGELOG.md
 
 source-repository head
   type:     git
@@ -31,9 +30,11 @@ flag develop
   description: Turn on some options for development
 
 common general
-  default-language: Haskell2010
+  default-language:
+    Haskell2010
   default-extensions:
     NoImplicitPrelude
+
     BangPatterns
     BinaryLiterals
     BlockArguments
@@ -54,7 +55,6 @@ common general
     FlexibleInstances
     FunctionalDependencies
     GADTs
-    GeneralisedNewtypeDeriving
     InstanceSigs
     LambdaCase
     MagicHash
@@ -100,31 +100,20 @@ common general
     base,
     array,
     bytestring,
+    ghc-prim,
     mono-traversable,
     prettyprinter,
     prettyprinter-ansi-terminal,
     text,
     transformers,
 
-    megaparsec,
-
   build-tool-depends:
     happy:happy,
 
   autogen-modules:
-    Paths_quell
+    Paths_quell_compiler
   other-modules:
-    Paths_quell
-
-common exe
-  import: general
-  build-depends:
-    quell,
-  ghc-options:
-    -rtsopts
-  ghc-prof-options:
-    -rtsopts
-    -with-rtsopts="-xc -p"
+    Paths_quell_compiler
 
 custom-setup
   setup-depends:
@@ -132,20 +121,27 @@ custom-setup
     Cabal,
 
 executable quellc
-  import:              exe
-  main-is:             Main.hs
-  hs-source-dirs:      app
+  import:
+    general
+  main-is:
+    Main.hs
+  hs-source-dirs:
+    app
+  build-depends:
+    quell-compiler,
+  ghc-options:
+    -rtsopts
+  ghc-prof-options:
+    -rtsopts
+    -with-rtsopts="-xc -p"
 
 library
-  import:              general
-  hs-source-dirs:      src
+  import:
+    general
+  hs-source-dirs:
+    src
   exposed-modules:
     Language.Quell.Prelude
     Language.Quell.Type.Ast
-    Language.Quell.Parse.Type
-    Language.Quell.Parse.Lexer
-    Language.Quell.Parse.Parser
   other-modules:
     Language.Quell.Prelude.Core
-    Language.Quell.Prelude.FastString
-    Language.Quell.Prelude.Span

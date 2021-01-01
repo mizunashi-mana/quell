@@ -1,0 +1,67 @@
+module List where
+
+type List : Type -> Type
+data List where
+  Nil : List a
+  Cons : a -> List a -> List a
+
+type String : Type
+type String = List Char
+
+implicit listEq : @ a. Eq a => Eq (List a)
+listEq = Eq where
+  Nil       == Nil       = True
+  Cons x xs == Cons y ys = x == y && xs == ys
+  _         == _         = False
+
+implicit listOrd : @ a. Ord a => Ord (List a)
+derive listOrd
+
+map : @ a b. (a -> b) -> List a -> List b
+map f = go where
+  go = \case
+    Nil       -> Nil
+    Cons x xs -> Cons
+      do f x
+      do go xs
+
+null : @ a. List a -> Bool
+null = \case
+  Nil    -> True
+  Cons{} -> False
+
+foldl : @ b a. (a -> b -> b) -> b -> List a -> b
+foldl f = go where
+  go z = \case
+    Nil       -> z
+    Cons x xs -> go (f x z) xs
+
+foldr : @ b a. (b -> a -> b) -> b -> List a -> b
+foldr f = foldl (\x k z -> k (f z x)) \z -> z
+
+insertBy : @ a. (a -> a -> Ordering) -> a -> List a -> List a
+insertBy cmp x = go where
+  go = \case
+    Cons y ys
+      | x `cmp` y == GT -> Cons y do go ys
+    ys                  -> Cons x ys
+
+sortBy : @ a. (a -> a -> Ordering) -> List a -> List a
+sortBy cmp = foldr (insertBy cmp) Nil
+
+dropWhileEnd : @ a. (a -> Bool) -> List a -> List a
+dropWhileEnd p = foldr (\x xs -> if (p x && null xs) { then = [], else = Cons x xs }) Nil
+
+zipWith : @ a b c. (a -> b -> c) -> List a -> List b -> List c
+zipWith f = go where
+  go = \case
+    Nil      , _         -> Nil
+    _        , Nil       -> Nil
+    Cons x xs, Cons y ys -> Cons
+      do f x y
+      do go xs ys
+
+if : @ a. Bool -> { then: a, else: a } -> a
+if b e
+  | b    = e.then
+  | else = e.else
