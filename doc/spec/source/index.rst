@@ -6,8 +6,11 @@ Quell Specification
    :caption: Contents:
    :glob:
 
-   article/*
-
+   article/syntax
+   article/module_semantics
+   article/typing_semantics
+   article/evaluate_semantics
+   article/knowledge
 
 
 Indices and tables

@@ -1,10 +1,14 @@
 module Language.Quell.Parsing.Runner (
   Runner (..),
+  Context (..),
+  Result (..),
+
+  LayoutContext (..),
 ) where
 
 import Language.Quell.Prelude
 
-import qualified Language.Quell.Data.Spanned as Spanned
+import qualified Language.Quell.Parsing.Spanned as Spanned
 
 
 newtype Runner a = Runner {

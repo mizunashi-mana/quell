@@ -1,169 +1,332 @@
 Syntax
 ======
 
+Notational Conventions
+----------------------
+
+.. glossary::
+
+  ``pattern?``
+    optional
+
+  ``pattern*``
+    zero or more repetitions
+
+  ``pattern+``
+    zero or more repetitions
+
+  ``( pattern )``
+    grouping
+
+  ``pattern | pattern``
+    choice
+
+  ``pattern<pattern>``
+    difference
+
+  ``"..."``
+    terminal by unicode properties
+
 Lexical Syntax
 --------------
 
-.. math::
+.. productionlist::
+  program: (lexeme | whitespace)*
+  lexeme: var_id
+        : var_op
+        : con_id
+        : con_op
+        : reserved_id
+        : reserved_op
+        : literal
 
-  \begin{array}{llll}
-    \mathit{reservedid}
-    &: &\texttt{alias} \\
-    &\mid &\texttt{as} \\
-    &\mid &\texttt{case} \\
-    &\mid &\texttt{data} \\
-    &\mid &\texttt{default} \\
-    &\mid &\texttt{derive} \\
-    &\mid &\texttt{do} \\
-    &\mid &\texttt{family} \\
-    &\mid &\texttt{fixity} \\
-    &\mid &\texttt{foreign} \\
-    &\mid &\texttt{implicit} \\
-    &\mid &\texttt{import} \\
-    &\mid &\texttt{in} \\
-    &\mid &\texttt{infix} \\
-    &\mid &\texttt{infixl} \\
-    &\mid &\texttt{infixr} \\
-    &\mid &\texttt{let} \\
-    &\mid &\texttt{module} \\
-    &\mid &\texttt{newtype} \\
-    &\mid &\texttt{of} \\
-    &\mid &\texttt{pattern} \\
-    &\mid &\texttt{rec} \\
-    &\mid &\texttt{self} \\
-    &\mid &\texttt{type} \\
-    &\mid &\texttt{where} \\
-    &\mid &\texttt{with} \\
-    &\mid &\texttt{\_} \\
+.. productionlist::
+  var_id: (small (small | large | digit | other)*)<reserved_id>
+  con_id: (large (small | large | digit | other)*)<reserved_id>
+  var_sym: (symbol<":"> (symbol | other)*)<reserved_op>
+  con_sym: (":" (symbol | other)*)<reserved_op>
 
-    \mathit{reservedop}
-    &: &\texttt{=} \\
-    &\mid &\texttt{:} \\
-    &\mid &\texttt{->} \\
-    &\mid &\texttt{=>} \\
-    &\mid &\texttt{@} \\
-    &\mid &\texttt{\textasciitilde} \\
-    &\mid &\texttt{|} \\
-    &\mid &\texttt{?} \\
-    &\mid &\texttt{!} \\
-    &\mid &\texttt{<-}
-  \end{array}
+.. productionlist::
+  reserved_id: "alias"
+             : "as"
+             : "case"
+             : "data"
+             : "default"
+             : "derive"
+             : "do"
+             : "export"
+             : "family"
+             : "foreign"
+             : "impl"
+             : "in"
+             : "infix"
+             : "let"
+             : "letrec"
+             : "module"
+             : "newtype"
+             : "none"
+             : "of"
+             : "pattern"
+             : "rec"
+             : "record"
+             : "role"
+             : "signature"
+             : "static"
+             : "type"
+             : "trait"
+             : "use"
+             : "where"
+             : "with"
+             : "Self"
+             : "_"
+  reserved_op: "."
+             : ".."
+             : ":"
+             : "::"
+             : "="
+             : "=>"
+             : "<="
+             : "<-"
+             : "->"
+             : "\\"
+             : "|"
+             : "@"
+             : "~"
+             : "?"
+             : "!"
+             : "#"
+  special: "("
+         : ")"
+         : ","
+         : ";"
+         : "["
+         : "]"
+         : "`" -- `
+         : "{"
+         : "}"
+
+.. productionlist::
+  literal: integer
+         : rational
+         : bytestring
+         : string
+         : bytechar
+         : char
+
+.. productionlist::
+  integer: sign? decimal
+         : sign? zero ("b" | "B") bit (bit | "_")*
+         : sign? zero ("o" | "O") octit (octit | "_")*
+         : sign? zero ("x" | "X") hexit (hexit | "_")*
+  rational: sign? decimal "." decimal exponent?
+          : sign? decimal ("." decimal)? exponent
+  decimal: digit (digit | "_")*
+  sign: "+"
+      : "-"
+  zero: "0"
+  exponent: ("e" | "E") sign? decimal
+  bit: "0" | "1"
+  octit: "0" | "1" | ... | "7"
+  hexit: digit
+       : "A" | "B" | ... | "F"
+       : "a" | "b" | ... | "f"
+
+.. productionlist::
+  bytestring: "#" str_sep bstr_graphic* str_sep
+  string: str_sep (bstr_graphic | uni_escape)* str_sep
+  bytechar: "#" char_sep bchar_graphic char_sep
+  char: char_sep (bchar_graphic | uni_escape) char_sep
+  str_sep: "\""
+  char_sep: "'"
+  escape_open: "\\"
+  bstr_graphic: graphic<str_sep | escape_open>
+              : whitechar
+              : byte_escape
+              : gap
+  bchar_graphic: graphic<char_sep | escape_open>
+               : " "
+               : byte_escape<"\\&">
+  byte_escape: escape_open (charesc | asciiesc | byteesc)
+  uni_escape: escape_open "u{" hexit+ "}"
+  gap: escape_open "|" whitechar* "|"
+  charesc: "0" | "a" | "b" | "f" | "n" | "r" | "t" | "v"
+         : "&" | escape_open | str_sep | char_sep
+  asciiesc: "^" cntrlesc
+          : "NUL" | "SOH" | "STX" | "ETX" | "EOT" | "ENQ"
+          : "ACK" | "BEL" | "BS" | "HT" | "LF" | "VT"
+          : "FF" | "CR" | "SO" | "SI" | "DLE" | "DC1"
+          : "DC2" | "DC3" | "DC4" | "NAK" | "SYN" | "ETB"
+          : "CAN" | "EM" | "SUB" | "ESC" | "FS" | "GS"
+          : "RS" | "US" | "SP" | "DEL"
+  cntrlesc: "A" | "B" | ... | "Z" | "@" | "[" | "\\" | "]"
+          : "^" | "_"
+  byteesc: "x" hexit hexit
+
+.. productionlist::
+  whitespace: whitestuff+
+  whitestuff: whitechar
+            : comment
+
+.. productionlist::
+  comment: line_comment
+         : multiline_comment
+         : doc_comment
+  line_comment: "--" "-"* (any<symbol> any*)? newline
+  multiline_comment: comment_open ANY<"!"> ANYs (nested_comment ANYs)* comment_close
+  doc_comment: comment_open "!" ANY* newline "|" comment_close
+  nested_comment: comment_open ANYs (nested_comment ANYs)* comment_close
+  comment_open: "{-"
+  comment_close: "-}"
+  any: graphic | " " | "\t"
+  ANYs: (ANY*)<ANY* (comment_open | comment_close) ANY*>
+  ANY: graphic | whitechar
+
+.. productionlist::
+  graphic: small
+         : large
+         : symbol
+         : digit
+         : other
+         : special
+         : "\""
+         : other_graphic
+  whitechar: "\p{Pattern_White_Space}"
+  newline: "\r\n" | "\r" | "\n" | "\f"
+  small: "\p{General_Category=Lowercase_Letter}"
+       : "\p{General_Category=Other_Letter}"
+       : "_"
+  large: "\p{General_Category=Uppercase_Letter}"
+       : "\p{General_Category=Titlecase_Letter}"
+  symbol: symbolchar<special | "#" | "_" | "\"" | "'">
+  symbolchar: "\p{General_Category=Connector_Punctuation}"
+            : "\p{General_Category=Dash_Punctuation}"
+            : "\p{General_Category=Other_Punctuation}"
+            : "\p{General_Category=Symbol}"
+  digit: "\p{General_Category=Decimal_Number}"
+       : "\p{General_Category=Other_Number}"
+  other: "\p{General_Category=Modifier_Letter}"
+       : "\p{General_Category=Mark}"
+       : "\p{General_Category=Letter_Number}"
+       : "'"
+  other_graphic: "\p{General_Category=Punctuation}"<symbolchar>
 
 Grammar
 -------
 
-.. math::
+.. productionlist::
+  program: module_decl_body
 
-  \begin{array}{llll}
-    \mathit{program}
-    &: &\mathit{moddecl} \\
-    &\mid &\mathit{body} \\
+.. productionlist::
+  module_decl: "module" simplecon "where" module_decl_body
+             : "module" simplecon "=" expr
+  module_decl_body: "{{" module_decl_items "}}"
+                  : "{" module_decl_items "}"
+  module_decl_items: (module_decl_item ";"+)* (module_decl_item ";"*)?
+  module_decl_item: type_decl
+                  : sig_decl
+                  : typesig_decl
+                  : valsig_decl
+                  : module_decl
+                  : data_decl
+                  : val_decl
+                  : trait_decl
+                  : impl_decl
+                  : fixity_decl
+                  : use_clause
+                  : foreign_use_clause
+                  : derive_clause
 
-    \mathit{moddecl}
-    &: &\texttt{module}\;\mathit{modid}\;\texttt{where}\;\mathit{body} &(\text{TODO: consider export visibility}) \\
+.. productionlist::
+  type_decl: "type" simpletype "=" type
 
-    \mathit{body}
-    &: &\texttt{\{}\;\mathit{impdecls}\;\mathit{topdecls}\;\texttt{\}} \\
+.. productionlist::
+  sig_decl: "signature" simpletype "where" sig_decl_body
+  sig_decl_body: "{{" sig_decl_items "}}"
+               : "{" sig_decl_items "}"
+  sig_decl_items: (sig_decl_item ";"+)* (sig_decl_item ";"*)?
+  sig_decl_item: sig_decl
+               : typesig_decl
+               : valsig_decl
+               : use_clause
 
-    \mathit{impdecls}
-    &: &\mathit{impdecl}\;\texttt{;}\;\mathit{impdecls} \\
-    &\mid \\
+.. productionlist::
+  typesig_decl: "type" con ":" kind
+  valsig_decl: var ":" type
+  consig_decl: con ":" type
 
-    \mathit{impdecl}
-    &: &\texttt{import}\;\mathit{modid} &(\text{TODO: consider some functionality: aliases, expand, etc.}) \\
+.. productionlist::
+  data_decl: "data" con "where" data_decl_body
+           : "newtype" simplecon "=" expr
+  data_decl_body: "{{" data_decl_items "}}"
+                : "{" data_decl_items "}"
+  data_decl_items: (data_decl_item ";"+)* (data_decl_item ";"*)?
+  data_decl_item: consig_decl
+                : use_clause
 
-    \mathit{topdecls}
-    &: &\mathit{topdecl}\;\texttt{;}\;\mathit{topdecls} \\
-    &\mid \\
+.. productionlist::
+  trait_decl: "trait" simpletype "<=" context "where" trait_decl_body
+  trait_decl_body: "{{" trait_decl_items "}}"
+                 : "{" trait_decl_items "}"
+  trait_decl_items: (trait_decl_item ";"+)* (trait_decl_item ";"*)?
+  trait_decl_item: sig_decl
+                 : typesig_decl
+                 : valsig_decl
+                 : fixity_decl
+                 : use_clause
 
-    \mathit{topdecl}
-    &: &\mathit{moddecl} \\
-    &\mid &\texttt{type}\;\mathit{decltype}\;\texttt{=}\;\mathit{type} \\
-    &\mid &\texttt{type}\;\texttt{family}\;\text{TODO} \\
-    &\mid &\texttt{data}\;\mathit{decltype}\;\texttt{where}\;\texttt{\{}\;\mathit{condecls}\;\texttt{\}} \\
-    &\mid &\texttt{data}\;\texttt{family}\;\text{TODO} \\
-    &\mid &\texttt{data}\;\texttt{newtype}\;\text{decltype}\;\texttt{=}\;\mathit{type} \\
-    &\mid &\texttt{foreign}\;\text{TODO} \\
-    &\mid &\mathit{decl} \\
+.. productionlist::
+  simpletype: con { var_id }
+            : var_id conop var_id
+  simplecon: con { var_id }
+           : var_id conop var_id
+  simpleval: var { var_id }
+           : var_id op var_id
 
-    \mathit{decls}
-    &: &\mathit{decl}\;\texttt{;}\;\mathit{decls} \\
-    &\mid \\
+.. productionlist::
+  kind:
+  type:
+  context:
+  ctype:
+  expr:
 
-    \mathit{decl}
-    &: &\mathit{var}\;\texttt{:}\;\mathit{expsig} \\
-    &\mid &\mathit{funlhs}\;\mathit{funrhs} \\
-    &\mid &\texttt{fixity}\;\text{TODO} \\
-    &\mid &\texttt{implicit}\;\text{TODO} \\
-    &\mid &\texttt{pattern}\;\text{TODO} \\
-
-    \mathit{funlhs}
-    &: &\mathit{var}\;\mathit{apats} \\
-    &\mid &\mathit{apat}\;\mathit{varop}\;\mathit{apats} \\
-
-    \mathit{funrhs}
-    &: &\texttt{=}\;\mathit{exp}\;\texttt{where}\;\texttt{\{}\mathit{decls}\texttt{\}} &(\text{TODO: consider some functionality: guards, prebindings, etc.}) \\
-
-    \mathit{exps}
-    &: &\mathit{exp}\;\texttt{,}\;\mathit{exps} \\
-    &\mid &\mathit{exp} \\
-    &\mid \\
-
-    \mathit{exp}
-    &: &\mathit{infixexp}\;\texttt{:}\;\mathit{expsig} \\
-    &\mid &\mathit{infixexp} \\
-
-    \mathit{infixexp}
-    &: &\mathit{blockexp}\;\mathit{qop}\;\mathit{infixexp} \\
-    &\mid &\mathit{blockexp} \\
-
-    \mathit{blockexp}
-    &: &\texttt{\textbackslash}\;\mathit{apats}\;\texttt{->}\;\mathit{exp} &(\text{TODO: consider some functionality: same as funrhs}) \\
-    &\mid &\texttt{let}\;\texttt{\{}\;\mathit{decls}\;\texttt{\}}\;\texttt{in}\;\mathit{exp} \\
-    &\mid &\texttt{let}\;\texttt{rec}\;\texttt{\{}\;\mathit{decls}\;\texttt{\}}\;\texttt{in}\;\mathit{exp} &(\text{TODO: maybe use letrec instead}) \\
-    &\mid &\texttt{case}\;\mathit{exps}\;\texttt{of}\;\texttt{\{}\;\mathit{alts}\;\texttt{\}} \\
-    &\mid &\texttt{\textbackslash}\;\texttt{case}\;\texttt{->}\;\texttt{\{}\;\mathit{alts}\;\texttt{\}} \\
-    &\mid &\texttt{do}\;\texttt{\{}\;\mathit{stmts}\;\texttt{\}} \\
-    &\mid &\mathit{fexp} \\
-
-    \mathit{fexp}
-    &: &\mathit{fexp}\;\mathit{aexp} \\
-    &\mid &\mathit{aexp} \\
-
-    \mathit{aexp}
-    &: &\texttt{(}\;\mathit{exp}\;\texttt{)} \\
-    &\mid &\mathit{qvar} \\
-    &\mid &\mathit{gcon} \\
-    &\mid &\mathit{literal} \\
-    &\mid &\mathit{littuple} \\
-    &\mid &\mathit{litvector} \\
-    &&&(\text{TODO: consider some atomic expressions: section, etc.}) \\
-
-    \mathit{var}
-    &: &\mathit{varid} \\
-    &\mid &\texttt{(} \mathit{varsym} \texttt{)} \\
-
-    \mathit{varop}
-    &: &\mathit{varsym} \\
-    &\mid &{}^\backprime \mathit{varid}\,{}^\backprime \\
-
-    \mathit{qvar}
-    &: &\mathit{qvarid} \\
-    &\mid &\texttt{(} \mathit{qvarsym} \texttt{)} \\
-
-    \mathit{qvarop}
-    &: &\mathit{qvarsym} \\
-    &\mid &{}^\backprime \mathit{qvarid}\,{}^\backprime
-  \end{array}
+.. productionlist::
+  kind:
+  type:
+  con: con_id
+       : "(" con_sym ")"
+  conop: con_sym
+       : "`" con_id "`"
+  var: var_id
+     : "(" var_sym ")"
+  op: var_sym
+    : "`" var_id "`"
+  qual_con: (con ".")* con
+  qual_conop: (con ".")* conop
 
 Note:
 
 * ``if`` 式はいれない．以下の標準関数で代用::
 
-    if :> a. Bool -> { then: a, else: a } -> a
+    if : \a -> Bool -> { then: a, else: a } -> a
     if = \case
       True  e -> e.then
       False e -> e.else
+
+* multi way if / lambda case はラムダ抽象で代替::
+
+    func1 : \a -> Int -> a -> Maybe a
+    func1 = \
+      0 x -> Just x
+      i x
+        | i > 10 -> Just x
+        | else   -> Nothing
+
+    func2 : Int -> a -> Maybe a
+    func2 = \i x -> \
+      | i == 0 -> Just x
+      | i > 10 -> Just x
+      | else   -> Nothing
+
 
 Layout
 ------
@@ -172,3 +335,9 @@ TODO: ``{`` / ``}`` でレイアウトオフ，``{{`` / ``}}`` で明示的に�
 
 Fixity Resolution
 -----------------
+
+Reference
+---------
+
+* `Unicode Identifier and Pattern Syntax <https://unicode.org/reports/tr31/>`_
+* `Unicode Character Database - 5.7.1 General Category Values <http://www.unicode.org/reports/tr44/#General_Category_Values>`_

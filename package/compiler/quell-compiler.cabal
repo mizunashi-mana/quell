@@ -143,5 +143,6 @@ library
   exposed-modules:
     Language.Quell.Prelude
     Language.Quell.Type.Ast
+    Language.Quell.Type.Token
   other-modules:
     Language.Quell.Prelude.Core
