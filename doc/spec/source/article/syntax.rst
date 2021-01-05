@@ -402,7 +402,7 @@ Grammar
   expr_tuple_items: (expr ",")+ expr ","?
   expr_array_items: (expr ",")* expr?
   expr_simplrecord_items: (expr_simplrecord_item ",")* expr_simplrecord_item?
-  expr_record_item: var "=" expr
+  expr_simplrecord_item: var "=" expr
   expr_record_body: "{{" expr_record_items "}}"
                   : "{" expr_record_items "}"
   expr_record_items: (expr_record_item semis)* expr_record_item?
