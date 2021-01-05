@@ -31,13 +31,15 @@ Lexical Syntax
 --------------
 
 .. productionlist::
-  program: (lexeme | whitespace)*
+  lexical_program: (lexeme | whitespace)*
   lexeme: var_id
         : var_op
         : con_id
         : con_op
         : reserved_id
         : reserved_op
+        : special
+        : semis
         : literal
 
 .. productionlist::
@@ -51,7 +53,6 @@ Lexical Syntax
              : "as"
              : "case"
              : "data"
-             : "default"
              : "derive"
              : "do"
              : "export"
@@ -75,8 +76,9 @@ Lexical Syntax
              : "type"
              : "trait"
              : "use"
+             : "when"
              : "where"
-             : "with"
+             : "Default"
              : "Self"
              : "_"
   reserved_op: "."
@@ -89,21 +91,21 @@ Lexical Syntax
              : "<-"
              : "->"
              : "\\"
+             : "\\/"
              : "|"
              : "@"
              : "~"
              : "?"
              : "!"
-             : "#"
   special: "("
          : ")"
          : ","
-         : ";"
          : "["
          : "]"
          : "`" -- `
          : "{"
          : "}"
+  semis: ";"+
 
 .. productionlist::
   literal: integer
@@ -188,7 +190,7 @@ Lexical Syntax
          : digit
          : other
          : special
-         : "\""
+         : ";" | "#" | "\""
          : other_graphic
   whitechar: "\p{Pattern_White_Space}"
   newline: "\r\n" | "\r" | "\n" | "\f"
@@ -197,7 +199,7 @@ Lexical Syntax
        : "_"
   large: "\p{General_Category=Uppercase_Letter}"
        : "\p{General_Category=Titlecase_Letter}"
-  symbol: symbolchar<special | "#" | "_" | "\"" | "'">
+  symbol: symbolchar<special | ";" | "#" | "_" | "\"" | "'">
   symbolchar: "\p{General_Category=Connector_Punctuation}"
             : "\p{General_Category=Dash_Punctuation}"
             : "\p{General_Category=Other_Punctuation}"
@@ -218,106 +220,273 @@ Grammar
 
 .. productionlist::
   module_decl: "module" simplecon "where" module_decl_body
-             : "module" simplecon "=" expr
   module_decl_body: "{{" module_decl_items "}}"
                   : "{" module_decl_items "}"
-  module_decl_items: (module_decl_item ";"+)* (module_decl_item ";"*)?
-  module_decl_item: type_decl
-                  : sig_decl
-                  : typesig_decl
-                  : valsig_decl
-                  : module_decl
+  module_decl_items: (module_decl_item semis)* module_decl_item?
+  module_decl_item: sig_item
+                  : type_decl
+                  : type_family_decl
+                  : type_impl_decl
                   : data_decl
                   : val_decl
+                  : module_decl
+                  : pattern_decl
                   : trait_decl
                   : impl_decl
                   : fixity_decl
-                  : use_clause
                   : foreign_use_clause
                   : derive_clause
 
 .. productionlist::
-  type_decl: "type" simpletype "=" type
-
-.. productionlist::
-  sig_decl: "signature" simpletype "where" sig_decl_body
-  sig_decl_body: "{{" sig_decl_items "}}"
-               : "{" sig_decl_items "}"
-  sig_decl_items: (sig_decl_item ";"+)* (sig_decl_item ";"*)?
-  sig_decl_item: sig_decl
-               : typesig_decl
-               : valsig_decl
-               : use_clause
-
-.. productionlist::
-  typesig_decl: "type" con ":" kind
+  typesig_decl: "type" con ":" type
   valsig_decl: var ":" type
   consig_decl: con ":" type
+  patternsig_decl: "pattern" con ":" type
 
 .. productionlist::
-  data_decl: "data" con "where" data_decl_body
-           : "newtype" simplecon "=" expr
+  type_decl: "type" simpletype "=" type ("where" type_decl_where)?
+  type_decl_where: "{{" type_decl_where_items "}}"
+                 : "{" type_decl_where_items "}"
+  type_decl_where_items: (type_decl_where_item semis)* type_decl_where_item?
+  type_decl_where_item: type_decl
+                      : use_clause
+
+.. productionlist::
+  type_family_decl: "type" "family" con (":" type)? ("where" ctypefam_decl_body)?
+                  : "data" "family" con (":" type)? ("where" cdatafam_decl_body)?
+  ctypefam_decl_body: "{{" ctypefam_decl_items "}}"
+                    : "{" ctypefam_decl_items "}"
+  ctypefam_decl_items: (ctypefam_decl_item semis)* ctypefam_decl_item?
+  ctypefam_decl_item: typefam_impl_decl
+  cdatafam_decl_body: "{{" cdatafam_decl_items "}}"
+                    : "{" cdatafam_decl_items "}"
+  cdatafam_decl_items: (cdatafam_decl_item semis)* cdatafam_decl_item?
+  cdatafam_decl_item: datafam_impl_decl
+
+.. productionlist::
+  type_impl_decl: typefam_impl_decl
+                : datafam_impl_decl
+  typefam_impl_decl: "type" "impl" type_impl_decl_type "=" type ("where" type_decl_where)?
+  datafam_impl_decl: "data" "impl" type_impl_decl_type "where" data_decl_body
+                   : "newtype" "impl" type_impl_decl_type "=" type ("where" type_decl_where)?
+  type_impl_decl_type: con type_qualified*
+                     : type_qualified conop type_qualified
+
+.. productionlist::
+  data_decl: "data" con (":" type)? "where" data_decl_body
+           : "newtype" simpletype "=" type ("where" type_decl_where)?
   data_decl_body: "{{" data_decl_items "}}"
                 : "{" data_decl_items "}"
-  data_decl_items: (data_decl_item ";"+)* (data_decl_item ";"*)?
+  data_decl_items: (data_decl_item semis)* data_decl_item?
   data_decl_item: consig_decl
-                : use_clause
 
 .. productionlist::
-  trait_decl: "trait" simpletype "<=" context "where" trait_decl_body
+  val_decl: simpleval "=" expr ("where" val_decl_where)?
+  val_decl_where: "{{" val_decl_where_items "}}"
+                : "{" val_decl_where_items "}"
+  val_decl_where_items: (val_decl_where_item semis)* val_decl_where_item?
+  val_decl_where_item: module_decl_item
+
+.. productionlist::
+  pattern_decl: "pattern" "_" (":" type)? "of" pattern_decl_body
+              : "pattern" simplecon "=" pat
+              : "pattern" simplecon "<-" pat
+  pattern_decl_body: "{{" pattern_decl_items "}}"
+                   : "{" pattern_decl_items "}"
+  pattern_decl_items: (pattern_decl_item semis)* pattern_decl_item?
+  pattern_decl_item: simplecon "=" pat
+                   : simplecon "<-" pat
+
+.. productionlist::
+  trait_decl: "trait" simpletype ("<=" context)* "where" trait_decl_body
   trait_decl_body: "{{" trait_decl_items "}}"
                  : "{" trait_decl_items "}"
-  trait_decl_items: (trait_decl_item ";"+)* (trait_decl_item ";"*)?
-  trait_decl_item: sig_decl
-                 : typesig_decl
-                 : valsig_decl
+  trait_decl_items: (trait_decl_item semis)* trait_decl_item?
+  trait_decl_item: sig_item
                  : fixity_decl
-                 : use_clause
 
 .. productionlist::
-  simpletype: con { var_id }
-            : var_id conop var_id
-  simplecon: con { var_id }
-           : var_id conop var_id
-  simpleval: var { var_id }
-           : var_id op var_id
+  impl_decl: "impl" impl_decl_type ("<=" context)* ("for" con)? "where" impl_decl_body
+  impl_decl_type: con type_qualified*
+                : type_qualified conop type_qualified
+  impl_decl_body: "{{" impl_decl_items "}}"
+                : "{" impl_decl_items "}"
+  impl_decl_items: (impl_decl_item semis)* impl_decl_item?
+  impl_decl_item: module_decl_item
 
 .. productionlist::
-  kind:
-  type:
-  context:
-  ctype:
-  expr:
+  fixity_decl: "infix" infix_assoc infix_prec (op ",")* op ","?
+  infix_assoc: "none" | "<-" | "->"
+  infix_prec: integer
 
 .. productionlist::
-  kind:
-  type:
+  use_clause: "use" (con ".")* use_body
+  use_items: use_item
+           : "(" (use_item ",")* use_item? ")"
+           : "(" ".." ")"
+  use_item: con ("as" con)?
+          : conop ("as" conop)?
+          : var ("as" var)?
+          : op ("as" op)?
+
+.. productionlist::
+  simpletype: con bind_var*
+            : bind_var conop bind_var
+  simplecon: con bind_var*
+           : bind_var conop bind_var
+  simpleval: var bind_var*
+           : bind_var op bind_var
+
+.. productionlist::
+  type: "\\/" bind_var* "." type
+      : context "=>" type
+      : type_expr
+  context: type_unit
+  type_expr: type_unit "->" type
+           : type_unit
+  type_unit: type_infix
+  type_infix: type_apps (qual_conop type_apps)*
+  type_apps: type_qualified type_app*
+  type_app: type_qualified
+          : "@" type_qualified
+  type_qualified: type_atomic ("." type_atomic)*
+  type_atomic: "(" type (":" type)? ")"
+             : qual_con
+             : var
+             : type_literal
+  type_literal: literal
+              : "(" type_tuple_items ")"
+              : "[" type_array_items "]"
+              : "{" type_simplrecord_items "}"
+              : "record" type_record_body
+              : "signature" sig_body
+  type_tuple_items: (type ",")+ type ","?
+  type_array_items: (type ",")* type?
+  type_simplrecord_items: (type_simplrecord_item ",")* type_simplrecord_item?
+  type_simplrecord_item: var ":" type
+  type_record_body: "{{" type_record_items "}}"
+                  : "{" type_record_items "}"
+  type_record_items: (type_record_item semis)* type_record_item?
+  type_record_item: valsig_decl
+  sig_body: "{{" sig_items "}}"
+          : "{" sig_items "}"
+  sig_items: (sig_item semis)* sig_item?
+  sig_item: typesig_decl
+          : valsig_decl
+          : consig_decl
+          : patternsig_decl
+          : use_clause
+
+.. productionlist::
+  expr: expr_infix ":" type
+      : expr_infix
+  expr_infix: expr_apps ((qual_op | qual_conop) expr_apps)*
+  expr_apps: expr_qualified expr_app*
+  expr_app: expr_qualified
+          : "@" type_qualified
+  expr_qualified: expr_block ("." expr_block)*
+  expr_block: "\\" case_body
+            : "let" let_binds "in" expr
+            : "case" (expr ",")* expr ","? "of" case_body
+            : "do" do_body
+            : expr_atomic
+  expr_atomic: "(" expr ")"
+             : qual_con
+             : qual_var
+             : expr_literal
+  expr_literal: literal
+              : "(" expr_tuple_items ")"
+              : "[" expr_array_items "]"
+              : "{" expr_simplrecord_items "}"
+              : "record" expr_record_body
+  expr_tuple_items: (expr ",")+ expr ","?
+  expr_array_items: (expr ",")* expr?
+  expr_simplrecord_items: (expr_simplrecord_item ",")* expr_simplrecord_item?
+  expr_record_item: var "=" expr
+  expr_record_body: "{{" expr_record_items "}}"
+                  : "{" expr_record_items "}"
+  expr_record_items: (expr_record_item semis)* expr_record_item?
+  expr_record_item: valsig_decl
+                  : val_decl
+
+.. productionlist::
+  pat: pat_unit ("|" pat_unit)*
+     : pat_unit ":" type
+     : pat_unit
+  pat_unit: pat_infix
+  pat_infix: pat_apps (qual_conop  pat_apps)*
+  pat_apps: type_qualified type_app*
+  pat_app: pat_qualified
+         : "@" pat_qualified
+  pat_qualified: (con ".")* pat_atomic
+  pat_atomic: "(" pat ")"
+            : qual_con
+            : var
+            : pat_literal
+  pat_literal: literal
+             : "(" pat_tuple_items ")"
+             : "[" pat_array_items "]"
+             : "{" pat_simplrecord_items "}"
+  pat_tuple_items: (pat ",")+ pat ","?
+  pat_array_items: (pat ",")* pat?
+  pat_simplrecord_items: (pat_simplrecord_item ",")* pat_simplrecord_item?
+  pat_simplrecord_item: var "=" pat
+
+.. productionlist::
+  let_binds: "{{" let_bind_items "}}"
+           : "{" let_bind_items "}"
+  let_bind_items: (let_bind_item semis)* let_bind_item?
+  let_bind_item: module_decl_item
+
+.. productionlist::
+  case_body: "{{" case_alt_items "}}"
+           : "{" case_alt_items "}"
+  case_alt_items: (case_alt_item semis)* case_alt_item?
+  case_alt_item: (pat ",")* pat? guarded_alt
+  guarded_alt: "->" expr
+             : "when" guarded_alt_body
+  guarded_alt_body: "{{" guarded_alt_items "}}"
+                  : "{" guarded_alt_items "}"
+  guarded_alt_items: (guarded_alt_item semis)* guarded_alt_item?
+  guarded_alt_item: guard_qual "->" expr
+  guard_qual: expr
+
+.. productionlist::
+  bind_var: var_id
+          : "_"
+          : "(" var_id ":" type ")"
   con: con_id
-       : "(" con_sym ")"
+     : "(" ")"
+     : "(" "->" ")"
+     : "(" con_sym ")"
   conop: con_sym
+       : "->"
        : "`" con_id "`"
   var: var_id
+     : "_"
      : "(" var_sym ")"
   op: var_sym
     : "`" var_id "`"
   qual_con: (con ".")* con
   qual_conop: (con ".")* conop
+  qual_var: (con ".")* var
+  qual_op: (con ".")* op
 
 Note:
 
 * ``if`` 式はいれない．以下の標準関数で代用::
 
     if : \a -> Bool -> { then: a, else: a } -> a
-    if = \case
-      True  e -> e.then
-      False e -> e.else
+    if = \
+      True,  e -> e.then
+      False, e -> e.else
 
 * multi way if / lambda case はラムダ抽象で代替::
 
     func1 : \a -> Int -> a -> Maybe a
     func1 = \
-      0 x -> Just x
-      i x
+      0, x -> Just x
+      i, x
         | i > 10 -> Just x
         | else   -> Nothing
 
