@@ -457,10 +457,8 @@ Grammar
           : "(" var_id ":" type ")"
   con: con_id
      : "(" ")"
-     : "(" "->" ")"
-     : "(" con_sym ")"
-  conop: con_sym
-       : "->"
+     : "(" ( "->" | con_sym ) ")"
+  conop: "->" | con_sym
        : "`" con_id "`"
   var: var_id
      : "_"
