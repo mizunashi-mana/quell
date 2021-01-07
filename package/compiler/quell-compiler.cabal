@@ -105,6 +105,9 @@ common general
     prettyprinter,
     prettyprinter-ansi-terminal,
     text,
+    tlex,
+    tlex-th,
+    tlex-encoding,
     transformers,
 
   build-tool-depends:
@@ -144,5 +147,8 @@ library
     Language.Quell.Prelude
     Language.Quell.Type.Ast
     Language.Quell.Type.Token
+    Language.Quell.Parsing.Spanned
+    Language.Quell.Parsing.Runner
+    Language.Quell.Parsing.Lexer
   other-modules:
     Language.Quell.Prelude.Core
