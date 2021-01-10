@@ -126,6 +126,7 @@ custom-setup
   setup-depends:
     base,
     Cabal,
+    cabal-doctest,
 
 executable quellc
   import:
@@ -160,3 +161,39 @@ library
     Language.Quell.Prelude.Core
     Language.Quell.Prelude.Literal
     Language.Quell.Prelude.MonoTraversableM
+
+test-suite doctest
+    import:
+        general,
+    type:
+        exitcode-stdio-1.0
+    hs-source-dirs:
+        test/doctest
+    main-is:
+        Doctest.hs
+    build-depends:
+        doctest,
+        QuickCheck,
+    autogen-modules:
+        Build_doctests
+    other-modules:
+        Build_doctests
+
+test-suite spec
+    import:
+        general,
+    type:
+        exitcode-stdio-1.0
+    hs-source-dirs:
+        test/spec
+    main-is:
+        HSpecDriver.hs
+    ghc-options:
+        -Wno-missing-home-modules
+    build-tool-depends:
+        hspec-discover:hspec-discover,
+    build-depends:
+        quell-compiler,
+
+        hspec,
+        QuickCheck,

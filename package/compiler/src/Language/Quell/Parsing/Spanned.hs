@@ -21,5 +21,6 @@ data Span = Span {
 
 data Loc = Loc {
   locLine :: Int,
-  locCol :: Int
+  locCol :: Int,
+  locAbsPosition :: Int
 } deriving (Eq, Show)
