@@ -91,6 +91,9 @@ reservedOpRules = do
   initialRule (stringP ".")       [||pure do Token.SymDot||]
   initialRule (stringP "=>")      [||pure do Token.SymDArrow||]
   initialRule (stringP "=")       [||pure do Token.SymEqual||]
+  initialRule (stringP "<=")      [||pure do Token.SymDRightArrow||]
+  initialRule (stringP "<-")      [||pure do Token.SymRightArrow||]
+  initialRule (stringP "->")      [||pure do Token.SymArrow||]
 
 
 literalRules :: ScannerBuilder ()
