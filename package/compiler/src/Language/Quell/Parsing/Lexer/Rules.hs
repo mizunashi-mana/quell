@@ -13,14 +13,29 @@ import qualified Language.Haskell.TH                 as TH
 import qualified Language.Lexer.Tlex                 as Tlex
 import qualified Language.Lexer.Tlex.Plugin.Encoding as TlexEnc
 import qualified Language.Lexer.Tlex.Plugin.TH       as TlexTH
-import qualified Language.Quell.Parsing.Token        as Token
+import qualified Language.Quell.Type.Token           as Token
+import qualified Language.Quell.Data.TextId          as TextId
+import qualified Prelude
 
 
 data LexerState = Initial
   deriving (Eq, Ord, Show, Enum)
 
-type LexerAction = ByteString -> Token
+data LexerAction
+  = WithToken Token.T
+  | WithIdToken (TextId.T -> Token.T)
+  | LexLitIntegerOrRational
+  | LexLitByteString
+  | LexLitByteChar
+  | LexLitString
+  | LexLitChar
+  | LexCommentLineWithContent
+  | LexCommentMultilineWithContent
+  | LexCommentDoc
+  | LexCommentPragma
+
 type LexerCodeUnit = Word.Word8
+
 
 type ScannerBuilder = TlexTH.THScannerBuilder LexerState LexerCodeUnit LexerAction
 type Pattern = Tlex.Pattern LexerCodeUnit
@@ -44,102 +59,160 @@ lexerRules = do
   literalRules
 
   specialRules
-  -- be before var_id / con_id to avoid conflicting
+  semisRules
+  curlyRules
+
+  -- be before varIdRule / conIdRule to avoid conflicting
   reservedIdRules
-  -- be before var_sym / con_sym to avoid conflicting
+  -- be before varOpRule / conOpRule to avoid conflicting
   reservedOpRules
+
+
+varIdRule :: ScannerBuilder ()
+varIdRule =
+  initialRule varIdP [||WithIdToken Token.IdVarId||]
+
+varIdP = smallP <> Tlex.manyP do
+  Tlex.orP
+    [
+      smallP,
+      largeP,
+      digitP,
+      otherP
+    ]
+
+conIdRule :: ScannerBuilder ()
+conIdRule =
+  initialRule conIdP [||WithIdToken Token.IdConId||]
+
+conIdP = largeP <> Tlex.manyP do
+  Tlex.orP
+    [
+      smallP,
+      largeP,
+      digitP,
+      otherP
+    ]
+
+varOpRule :: ScannerBuilder ()
+varOpRule =
+  initialRule varOpP [||WithIdToken Token.IdVarOp||]
+
+varOpP = symbolWithoutColonP <> Tlex.manyP do
+  Tlex.orP
+    [
+      symbolP,
+      otherP
+    ]
+  where
+    symbolWithoutColonP = charSetP
+      do symbolCs `CharSet.difference` CharSet.fromList [':']
+
+conOpRule :: ScannerBuilder ()
+conOpRule =
+  initialRule conOpP [||WithIdToken Token.IdConOp||]
+
+conOpP = chP ':' <> Tlex.manyP do
+  Tlex.orP
+    [
+      symbolP,
+      otherP
+    ]
 
 
 reservedIdRules :: ScannerBuilder ()
 reservedIdRules = do
-  initialRule (stringP "alias")     [||pure do Token.KwAlias||]
-  initialRule (stringP "as")        [||pure do Token.KwAs||]
-  initialRule (stringP "case")      [||pure do Token.KwCase||]
-  initialRule (stringP "data")      [||pure do Token.KwData||]
-  initialRule (stringP "derive")    [||pure do Token.KwDerive||]
-  initialRule (stringP "do")        [||pure do Token.KwDo||]
-  initialRule (stringP "export")    [||pure do Token.KwExport||]
-  initialRule (stringP "family")    [||pure do Token.KwFamily||]
-  initialRule (stringP "foreign")   [||pure do Token.KwForeign||]
-  initialRule (stringP "impl")      [||pure do Token.KwImpl||]
-  initialRule (stringP "infix")     [||pure do Token.KwInfix||]
-  initialRule (stringP "in")        [||pure do Token.KwIn||]
-  initialRule (stringP "letrec")    [||pure do Token.KwLetrec||]
-  initialRule (stringP "let")       [||pure do Token.KwLet||]
-  initialRule (stringP "module")    [||pure do Token.KwModule||]
-  initialRule (stringP "newtype")   [||pure do Token.KwNewtype||]
-  initialRule (stringP "none")      [||pure do Token.KwNone||]
-  initialRule (stringP "of")        [||pure do Token.KwOf||]
-  initialRule (stringP "pattern")   [||pure do Token.KwPattern||]
-  initialRule (stringP "record")    [||pure do Token.KwRecord||]
-  initialRule (stringP "rec")       [||pure do Token.KwRec||]
-  initialRule (stringP "role")      [||pure do Token.KwRole||]
-  initialRule (stringP "signature") [||pure do Token.KwSignature||]
-  initialRule (stringP "static")    [||pure do Token.KwStatic||]
-  initialRule (stringP "trait")     [||pure do Token.KwTrait||]
-  initialRule (stringP "type")      [||pure do Token.KwType||]
-  initialRule (stringP "use")       [||pure do Token.KwUse||]
-  initialRule (stringP "when")      [||pure do Token.KwWhen||]
-  initialRule (stringP "where")     [||pure do Token.KwWhere||]
-  initialRule (stringP "_")         [||pure do Token.KwUnderscore||]
+  initialRule (stringP "alias")     [||WithToken do Token.KwAlias||]
+  initialRule (stringP "as")        [||WithToken do Token.KwAs||]
+  initialRule (stringP "case")      [||WithToken do Token.KwCase||]
+  initialRule (stringP "data")      [||WithToken do Token.KwData||]
+  initialRule (stringP "derive")    [||WithToken do Token.KwDerive||]
+  initialRule (stringP "do")        [||WithToken do Token.KwDo||]
+  initialRule (stringP "export")    [||WithToken do Token.KwExport||]
+  initialRule (stringP "family")    [||WithToken do Token.KwFamily||]
+  initialRule (stringP "foreign")   [||WithToken do Token.KwForeign||]
+  initialRule (stringP "impl")      [||WithToken do Token.KwImpl||]
+  initialRule (stringP "infix")     [||WithToken do Token.KwInfix||]
+  initialRule (stringP "in")        [||WithToken do Token.KwIn||]
+  initialRule (stringP "letrec")    [||WithToken do Token.KwLetrec||]
+  initialRule (stringP "let")       [||WithToken do Token.KwLet||]
+  initialRule (stringP "module")    [||WithToken do Token.KwModule||]
+  initialRule (stringP "newtype")   [||WithToken do Token.KwNewtype||]
+  initialRule (stringP "none")      [||WithToken do Token.KwNone||]
+  initialRule (stringP "of")        [||WithToken do Token.KwOf||]
+  initialRule (stringP "pattern")   [||WithToken do Token.KwPattern||]
+  initialRule (stringP "record")    [||WithToken do Token.KwRecord||]
+  initialRule (stringP "rec")       [||WithToken do Token.KwRec||]
+  initialRule (stringP "role")      [||WithToken do Token.KwRole||]
+  initialRule (stringP "signature") [||WithToken do Token.KwSignature||]
+  initialRule (stringP "static")    [||WithToken do Token.KwStatic||]
+  initialRule (stringP "trait")     [||WithToken do Token.KwTrait||]
+  initialRule (stringP "type")      [||WithToken do Token.KwType||]
+  initialRule (stringP "use")       [||WithToken do Token.KwUse||]
+  initialRule (stringP "when")      [||WithToken do Token.KwWhen||]
+  initialRule (stringP "where")     [||WithToken do Token.KwWhere||]
+  initialRule (stringP "_")         [||WithToken do Token.KwUnderscore||]
 
-  initialRule (stringP "Default")   [||pure do Token.LKwDefault||]
-  initialRule (stringP "Self")      [||pure do Token.LKwSelf||]
+  initialRule (stringP "Default")   [||WithToken do Token.LKwDefault||]
+  initialRule (stringP "Self")      [||WithToken do Token.LKwSelf||]
 
 reservedOpRules :: ScannerBuilder ()
 reservedOpRules = do
-  initialRule (stringP "!")       [||pure do Token.SymBang||]
-  initialRule (stringP "->")      [||pure do Token.SymArrow||]
-  initialRule (stringP "..")      [||pure do Token.SymDots||]
-  initialRule (stringP ".")       [||pure do Token.SymDot||]
-  initialRule (stringP "<-")      [||pure do Token.SymRightArrow||]
-  initialRule (stringP "<=")      [||pure do Token.SymDRightArrow||]
-  initialRule (stringP "=>")      [||pure do Token.SymDArrow||]
-  initialRule (stringP "=")       [||pure do Token.SymEqual||]
-  initialRule (stringP "?")       [||pure do Token.SymUnknown||]
-  initialRule (stringP "@")       [||pure do Token.SymAt||]
-  initialRule (stringP "\\/")     [||pure do Token.SymForall||]
-  initialRule (stringP "\\")      [||pure do Token.SymLambda||]
-  initialRule (stringP "|")       [||pure do Token.SymOr||]
-  initialRule (stringP "~")       [||pure do Token.SymTilde||]
-  initialRule (stringP "∀")       [||pure do Token.SymForall||]
-  initialRule (stringP "λ")       [||pure do Token.SymLambda||]
-  initialRule (stringP "→")       [||pure do Token.SymArrow||]
-  initialRule (stringP "←")       [||pure do Token.SymLeftArrow||]
-  initialRule (stringP "⇒")       [||pure do Token.SymDArrow||]
-  initialRule (stringP "⇐")       [||pure do Token.SymDLeftArrow||]
-  initialRule (stringP "…")       [||pure do Token.SymDots||]
+  initialRule (stringP "!")       [||WithToken do Token.SymBang||]
+  initialRule (stringP "->")      [||WithToken do Token.SymArrow||]
+  initialRule (stringP "..")      [||WithToken do Token.SymDots||]
+  initialRule (stringP ".")       [||WithToken do Token.SymDot||]
+  initialRule (stringP "<-")      [||WithToken do Token.SymLeftArrow||]
+  initialRule (stringP "<=")      [||WithToken do Token.SymDLeftArrow||]
+  initialRule (stringP "=>")      [||WithToken do Token.SymDArrow||]
+  initialRule (stringP "=")       [||WithToken do Token.SymEqual||]
+  initialRule (stringP "?")       [||WithToken do Token.SymUnknown||]
+  initialRule (stringP "@")       [||WithToken do Token.SymAt||]
+  initialRule (stringP "\\/")     [||WithToken do Token.SymForall||]
+  initialRule (stringP "\\")      [||WithToken do Token.SymLambda||]
+  initialRule (stringP "|")       [||WithToken do Token.SymOr||]
+  initialRule (stringP "~")       [||WithToken do Token.SymTilde||]
+  initialRule (stringP "∀")       [||WithToken do Token.SymForall||]
+  initialRule (stringP "λ")       [||WithToken do Token.SymLambda||]
+  initialRule (stringP "→")       [||WithToken do Token.SymArrow||]
+  initialRule (stringP "←")       [||WithToken do Token.SymLeftArrow||]
+  initialRule (stringP "⇒")       [||WithToken do Token.SymDArrow||]
+  initialRule (stringP "⇐")       [||WithToken do Token.SymDLeftArrow||]
+  initialRule (stringP "…")       [||WithToken do Token.SymDots||]
 
 specialRules :: ScannerBuilder ()
 specialRules = do
-  initialRule (stringP "(")       [||pure do Token.SpParenOpen||]
-  initialRule (stringP ")")       [||pure do Token.SpParenClose||]
-  initialRule (stringP ",")       [||pure do Token.SpComma||]
-  initialRule (stringP "[")       [||pure do Token.SpBrackOpen||]
-  initialRule (stringP "]")       [||pure do Token.SpBrackClose||]
-  initialRule (stringP "`")       [||pure do Token.SpBackquote||]
+  initialRule (stringP "(")       [||WithToken do Token.SpParenOpen||]
+  initialRule (stringP ")")       [||WithToken do Token.SpParenClose||]
+  initialRule (stringP ",")       [||WithToken do Token.SpComma||]
+  initialRule (stringP "[")       [||WithToken do Token.SpBrackOpen||]
+  initialRule (stringP "]")       [||WithToken do Token.SpBrackClose||]
+  initialRule (stringP "`")       [||WithToken do Token.SpBackquote||]
 
-semisRules :: ScannerBuilder ()
-semisRules = do
-  initialRule (Tlex.someP do chP ";") [||pure do Token.SpSemis||]
+specialCs = CharSet.fromList ['(', ')', ',', '[', ']', '`']
 
 curlyRules :: ScannerBuilder ()
 curlyRules = do
-  initialRule (stringP "{{")        [||pure do Token.SpDCurlyOpen||]
-  initialRule (stringP "}}")        [||pure do Token.SpDCurlyClose||]
-  initialRule (stringP "{")         [||pure do Token.SpCurlyOpen||]
-  initialRule (stringP "}")         [||pure do Token.SpCurlyClose||]
-  initialRule (stringP "⦃")         [||pure do Token.SpDCurlyOpen||]
-  initialRule (stringP "⦄")         [||pure do Token.SpDCurlyClose||]
+  initialRule (stringP "{{")        [||WithToken do Token.SpDCurlyOpen||]
+  initialRule (stringP "}}")        [||WithToken do Token.SpDCurlyClose||]
+  initialRule (stringP "{")         [||WithToken do Token.SpCurlyOpen||]
+  initialRule (stringP "}")         [||WithToken do Token.SpCurlyClose||]
+  initialRule (stringP "⦃")         [||WithToken do Token.SpDCurlyOpen||]
+  initialRule (stringP "⦄")         [||WithToken do Token.SpDCurlyClose||]
+
+semisRules :: ScannerBuilder ()
+semisRules =
+  initialRule (Tlex.someP do chP ';') [||WithToken do Token.SpSemis||]
+
 
 literalRules :: ScannerBuilder ()
 literalRules = do
   --- lex rests without standard lexer
-  initialRule integerOrRationalOpenP [||undefined||]
-  initialRule byteStringOpenP [||pure do Token.LitByteString undefined||]
-  initialRule stringOpenP [||pure do Token.LitString undefined||]
-  initialRule byteCharOpenP [||pure do Token.LitByteChar undefined||]
-  initialRule charOpenP [||pure do Token.LitChar undefined||]
+  initialRule integerOrRationalOpenP [||LexLitIntegerOrRational||]
+  initialRule byteStringOpenP [||LexLitByteString||]
+  initialRule stringOpenP [||LexLitString||]
+  initialRule byteCharOpenP [||LexLitByteChar||]
+  initialRule charOpenP [||LexLitChar||]
 
 
 integerOrRationalOpenP = Tlex.maybeP signP <> digitP
@@ -163,33 +236,34 @@ charSepP = chP '\''
 
 whiteSpaceRules :: ScannerBuilder ()
 whiteSpaceRules = do
-  initialRule (Tlex.someP whiteCharP) [||pure Token.WhiteSpace||]
+  initialRule (Tlex.someP whiteCharP) [||WithToken Token.Whitespace||]
+
   commentRules
 
 
 commentRules :: ScannerBuilder ()
 commentRules = do
-  initialRule lineCommentWithoutContentP [||pure do Token.CommentLine do text ""||]
+  initialRule lineCommentWithoutContentP [||WithToken do Token.CommentLine do text ""||]
   --- lex rests without standard lexer
-  initialRule lineCommentOpenWithContentP [||pure do Token.CommentLine undefined||]
+  initialRule lineCommentOpenWithContentP [||LexCommentLineWithContent||]
 
-  initialRule multilineCommentWithoutContentP [||pure do Token.CommentMultiline do text ""]
+  initialRule multilineCommentWithoutContentP [||WithToken do Token.CommentMultiline do text ""||]
   --- lex rests without standard lexer
-  initialRule multilineCommentOpenWithContentP [||pure do Token.CommentMultiline undefined||]
-
-  --- lex rests without standard lexer
-  initialRule docCommentOpenP [||pure do Token.CommentDoc undefined||]
+  initialRule multilineCommentOpenWithContentP [||LexCommentMultilineWithContent||]
 
   --- lex rests without standard lexer
-  initialRule pragmaCommentOpenP [||pure do Token.CommentPragma undefined||]
+  initialRule docCommentOpenP [||LexCommentDoc||]
+
+  --- lex rests without standard lexer
+  initialRule pragmaCommentOpenP [||LexCommentPragma||]
 
 lineCommentWithoutContentP = lineCommentOpenP <> newlineP
-lineCommentOpenWithContentP = lineCommentOpenP
-  <> charSetP do anyCs `CharSet.difference` mconcat
-    [
-      symbolCs,
-      otherCs
-    ]
+lineCommentOpenWithContentP = lineCommentOpenP <> charSetP
+  do anyCs `CharSet.difference` mconcat
+      [
+        symbolCs,
+        otherCs
+      ]
 lineCommentOpenP = stringP "--" <> Tlex.manyP do chP '-'
 
 multilineCommentWithoutContentP = commentOpenP <> commentCloseP
@@ -291,6 +365,7 @@ digitCs = mconcat
     UniCharSet.otherNumber
   ]
 
+otherP = charSetP otherCs
 otherCs = mconcat
   [
     CharSet.fromList ['\''],
@@ -321,5 +396,5 @@ charSetP cs = TlexEnc.charSetP TlexEnc.charSetPUtf8 cs
 chP :: Char -> Pattern
 chP c = TlexEnc.chP TlexEnc.charSetPUtf8 c
 
-stringP :: String -> Pattern
+stringP :: Prelude.String -> Pattern
 stringP s = TlexEnc.stringP TlexEnc.charSetPUtf8 s

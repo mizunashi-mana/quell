@@ -7,7 +7,11 @@ module Language.Quell.Parsing.Spanned (
 import Language.Quell.Prelude
 
 
-data Spanned a = Spanned Span a
+data Spanned a = Spanned
+  {
+    content :: a,
+    contentSpan :: Span
+  }
   deriving (Eq, Show, Functor)
 
 data Span = Span {

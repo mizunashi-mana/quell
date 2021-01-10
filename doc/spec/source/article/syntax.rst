@@ -46,8 +46,8 @@ Lexical Syntax
 .. productionlist::
   var_id: (small (small | large | digit | other)*)<reserved_id>
   con_id: (large (small | large | digit | other)*)<reserved_id>
-  var_sym: (symbol<":"> (symbol | other)*)<reserved_op>
-  con_sym: (":" (symbol | other)*)<reserved_op>
+  var_op: (symbol<":"> (symbol | other)*)<reserved_op>
+  con_op: (":" (symbol | other)*)<reserved_op>
 
 .. productionlist::
   reserved_id: "alias"

@@ -97,15 +97,18 @@ common general
       -dcore-lint
 
   build-depends:
-    base,
     array,
+    base,
     bytestring,
     ghc-prim,
+    template-haskell,
+    text,
+
+    charset,
+    conduit,
     mono-traversable,
     prettyprinter,
     prettyprinter-ansi-terminal,
-    text,
-    charset,
     tlex,
     tlex-th,
     tlex-encoding,
@@ -152,6 +155,7 @@ library
     Language.Quell.Parsing.Spanned
     Language.Quell.Parsing.Runner
     Language.Quell.Parsing.Lexer
+    Language.Quell.Parsing.Lexer.Rules
   other-modules:
     Language.Quell.Prelude.Core
     Language.Quell.Prelude.Literal

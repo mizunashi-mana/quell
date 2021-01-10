@@ -84,9 +84,9 @@ data Token
   | SpVSemis
 
   | IdConId TextId.T
-  | IdConSym TextId.T
+  | IdConOp TextId.T
   | IdVarId TextId.T
-  | IdVarSym TextId.T
+  | IdVarOp TextId.T
 
   | LitByteChar Word8
   | LitByteString ByteString
@@ -173,9 +173,9 @@ instance Pretty Token where
     SpVDCurlyClose      -> pretty "{- }} -}"
     SpVSemis            -> pretty "{- ; -}"
     IdConId v           -> pretty v
-    IdConSym v          -> pretty v
+    IdConOp v           -> pretty v
     IdVarId v           -> pretty v
-    IdVarSym v          -> pretty v
+    IdVarOp v           -> pretty v
     LitByteChar v       -> prettyByteChar v
     LitByteString v     -> prettyByteString v
     LitChar v           -> pretty do show v
