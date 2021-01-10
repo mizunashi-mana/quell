@@ -1,8 +1,10 @@
-module Language.Quell.Data.Spanned (
+module Language.Quell.Parsing.Spanned (
   Spanned (..),
   Span (..),
   Loc (..),
 ) where
+
+import Language.Quell.Prelude
 
 
 data Spanned a = Spanned Span a

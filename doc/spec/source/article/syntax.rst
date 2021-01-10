@@ -40,6 +40,7 @@ Lexical Syntax
         : reserved_op
         : special
         : semis
+        : curly
         : literal
 
 .. productionlist::
@@ -103,8 +104,8 @@ Lexical Syntax
          : "["
          : "]"
          : "`"
-         : "{"
-         : "}"
+  curly: "{{" | "}}"
+       : "{" | "}"
   semis: ";"+
 
 .. productionlist::
@@ -171,15 +172,17 @@ Lexical Syntax
 
 .. productionlist::
   comment: line_comment
-         : multiline_comment
          : doc_comment
+         : pragma_comment
+         : multiline_comment
   line_comment: "--" "-"* (any<symbol> any*)? newline
-  multiline_comment: comment_open ANY<"!"> ANYs (nested_comment ANYs)* comment_close
-  doc_comment: comment_open "!" ANY* newline "|" comment_close
+  multiline_comment: comment_open ANY<"!" | "#"> ANYs (nested_comment ANYs)* comment_close
+  doc_comment: comment_open "!" (ANY*)<ANY* newline "|" comment_close ANY*> newline "|" comment_close
+  pragma_comment: comment_open "#" ANYs (nested_comment ANYs)* "#" comment_close
   nested_comment: comment_open ANYs (nested_comment ANYs)* comment_close
   comment_open: "{-"
   comment_close: "-}"
-  any: graphic | " " | "\t"
+  any: graphic | space
   ANYs: (ANY*)<ANY* (comment_open | comment_close) ANY*>
   ANY: graphic | whitechar
 
@@ -190,16 +193,22 @@ Lexical Syntax
          : digit
          : other
          : special
-         : ";" | "#" | "\""
+         : other_special
          : other_graphic
-  whitechar: "\p{Pattern_White_Space}"
+  whitechar: "\v"
+           : space
+           : newline
+  space: "\t" | "\u200E" | "\u200F"
+       : "\p{General_Category=Space_Separator}"
   newline: "\r\n" | "\r" | "\n" | "\f"
+         : "\p{General_Category=Line_Separator}"
+         : "\p{General_Category=Paragraph_Separator}"
   small: "\p{General_Category=Lowercase_Letter}"
        : "\p{General_Category=Other_Letter}"
        : "_"
   large: "\p{General_Category=Uppercase_Letter}"
        : "\p{General_Category=Titlecase_Letter}"
-  symbol: symbolchar<special | ";" | "#" | "_" | "\"" | "'">
+  symbol: symbolchar<special | other_special | "_" | "'">
   symbolchar: "\p{General_Category=Connector_Punctuation}"
             : "\p{General_Category=Dash_Punctuation}"
             : "\p{General_Category=Other_Punctuation}"
@@ -209,7 +218,9 @@ Lexical Syntax
   other: "\p{General_Category=Modifier_Letter}"
        : "\p{General_Category=Mark}"
        : "\p{General_Category=Letter_Number}"
+       : "\p{General_Category=Format}"<whitechar>
        : "'"
+  other_special: ";" | "#" | "\"" | "{" | "}"
   other_graphic: "\p{General_Category=Punctuation}"<symbolchar>
 
 Grammar
@@ -234,7 +245,8 @@ Grammar
                   : trait_decl
                   : impl_decl
                   : fixity_decl
-                  : foreign_use_clause
+                  : foreign_val_decl
+                  : export_clause
                   : derive_clause
 
 .. productionlist::
@@ -242,6 +254,7 @@ Grammar
   valsig_decl: var ":" type
   consig_decl: con ":" type
   patternsig_decl: "pattern" con ":" type
+  foreign_val_decl: "foreign" string var ":" type
 
 .. productionlist::
   type_decl: "type" simpletype "=" type ("where" type_decl_where)?
@@ -285,7 +298,7 @@ Grammar
   val_decl_where: "{{" val_decl_where_items "}}"
                 : "{" val_decl_where_items "}"
   val_decl_where_items: (val_decl_where_item semis)* val_decl_where_item?
-  val_decl_where_item: module_decl_item
+  val_decl_where_item: let_bind_item
 
 .. productionlist::
   pattern_decl: "pattern" "_" (":" type)? "of" pattern_decl_body
@@ -320,7 +333,7 @@ Grammar
   infix_prec: integer
 
 .. productionlist::
-  use_clause: "use" (con ".")* use_body
+  use_clause: "use" (string ":")?  (con ".")* use_body
   use_items: use_item
            : "(" (use_item ",")* use_item? ")"
            : "(" ".." ")"
@@ -436,7 +449,19 @@ Grammar
   let_binds: "{{" let_bind_items "}}"
            : "{" let_bind_items "}"
   let_bind_items: (let_bind_item semis)* let_bind_item?
-  let_bind_item: module_decl_item
+  let_bind_item: sig_item
+               : type_decl
+               : type_family_decl
+               : type_impl_decl
+               : data_decl
+               : val_decl
+               : module_decl
+               : pattern_decl
+               : trait_decl
+               : impl_decl
+               : fixity_decl
+               : foreign_val_decl
+               : derive_clause
 
 .. productionlist::
   case_body: "{{" case_alt_items "}}"
@@ -494,11 +519,22 @@ Note:
       | i > 10 -> Just x
       | else   -> Nothing
 
+TODO:
+
+* 不要な Keyword 取り除く & 適切な単語選ぶ
+* レコード / モジュールの演算 (extend / union)
+* レコード / モジュール部分多相
+* モジュールの構文再定義 (ファイルシステムとのマッピング，可視性)
+* プラグマの名前をちゃんと取るように
+* ドキュメントコメントの lexical syntax 定義
 
 Layout
 ------
 
-TODO: ``{`` / ``}`` でレイアウトオフ，``{{`` / ``}}`` で明示的に終端示すレイアウト．
+TODO:
+
+* ``{`` / ``}`` でレイアウトオフ，``{{`` / ``}}`` で明示的に終端示すレイアウト
+* 自動で ``{`` / ``}`` / ``{{`` / ``}}`` / ``;`` 挿入．``let-in`` は ``{{`` / ``}}``
 
 Fixity Resolution
 -----------------

@@ -6,12 +6,10 @@ module Language.Quell.Type.Ast (
 import Language.Quell.Prelude
 
 
-data Program = Program
-  { importDecls :: [ImportDecl]
-  , decls :: [Decl]
-  }
-
-data ImportDecl = ImportDecl Text [Text]
+data Program = Program {
+  moduleName :: Text,
+  decls :: [Decl]
+} deriving (Eq, Show)
 
 data Decl
   = DeclClass

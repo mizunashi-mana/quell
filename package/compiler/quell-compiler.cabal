@@ -105,6 +105,7 @@ common general
     prettyprinter,
     prettyprinter-ansi-terminal,
     text,
+    charset,
     tlex,
     tlex-th,
     tlex-encoding,
@@ -145,6 +146,7 @@ library
     src
   exposed-modules:
     Language.Quell.Prelude
+    Language.Quell.Data.TextId
     Language.Quell.Type.Ast
     Language.Quell.Type.Token
     Language.Quell.Parsing.Spanned
@@ -152,3 +154,5 @@ library
     Language.Quell.Parsing.Lexer
   other-modules:
     Language.Quell.Prelude.Core
+    Language.Quell.Prelude.Literal
+    Language.Quell.Prelude.MonoTraversableM

@@ -16,7 +16,7 @@ newtype Runner a = Runner {
 } deriving (Functor, Applicative, Monad) via StateT Context Result
 
 data Context = Context {
-  currentLoc :: Spanned.Loc
+  currentLoc :: Spanned.Loc,
   layoutStack :: [LayoutContext]
 } deriving (Eq, Show)
 

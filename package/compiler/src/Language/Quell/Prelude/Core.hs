@@ -32,8 +32,9 @@ import           Prelude                          hiding (String, foldl, foldr,
 import           Control.Applicative
 import           Control.Monad
 import           Control.Monad.IO.Class
-import           Control.Monad.Trans.State.Strict hiding (modify)
-import           Data.ByteString                   (ByteString)
+import           Control.Monad.Trans.State.Strict hiding (modify, liftCallCC, liftCatch)
+import           Control.Monad.Trans.Reader       hiding (liftCallCC, liftCatch)
+import           Data.ByteString                  (ByteString)
 import           Data.Coerce
 import           Data.Foldable                    hiding (foldl, foldr')
 import           Data.Function                    hiding (($))
@@ -50,4 +51,4 @@ import           Data.Text                         (Text)
 import           Data.Typeable                    (Typeable)
 import           Data.Word                        (Word, Word8)
 import           GHC.Prim
-import           Prettyprinter                     (Pretty (..))
+import           Prettyprinter                     (Pretty (..), Doc)
