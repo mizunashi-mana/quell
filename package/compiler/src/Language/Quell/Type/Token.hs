@@ -96,9 +96,9 @@ data Token
   | LitString Text
 
   | CommentLine Text
-  | CommentBlock Text
+  | CommentMultiline Text
   | CommentPragma Text
-  | CommentDocBlock Text
+  | CommentDoc Text
 
   | Whitespace
   | EndOfSource
@@ -183,9 +183,9 @@ instance Pretty Token where
     LitInteger v        -> pretty v
     LitRational v       -> prettyRational v
     CommentLine v       -> pretty do text "--" <> v
-    CommentBlock v      -> pretty do text "{-" <> v <> text "-}"
+    CommentMultiline v  -> pretty do text "{-" <> v <> text "-}"
     CommentPragma v     -> pretty do text "{-#" <> v <> text "#-}"
-    CommentDocBlock v   -> pretty do text "{-!" <> v <> text "\n|-}"
+    CommentDoc v        -> pretty do text "{-!" <> v <> text "\n|-}"
     Whitespace          -> mempty
     EndOfSource         -> mempty
 

@@ -38,32 +38,185 @@ buildLexer = do
 
 lexerRules :: ScannerBuilder ()
 lexerRules = do
-    initialRule (Tlex.someP whiteCharP) [||\_ -> TokWhiteSpace||]
+  whiteSpaceRules
 
-    initialRule commentP [||TokLineComment||]
+  -- be before var_op to avoid conflicting
+  literalRules
 
-    -- openComP should be the head on nested comment mode to avoid conflicting.
-    TlexTH.thLexRule [Initial, NestedComment] openComP [||\_ -> TokOpenComment||]
-    -- closeComP should be the head on nested comment mode to avoid conflicting.
-    nestedCommentRule closeComP [||\_ -> TokCloseComment||]
-    nestedCommentRule anyWithNewlineP [||TokEnclosedCommentChar||]
+whiteSpaceRules :: ScannerBuilder ()
+whiteSpaceRules = do
+  initialRule (Tlex.someP whiteCharP) [||pure Token.WhiteSpace||]
+  commentRules
 
-    initialRule specialP [||TokSpecial||]
+literalRules :: ScannerBuilder ()
+literalRules = do
+  --- lex rests without standard lexer
+  initialRule integerOrRationalOpenP [||undefined||]
+  initialRule byteStringOpenP [||pure do Token.LitByteString undefined||]
+  initialRule stringOpenP [||pure do Token.LitString undefined||]
+  initialRule byteCharOpenP [||pure do Token.LitByteChar undefined||]
+  initialRule charOpenP [||pure do Token.LitChar undefined||]
 
-    -- reservedIdP should be before qvarid to avoid conflicting.
-    initialRule reservedIdP [||TokReservedId||]
-    -- reservedOpP should be before qvarsym / qconsym to avoid conflicting.
-    initialRule reservedOpP [||TokReservedOp||]
+commentRules :: ScannerBuilder ()
+commentRules = do
+  initialRule lineCommentWithoutContentP [||pure do Token.CommentLine do text ""||]
+  --- lex rests without standard lexer
+  initialRule lineCommentOpenWithContentP [||pure do Token.CommentLine undefined||]
 
-    initialRule qvaridP [||TokQualifiedVarId||]
-    initialRule qconidP [||TokQualifiedConId||]
-    initialRule qvarsymP [||TokQualifiedVarSym||]
-    initialRule qconsymP [||TokQualifiedConSym||]
+  initialRule multilineCommentWithoutContentP [||pure do Token.CommentMultiline do text ""]
+  --- lex rests without standard lexer
+  initialRule multilineCommentOpenWithContentP [||pure do Token.CommentMultiline undefined||]
 
-    initialRule litIntegerP [||TokLitInteger||]
-    initialRule litFloatP [||TokLitFloat||]
-    initialRule litCharP [||TokLitChar||]
-    initialRule litStringP [||TokLitString||]
+  --- lex rests without standard lexer
+  initialRule docCommentOpenP [||pure do Token.CommentDoc undefined||]
+
+  --- lex rests without standard lexer
+  initialRule pragmaCommentOpenP [||pure do Token.CommentPragma undefined||]
+
+
+integerOrRationalOpenP = Tlex.maybeP signP <> digitP
+
+signP = charSetP signCs
+signCs = CharSet.fromList ['+', '-']
+
+
+byteStringOpenP = chP '#' <> strSepP
+
+stringOpenP = strSepP
+
+byteCharOpenP = chP '#' <> charSepP
+
+charOpenP = charSepP
+
+strSepP = chP '"'
+
+charSepP = chP '\''
+
+
+lineCommentWithoutContentP = lineCommentOpenP <> newlineP
+lineCommentOpenWithContentP = lineCommentOpenP
+  <> charSetP do anyCs `CharSet.difference` mconcat
+    [
+      symbolCs,
+      otherCs
+    ]
+lineCommentOpenP = stringP "--" <> Tlex.manyP do chP '-'
+
+multilineCommentWithoutContentP = commentOpenP <> commentCloseP
+multilineCommentOpenWithContentP = commentOpenP
+  <> charSetP do largeAnyCs `CharSet.difference` CharSet.fromList ['!', '#']
+
+docCommentOpenP = commentOpenP <> chP '!'
+
+pragmaCommentOpenP = commentOpenP <> chP '#'
+
+commentOpenP = stringP "{-"
+commentCloseP = stringP "-}"
+
+anyCs = mconcat
+  [
+    graphicCs,
+    spaceCs
+  ]
+
+largeAnyCs = mconcat
+  [
+    graphicCs,
+    whiteCharCs
+  ]
+
+
+graphicCs = mconcat
+  [
+    smallCs,
+    largeCs,
+    symbolCs,
+    digitCs,
+    otherCs,
+    specialCs,
+    otherSpecialCs,
+    otherGraphicCs
+  ]
+
+whiteCharP = charSetP whiteCharCs
+whiteCharCs = mconcat
+  [
+    CharSet.fromList ['\v'],
+    spaceCs,
+    newlineCs
+  ]
+
+spaceCs = mconcat
+  [
+    CharSet.fromList ['\t', '\x200E', '\x200F'],
+    UniCharSet.space
+  ]
+
+newlineP = Tlex.orP
+  [
+    stringP "\r\n",
+    charSetP newlineCs
+  ]
+newlineCs = mconcat
+  [
+    CharSet.fromList ['\r', '\n', '\f'],
+    UniCharSet.lineSeparator,
+    UniCharSet.paragraphSeparator
+  ]
+
+smallP = charSetP smallCs
+smallCs = mconcat
+  [
+    CharSet.fromList ['_'],
+    UniCharSet.lowercaseLetter,
+    UniCharSet.otherLetter
+  ]
+
+largeP = charSetP largeCs
+largeCs = mconcat
+  [
+    UniCharSet.uppercaseLetter,
+    UniCharSet.titlecaseLetter
+  ]
+
+symbolP = charSetP symbolCs
+symbolCs = symbolCharCs `CharSet.difference` mconcat
+  [
+    CharSet.fromList ['_', '\''],
+    specialCs,
+    otherSpecialCs
+  ]
+symbolCharCs = mconcat
+  [
+    UniCharSet.connectorPunctuation,
+    UniCharSet.dashPunctuation,
+    UniCharSet.otherPunctuation,
+    UniCharSet.symbol
+  ]
+
+digitP = charSetP digitCs
+digitCs = mconcat
+  [
+    UniCharSet.decimalNumber,
+    UniCharSet.otherNumber
+  ]
+
+otherCs = mconcat
+  [
+    CharSet.fromList ['\''],
+    UniCharSet.modifierLetter,
+    UniCharSet.mark,
+    UniCharSet.letterNumber,
+    UniCharSet.format `CharSet.difference` whiteCharCs
+  ]
+
+otherSpecialCs =
+  CharSet.fromList [';', '#', '"', '{', '}']
+
+otherGraphicCs = mconcat
+  [
+    UniCharSet.punctuation `CharSet.difference` symbolCharCs
+  ]
 
 
 charSetP :: CharSet.CharSet -> Pattern
@@ -71,9 +224,6 @@ charSetP cs = TlexEnc.charSetP TlexEnc.charSetPUtf8 cs
 
 chP :: Char -> Pattern
 chP c = TlexEnc.chP TlexEnc.charSetPUtf8 c
-
-charsP :: [Char] -> Pattern
-charsP cs = TlexEnc.charsP TlexEnc.charSetPUtf8 cs
 
 stringP :: String -> Pattern
 stringP s = TlexEnc.stringP TlexEnc.charSetPUtf8 s

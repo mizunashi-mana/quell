@@ -32,16 +32,16 @@ Lexical Syntax
 
 .. productionlist::
   lexical_program: (lexeme | whitespace)*
-  lexeme: var_id
-        : var_op
-        : con_id
-        : con_op
-        : reserved_id
-        : reserved_op
+  lexeme: literal
         : special
         : semis
         : curly
-        : literal
+        : reserved_id
+        : reserved_op
+        : var_id
+        : var_op
+        : con_id
+        : con_op
 
 .. productionlist::
   var_id: (small (small | large | digit | other)*)<reserved_id>
@@ -175,8 +175,8 @@ Lexical Syntax
          : doc_comment
          : pragma_comment
          : multiline_comment
-  line_comment: "--" "-"* (any<symbol> any*)? newline
-  multiline_comment: comment_open ANY<"!" | "#"> ANYs (nested_comment ANYs)* comment_close
+  line_comment: "--" "-"* (any<symbol | other> any*)? newline
+  multiline_comment: comment_open (ANY<"!" | "#"> ANYs (nested_comment ANYs)*)? comment_close
   doc_comment: comment_open "!" (ANY*)<ANY* newline "|" comment_close ANY*> newline "|" comment_close
   pragma_comment: comment_open "#" ANYs (nested_comment ANYs)* "#" comment_close
   nested_comment: comment_open ANYs (nested_comment ANYs)* comment_close
@@ -222,6 +222,50 @@ Lexical Syntax
        : "'"
   other_special: ";" | "#" | "\"" | "{" | "}"
   other_graphic: "\p{General_Category=Punctuation}"<symbolchar>
+
+Specifications for Lexical Nonterminals
+:::::::::::::::::::::::::::::::::::::::
+
+These nonterminals must be disjoint:
+
+* ``whitespace``
+* ``var_id``
+* ``var_op``
+* ``con_id``
+* ``con_op``
+* ``reserved_id``
+* ``reserved_op``
+* ``special``
+* ``semis``
+* ``curly``
+* ``literal``
+
+These nonterminals must be disjoint:
+
+* ``whitechar``
+* ``small``
+* ``large``
+* ``symbol``
+* ``digit``
+* ``other``
+* ``special``
+* ``other_special``
+* ``other_graphic``
+
+These nonterminals must be disjoint:
+
+* ``space``
+* ``newline``
+
+These expressions must be empty:
+
+* ``((lexeme | whitespace)*)<ANY*>``
+* ``reserved_id<(small | large) (small | large | digit | other)*>``
+* ``reserved_op<symbol (symbol | other)*>``
+* ``(curly | semis)<other_special>``
+* ``literal<("+" | "-" | digit | "'" | other_special) ANY*>``
+* ``(multiline_comment | doc_comment | pragma_comment | nested_comment)<comment_open ANY* comment_close>``
+* ``(multiline_comment | doc_comment | pragma_comment)<doc_comment | nested_comment>``
 
 Grammar
 -------
