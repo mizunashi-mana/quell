@@ -43,6 +43,7 @@ lexerRules = do
   -- be before var_op to avoid conflicting
   literalRules
 
+  specialRules
   -- be before var_id / con_id to avoid conflicting
   reservedIdRules
   -- be before var_sym / con_sym to avoid conflicting
@@ -75,8 +76,8 @@ reservedIdRules = do
   initialRule (stringP "role")      [||pure do Token.KwRole||]
   initialRule (stringP "signature") [||pure do Token.KwSignature||]
   initialRule (stringP "static")    [||pure do Token.KwStatic||]
-  initialRule (stringP "type")      [||pure do Token.KwType||]
   initialRule (stringP "trait")     [||pure do Token.KwTrait||]
+  initialRule (stringP "type")      [||pure do Token.KwType||]
   initialRule (stringP "use")       [||pure do Token.KwUse||]
   initialRule (stringP "when")      [||pure do Token.KwWhen||]
   initialRule (stringP "where")     [||pure do Token.KwWhere||]
@@ -87,14 +88,49 @@ reservedIdRules = do
 
 reservedOpRules :: ScannerBuilder ()
 reservedOpRules = do
+  initialRule (stringP "!")       [||pure do Token.SymBang||]
+  initialRule (stringP "->")      [||pure do Token.SymArrow||]
   initialRule (stringP "..")      [||pure do Token.SymDots||]
   initialRule (stringP ".")       [||pure do Token.SymDot||]
+  initialRule (stringP "<-")      [||pure do Token.SymRightArrow||]
+  initialRule (stringP "<=")      [||pure do Token.SymDRightArrow||]
   initialRule (stringP "=>")      [||pure do Token.SymDArrow||]
   initialRule (stringP "=")       [||pure do Token.SymEqual||]
-  initialRule (stringP "<=")      [||pure do Token.SymDRightArrow||]
-  initialRule (stringP "<-")      [||pure do Token.SymRightArrow||]
-  initialRule (stringP "->")      [||pure do Token.SymArrow||]
+  initialRule (stringP "?")       [||pure do Token.SymUnknown||]
+  initialRule (stringP "@")       [||pure do Token.SymAt||]
+  initialRule (stringP "\\/")     [||pure do Token.SymForall||]
+  initialRule (stringP "\\")      [||pure do Token.SymLambda||]
+  initialRule (stringP "|")       [||pure do Token.SymOr||]
+  initialRule (stringP "~")       [||pure do Token.SymTilde||]
+  initialRule (stringP "∀")       [||pure do Token.SymForall||]
+  initialRule (stringP "λ")       [||pure do Token.SymLambda||]
+  initialRule (stringP "→")       [||pure do Token.SymArrow||]
+  initialRule (stringP "←")       [||pure do Token.SymLeftArrow||]
+  initialRule (stringP "⇒")       [||pure do Token.SymDArrow||]
+  initialRule (stringP "⇐")       [||pure do Token.SymDLeftArrow||]
+  initialRule (stringP "…")       [||pure do Token.SymDots||]
 
+specialRules :: ScannerBuilder ()
+specialRules = do
+  initialRule (stringP "(")       [||pure do Token.SpParenOpen||]
+  initialRule (stringP ")")       [||pure do Token.SpParenClose||]
+  initialRule (stringP ",")       [||pure do Token.SpComma||]
+  initialRule (stringP "[")       [||pure do Token.SpBrackOpen||]
+  initialRule (stringP "]")       [||pure do Token.SpBrackClose||]
+  initialRule (stringP "`")       [||pure do Token.SpBackquote||]
+
+semisRules :: ScannerBuilder ()
+semisRules = do
+  initialRule (Tlex.someP do chP ";") [||pure do Token.SpSemis||]
+
+curlyRules :: ScannerBuilder ()
+curlyRules = do
+  initialRule (stringP "{{")        [||pure do Token.SpDCurlyOpen||]
+  initialRule (stringP "}}")        [||pure do Token.SpDCurlyClose||]
+  initialRule (stringP "{")         [||pure do Token.SpCurlyOpen||]
+  initialRule (stringP "}")         [||pure do Token.SpCurlyClose||]
+  initialRule (stringP "⦃")         [||pure do Token.SpDCurlyOpen||]
+  initialRule (stringP "⦄")         [||pure do Token.SpDCurlyClose||]
 
 literalRules :: ScannerBuilder ()
 literalRules = do
@@ -265,11 +301,17 @@ otherCs = mconcat
   ]
 
 otherSpecialCs =
-  CharSet.fromList [';', '#', '"', '{', '}']
+  CharSet.fromList [';', '#', '"', '{', '}', '⦃', '⦄']
 
-otherGraphicCs = mconcat
+otherGraphicCs = otherGraphicCharCs `CharSet.difference` mconcat
   [
-    UniCharSet.punctuation `CharSet.difference` symbolCharCs
+    symbolCharCs,
+    specialCs,
+    otherSpecialCs
+  ]
+otherGraphicCharCs = mconcat
+  [
+    UniCharSet.punctuation
   ]
 
 

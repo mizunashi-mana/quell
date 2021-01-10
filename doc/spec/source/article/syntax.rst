@@ -83,17 +83,17 @@ Lexical Syntax
              : "Default"
              : "Self"
   reserved_op: "!"
-             : "->"
-             : ".."
+             : "->" | "→"
+             : ".." | "…"
              : "."
-             : "<-"
-             : "<="
-             : "=>"
+             : "<-" | "←"
+             : "<=" | "⇐"
+             : "=>" | "⇒"
              : "="
              : "?"
              : "@"
-             : "\\/"
-             : "\\"
+             : "\\/" | "∀"
+             : "\\" | "λ"
              : "|"
              : "~"
              : "::"
@@ -105,6 +105,7 @@ Lexical Syntax
          : "]"
          : "`"
   curly: "{{" | "}}"
+       : "⦃" | "⦄"
        : "{" | "}"
   semis: ";"+
 
@@ -220,8 +221,9 @@ Lexical Syntax
        : "\p{General_Category=Letter_Number}"
        : "\p{General_Category=Format}"<whitechar>
        : "'"
-  other_special: ";" | "#" | "\"" | "{" | "}"
-  other_graphic: "\p{General_Category=Punctuation}"<symbolchar>
+  other_special: ";" | "#" | "\"" | "{" | "}" | "⦃" | "⦄"
+  other_graphic: other_graphic_char<symbolchar | special | other_special>
+  other_graphic_char: "\p{General_Category=Punctuation}"
 
 Specifications for Lexical Nonterminals
 :::::::::::::::::::::::::::::::::::::::
