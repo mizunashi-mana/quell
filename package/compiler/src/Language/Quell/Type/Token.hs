@@ -70,17 +70,17 @@ data Token
   | SpBrackOpen
   | SpBrackClose
   | SpComma
-  | SpCurlyOpen
-  | SpCurlyClose
-  | SpDCurlyOpen
-  | SpDCurlyClose
+  | SpBraceOpen
+  | SpBraceClose
+  | SpDBraceOpen
+  | SpDBraceClose
   | SpParenOpen
   | SpParenClose
   | SpSemis
-  | SpVCurlyOpen
-  | SpVCurlyClose
-  | SpVDCurlyOpen
-  | SpVDCurlyClose
+  | SpVBraceOpen
+  | SpVBraceClose
+  | SpVDBraceOpen
+  | SpVDBraceClose
   | SpVSemis
 
   | IdConId TextId.T
@@ -99,9 +99,6 @@ data Token
   | CommentMultiline Text
   | CommentPragma Text
   | CommentDoc Text
-
-  | Whitespace
-  | EndOfSource
   deriving (Eq, Show)
 
 instance Pretty Token where
@@ -160,17 +157,17 @@ instance Pretty Token where
     SpBrackOpen        -> pretty "["
     SpBrackClose       -> pretty "]"
     SpComma            -> pretty ","
-    SpCurlyOpen        -> pretty "{"
-    SpCurlyClose       -> pretty "}"
-    SpDCurlyOpen       -> pretty "{{"
-    SpDCurlyClose      -> pretty "}}"
+    SpBraceOpen        -> pretty "{"
+    SpBraceClose       -> pretty "}"
+    SpDBraceOpen       -> pretty "{{"
+    SpDBraceClose      -> pretty "}}"
     SpParenOpen        -> pretty "("
     SpParenClose       -> pretty ")"
     SpSemis            -> pretty ";"
-    SpVCurlyOpen       -> pretty "{- { -}"
-    SpVCurlyClose      -> pretty "{- } -}"
-    SpVDCurlyOpen      -> pretty "{- {{ -}"
-    SpVDCurlyClose     -> pretty "{- }} -}"
+    SpVBraceOpen       -> pretty "{- { -}"
+    SpVBraceClose      -> pretty "{- } -}"
+    SpVDBraceOpen      -> pretty "{- {{ -}"
+    SpVDBraceClose     -> pretty "{- }} -}"
     SpVSemis           -> pretty "{- ; -}"
     IdConId v          -> pretty v
     IdConOp v          -> pretty v

@@ -24,6 +24,7 @@ data LexerState = Initial
 data LexerAction
   = WithToken Token.T
   | WithIdToken (TextId.T -> Token.T)
+  | LexWhitespace
   | LexLitIntegerOrRational
   | LexLitByteString
   | LexLitByteChar
@@ -55,12 +56,12 @@ lexerRules :: ScannerBuilder ()
 lexerRules = do
   whiteSpaceRules
 
-  -- be before var_op to avoid conflicting
+  -- be before varOpRule to avoid conflicting
   literalRules
 
   specialRules
   semisRules
-  curlyRules
+  braceRules
 
   -- be before varIdRule / conIdRule to avoid conflicting
   reservedIdRules
@@ -191,14 +192,14 @@ specialRules = do
 
 specialCs = CharSet.fromList ['(', ')', ',', '[', ']', '`']
 
-curlyRules :: ScannerBuilder ()
-curlyRules = do
-  initialRule (stringP "{{")        [||WithToken do Token.SpDCurlyOpen||]
-  initialRule (stringP "}}")        [||WithToken do Token.SpDCurlyClose||]
-  initialRule (stringP "{")         [||WithToken do Token.SpCurlyOpen||]
-  initialRule (stringP "}")         [||WithToken do Token.SpCurlyClose||]
-  initialRule (stringP "⦃")         [||WithToken do Token.SpDCurlyOpen||]
-  initialRule (stringP "⦄")         [||WithToken do Token.SpDCurlyClose||]
+braceRules :: ScannerBuilder ()
+braceRules = do
+  initialRule (stringP "{{")        [||WithToken do Token.SpDBraceOpen||]
+  initialRule (stringP "}}")        [||WithToken do Token.SpDBraceClose||]
+  initialRule (stringP "{")         [||WithToken do Token.SpBraceOpen||]
+  initialRule (stringP "}")         [||WithToken do Token.SpBraceClose||]
+  initialRule (stringP "⦃")         [||WithToken do Token.SpDBraceOpen||]
+  initialRule (stringP "⦄")         [||WithToken do Token.SpDBraceClose||]
 
 semisRules :: ScannerBuilder ()
 semisRules =
@@ -207,7 +208,7 @@ semisRules =
 
 literalRules :: ScannerBuilder ()
 literalRules = do
-  --- lex rests without standard lexer
+  -- lex rests without standard lexer
   initialRule integerOrRationalOpenP [||LexLitIntegerOrRational||]
   initialRule byteStringOpenP [||LexLitByteString||]
   initialRule stringOpenP [||LexLitString||]
@@ -236,7 +237,8 @@ charSepP = chP '\''
 
 whiteSpaceRules :: ScannerBuilder ()
 whiteSpaceRules = do
-  initialRule (Tlex.someP whiteCharP) [||WithToken Token.Whitespace||]
+  -- lex rests without standard lexer
+  initialRule whiteCharP [||LexWhitespace||]
 
   commentRules
 

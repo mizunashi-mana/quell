@@ -3,7 +3,6 @@ module Language.Quell.Type.Error (
   Error (..),
   errorCode,
   detailedMessage,
-  withErrorContext,
 
   errorUnknown,
 ) where
@@ -13,7 +12,6 @@ import           Language.Quell.Prelude
 import qualified Language.Quell.Type.ErrorCode as ErrorCode
 
 
-
 type ErrorConstraint code =
   (
     Show (Error code),
@@ -21,19 +19,12 @@ type ErrorConstraint code =
     Typeable (Error code)
   )
 
-class Errorable (code :: ErrorCode.T) where
+class ErrorConstraint code => Errorable (code :: ErrorCode.T) where
   data Error code :: Type
 
   errorCode :: Error code -> ErrorCode.T
 
-  errorConstraint :: Proxy# code -> Dict (ErrorConstraint code)
-  default errorConstraint :: ErrorConstraint code => Proxy# code -> Dict (ErrorConstraint code)
-  errorConstraint _ = Dict
-
   detailedMessage :: Error code -> Maybe (Doc ann)
-
-withErrorContext :: forall code r. Errorable code => Proxy# code -> (Show (Error code) => r) -> r
-withErrorContext p# = withDict (errorConstraint p#)
 
 
 instance Errorable 'ErrorCode.Unknown where

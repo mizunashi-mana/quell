@@ -27,6 +27,7 @@ module Language.Quell.Prelude.Core (
   module Prettyprinter,
 ) where
 
+-- FIXME: hiding (error)
 import           Prelude                          hiding (String, break, drop,
                                                    dropWhile, filter, foldl,
                                                    foldr, head, lines, pi,

@@ -13,12 +13,12 @@ import           Language.Quell.Prelude
 
 import qualified Conduit
 import qualified Language.Lexer.Tlex                as Tlex
-import qualified Language.Quell.Parsing.Lexer.Rules as LexerRules
+import qualified Language.Quell.Parsing.Lexer.Rules as Rules
 import qualified Language.Quell.Parsing.Spanned     as Spanned
 import qualified Language.Quell.Type.Token          as Token
 
 
-$(LexerRules.buildLexer)
+$(Rules.buildLexer)
 
 lexerConduit :: Monad m => Conduit.ConduitT ByteString Token.T m ()
 lexerConduit = Conduit.evalStateC
@@ -37,7 +37,8 @@ lexer = go where
           pure ()
         Tlex.TlexError ->
           errorRecoverByTlexScan
-        Tlex.TlexAccepted pos act -> undefined pos act
+        Tlex.TlexAccepted pos act -> case act of
+          Rules.WithToken t ->
 
   errorRecoverByTlexScan = undefined
 
@@ -57,8 +58,7 @@ data LexerContext = LexerContext
     bufferEndOfSource      :: Bool,
     lastToken              :: Maybe Token.T,
     lastLoc                :: Spanned.Loc,
-    lastLexerState         :: LexerRules.LexerState,
-    layoutContextStack     :: [LayoutContext]
+    lastLexerState         :: Rules.LexerState
   }
   deriving (Eq, Show)
 
@@ -66,7 +66,11 @@ initialLexerContext :: LexerContext
 initialLexerContext = LexerContext
   {
     currentBuffer = mempty,
-    currentPositionContext = PositionContext 0,
+    currentPositionContext = PositionContext
+      {
+        bufferPosition = 0,
+        layoutContextStack = []
+      },
     bufferEndOfSource = False,
     lastToken = Nothing,
     lastLoc = Spanned.Loc
@@ -75,21 +79,27 @@ initialLexerContext = LexerContext
         Spanned.locCol = 0,
         Spanned.locAbsPosition = 0
       },
-    lastLexerState = LexerRules.Initial,
-    layoutContextStack = []
+    lastLexerState = Rules.Initial
   }
 
-newtype PositionContext = PositionContext
+data PositionContext = PositionContext
   {
-    bufferPosition :: Int
+    bufferPosition :: Int,
+    layoutContextStack     :: [LayoutContext]
   }
   deriving (Eq, Show)
 
 data LayoutContext
   = NoLayout
-  | CurlyLayout Int
-  | DCurlyLayout Int
+  | BraceLayout Int
+  | DBraceLayout DBraceKind Int
   deriving (Eq, Show)
+
+data DBraceKind
+  = DBraceConcrete
+  | DBraceVirtualConcrete
+  | DBraceVirtual
+  deriving (Eq, Ord, Enum, Show)
 
 instance Monad m => Tlex.TlexContext PositionContext Word8 (Lexer m) where
   tlexGetInputPart = Lexer do

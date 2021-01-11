@@ -35,7 +35,7 @@ Lexical Syntax
   lexeme: literal
         : special
         : semis
-        : curly
+        : brace
         : reserved_id
         : reserved_op
         : var_id
@@ -104,7 +104,7 @@ Lexical Syntax
          : "["
          : "]"
          : "`"
-  curly: "{{" | "}}"
+  brace: "{{" | "}}"
        : "⦃" | "⦄"
        : "{" | "}"
   semis: ";"+
@@ -239,7 +239,7 @@ These nonterminals must be disjoint:
 * ``reserved_op``
 * ``special``
 * ``semis``
-* ``curly``
+* ``brace``
 * ``literal``
 
 These nonterminals must be disjoint:
@@ -264,10 +264,89 @@ These expressions must be empty:
 * ``((lexeme | whitespace)*)<ANY*>``
 * ``reserved_id<(small | large) (small | large | digit | other)*>``
 * ``reserved_op<symbol (symbol | other)*>``
-* ``(curly | semis)<other_special>``
+* ``(brace | semis)<other_special>``
 * ``literal<("+" | "-" | digit | "'" | other_special) ANY*>``
 * ``(multiline_comment | doc_comment | pragma_comment | nested_comment)<comment_open ANY* comment_close>``
 * ``(multiline_comment | doc_comment | pragma_comment)<doc_comment | nested_comment>``
+
+Layout
+------
+
+.. code-block::
+
+  PosToken(t) = ...
+
+.. code-block::
+
+  IsWhitespace(t)         = t match whitespace
+  IncludeNewline(t)       = t match (ANY* newline ANY*)
+  IsBraceKeyword(t)       = t match ("where" | "of" | "do"
+                                    | "record" | "signature"
+                                    )
+  IsDBraceKeyword(t)      = t match "let"
+  IsDBraceCloseKeyword(t) = t match "in"
+
+.. code-block::
+
+  PostProcess ts                          = <{{>:PostProcess1 ts
+
+  PostProcess1 []                         = []
+  PostProcess1 (t:ts)
+    | IsWhitespace(t) & IncludeNewline(t) = <;>:PostProcess1 ts
+    | IsWhitespace(t)                     = PostProcess1 ts
+    | IsBraceKeyword(t)                   = t:<{>:PostProcess1 ts
+    | IsDBraceKeyword(t)                  = t:<{{>:PostProcess1 ts
+    | IsDBraceCloseKeyword(t)             = <}}>:t:PostProcess1 ts
+    | otherwise                           = t:PostProcess1 ts
+
+.. code-block::
+
+  Layout ts = Layout1 ts []
+
+  Layout1 (<{>:t:ts) ms
+    | t == "{"            = t:Layout1 ts (<"{",0>:ms)
+    | t == "{{"           = t:Layout2 "c" ts ms
+    | otherwise           = "{":Layout1 (t:ts) (<"{",PosToken(t)>:ms)
+  Layout1 (<{{>:t:ts) ms
+    | t == "{"            = t:Layout1 ts (<"{",0>:ms)
+    | t == "{{"           = t:Layout2 "vc" ts ms
+    | otherwise           = "{{":Layout2 "v" (t:ts) ms
+  Layout1 [t] ms
+    | t == <{>            = "{":Layout1 [] (<"{",1>:ms)
+    | t == <{{>           = "{{":Layout1 [] (<"{{","v",1>:ms)
+  Layout1 (<;>:t:ts) ms@(<"{",m>:rms)
+    | PosToken(t) == m    = ";":Layout1 (t:ts) ms
+    | PosToken(t) <  m    = "}":Layout1 (<;>:t:ts) rms
+    | otherwise           = Layout1 (t:ts) ms
+  Layout1 (<;>:t:ts) ms@(<"{{",_,m>:_)
+    | PosToken(t) == m    = ";":Layout1 (t:ts) ms
+    | PosToken(t) <  m    = ParseError -- Broken layout by a shallower token.
+    | otherwise           = Layout1 (t:ts) ms
+  Layout1 (<;>:ts) ms     = Layout1 ts ms
+  Layout1 ("}":ts)        (<"{",0>:rms)
+                          = "}":Layout1 ts rms
+  Layout1 ("}}":<}}>:ts)  (<"{{","vc",_>:rms)
+                          = "}}":Layout1 ts rms
+  Layout1 ("}}":ts)       (<"{{","c",_>:rms)
+                          = "}}":Layout1 ts rms
+  Layout1 (<}}>:ts)       (<"{{","v",_>:rms)
+                          = "}}":Layout1 ts rms
+  Layout1 (t:ts) _
+    | t == "}"            = ParseError -- Not corresponding braces.
+    | t == "}}"           = ParseError -- Not corresponding braces.
+    | t == <}}>           = ParseError -- Not corresponding braces.
+  Layout1 (t:ts) ms       = t:Layout1 ts ms
+  Layout1 [] (<"{",m>:rms)
+    | m == 0              = ParseError -- Braces are not enough.
+    | otherwise           = "}":Layout1 [] rms
+  Layout1 [] (<"{{",k,_>:rms)
+    | k == "c"            = ParseError -- Braces are not enough.
+    | k == "vc"           = ParseError -- Braces are not enough.
+    | k == "v"            = "}}":Layout1 [] rms
+  Layout1 [] []           = []
+
+  Layout2 k []      ms  = Layout1 [] (<"{{",k,0>:ms)
+  Layout2 k (t:ts)  ms  = Layout1 (t:ts) (<"{{",k,PosToken(t)>:ms)
 
 Grammar
 -------
@@ -573,14 +652,6 @@ TODO:
 * モジュールの構文再定義 (ファイルシステムとのマッピング，可視性)
 * プラグマの名前をちゃんと取るように
 * ドキュメントコメントの lexical syntax 定義
-
-Layout
-------
-
-TODO:
-
-* ``{`` / ``}`` でレイアウトオフ，``{{`` / ``}}`` で明示的に終端示すレイアウト
-* 自動で ``{`` / ``}`` / ``{{`` / ``}}`` / ``;`` 挿入．``let-in`` は ``{{`` / ``}}``
 
 Fixity Resolution
 -----------------
