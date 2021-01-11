@@ -106,6 +106,7 @@ common general
 
     charset,
     conduit,
+    constraints,
     mono-traversable,
     prettyprinter,
     prettyprinter-ansi-terminal,
@@ -152,6 +153,8 @@ library
     Language.Quell.Prelude
     Language.Quell.Data.TextId
     Language.Quell.Type.Ast
+    Language.Quell.Type.Error
+    Language.Quell.Type.ErrorCode
     Language.Quell.Type.Token
     Language.Quell.Parsing.Spanned
     Language.Quell.Parsing.Runner

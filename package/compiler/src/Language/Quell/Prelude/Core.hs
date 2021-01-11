@@ -7,6 +7,7 @@ module Language.Quell.Prelude.Core (
   module Control.Monad.Trans.State.Strict,
   module Data.ByteString,
   module Data.Coerce,
+  module Data.Constraint,
   module Data.Function,
   module Data.Functor,
   module Data.Functor.Identity,
@@ -22,6 +23,7 @@ module Language.Quell.Prelude.Core (
   module Data.Typeable,
   module Data.Word,
   module GHC.Prim,
+  module GHC.Stack,
   module Prettyprinter,
 ) where
 
@@ -50,3 +52,5 @@ import           Data.Typeable                    (Typeable)
 import           Data.Word                        (Word, Word8)
 import           GHC.Prim
 import           Prettyprinter                     (Pretty (..), Doc)
+import Data.Constraint (Dict (..), withDict)
+import GHC.Stack (CallStack, HasCallStack, callStack)

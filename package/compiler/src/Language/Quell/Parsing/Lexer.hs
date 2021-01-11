@@ -25,8 +25,21 @@ lexerConduit = Conduit.evalStateC
   initialLexerContext
   do unLexer lexer
 
-lexer :: Monad m => Lexer m ()
-lexer = undefined
+lexer :: forall m. Monad m => Lexer m ()
+lexer = go where
+  go :: Lexer m ()
+  go = do
+    ctx <- Lexer do Conduit.lift get
+    tlexScan
+      do lastLexerState ctx
+      >>= \case
+        Tlex.TlexEndOfInput ->
+          pure ()
+        Tlex.TlexError ->
+          errorRecoverByTlexScan
+        Tlex.TlexAccepted pos act -> undefined pos act
+
+  errorRecoverByTlexScan = undefined
 
 newtype Lexer m a = Lexer
   { unLexer :: Conduit.ConduitT ByteString Token.T (StateT LexerContext m) a
@@ -44,6 +57,7 @@ data LexerContext = LexerContext
     bufferEndOfSource :: Bool,
     lastToken :: Maybe Token.T,
     lastLoc :: Spanned.Loc,
+    lastLexerState :: LexerRules.LexerState,
     layoutContextStack :: [LayoutContext]
   }
   deriving (Eq, Show)
@@ -61,8 +75,21 @@ initialLexerContext = LexerContext
         Spanned.locCol = 0,
         Spanned.locAbsPosition = 0
       },
+    lastLexerState = LexerRules.Initial,
     layoutContextStack = []
   }
+
+newtype PositionContext = PositionContext
+  {
+    bufferPosition :: Int
+  }
+  deriving (Eq, Show)
+
+data LayoutContext
+  = NoLayout
+  | CurlyLayout Int
+  | DCurlyLayout Int
+  deriving (Eq, Show)
 
 instance Monad m => Tlex.TlexContext PositionContext Word8 (Lexer m) where
   tlexGetInputPart = Lexer do
@@ -97,15 +124,3 @@ instance Monad m => Tlex.TlexContext PositionContext Word8 (Lexer m) where
   tlexGetMark = Lexer do
     ctx <- Conduit.lift get
     pure do currentPositionContext ctx
-
-newtype PositionContext = PositionContext
-  {
-    bufferPosition :: Int
-  }
-  deriving (Eq, Show)
-
-data LayoutContext
-  = NoLayout
-  | CurlyLayout Int
-  | DCurlyLayout Int
-  deriving (Eq, Show)
