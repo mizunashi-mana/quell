@@ -1,5 +1,5 @@
 
-{-# LANGUAGE TemplateHaskell  #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Language.Quell.Parsing.Lexer (
   lexerConduit,
@@ -9,13 +9,13 @@ module Language.Quell.Parsing.Lexer (
   LayoutContext (..),
 ) where
 
-import Language.Quell.Prelude
+import           Language.Quell.Prelude
 
-import qualified Language.Quell.Parsing.Lexer.Rules as LexerRules
-import qualified Language.Quell.Type.Token as Token
-import qualified Language.Quell.Parsing.Spanned as Spanned
 import qualified Conduit
-import qualified Language.Lexer.Tlex as Tlex
+import qualified Language.Lexer.Tlex                as Tlex
+import qualified Language.Quell.Parsing.Lexer.Rules as LexerRules
+import qualified Language.Quell.Parsing.Spanned     as Spanned
+import qualified Language.Quell.Type.Token          as Token
 
 
 $(LexerRules.buildLexer)
@@ -52,13 +52,13 @@ newtype Lexer m a = Lexer
 
 data LexerContext = LexerContext
   {
-    currentBuffer :: ByteString,
+    currentBuffer          :: ByteString,
     currentPositionContext :: PositionContext,
-    bufferEndOfSource :: Bool,
-    lastToken :: Maybe Token.T,
-    lastLoc :: Spanned.Loc,
-    lastLexerState :: LexerRules.LexerState,
-    layoutContextStack :: [LayoutContext]
+    bufferEndOfSource      :: Bool,
+    lastToken              :: Maybe Token.T,
+    lastLoc                :: Spanned.Loc,
+    lastLexerState         :: LexerRules.LexerState,
+    layoutContextStack     :: [LayoutContext]
   }
   deriving (Eq, Show)
 
@@ -119,7 +119,7 @@ instance Monad m => Tlex.TlexContext PositionContext Word8 (Lexer m) where
                 }
           case newBuf `index` pos of
             Nothing -> error "unreachable"
-            Just w -> pure do Just w
+            Just w  -> pure do Just w
 
   tlexGetMark = Lexer do
     ctx <- Conduit.lift get

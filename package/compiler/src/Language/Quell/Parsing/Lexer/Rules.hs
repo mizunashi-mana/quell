@@ -4,7 +4,7 @@
 
 module Language.Quell.Parsing.Lexer.Rules where
 
-import Language.Quell.Prelude
+import           Language.Quell.Prelude
 
 import qualified Data.CharSet                        as CharSet
 import qualified Data.CharSet.Unicode                as UniCharSet
@@ -13,8 +13,8 @@ import qualified Language.Haskell.TH                 as TH
 import qualified Language.Lexer.Tlex                 as Tlex
 import qualified Language.Lexer.Tlex.Plugin.Encoding as TlexEnc
 import qualified Language.Lexer.Tlex.Plugin.TH       as TlexTH
-import qualified Language.Quell.Type.Token           as Token
 import qualified Language.Quell.Data.TextId          as TextId
+import qualified Language.Quell.Type.Token           as Token
 import qualified Prelude
 
 

@@ -4,7 +4,7 @@ module Language.Quell.Prelude.MonoTraversableM (
   ocount,
 ) where
 
-import Language.Quell.Prelude.Core
+import           Language.Quell.Prelude.Core
 
 
 class MonoTraversable mono => MonoTraversableM mono where

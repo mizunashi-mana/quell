@@ -5,8 +5,8 @@ module Language.Quell.Prelude.Literal (
 
 import qualified Prelude
 
-import qualified Data.Text as Text
 import qualified Data.ByteString.Char8 as ByteString
+import qualified Data.Text             as Text
 
 
 {-# INLINE text #-}

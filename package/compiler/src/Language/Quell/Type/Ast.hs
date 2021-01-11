@@ -3,12 +3,12 @@ module Language.Quell.Type.Ast (
   Decl (..),
 ) where
 
-import Language.Quell.Prelude
+import           Language.Quell.Prelude
 
 
 data Program = Program {
   moduleName :: Text,
-  decls :: [Decl]
+  decls      :: [Decl]
 } deriving (Eq, Show)
 
 data Decl

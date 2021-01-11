@@ -1,11 +1,11 @@
 module Language.Quell.Parsing.Lexer.RulesSpec (spec) where
 
-import Language.Quell.Prelude
-import Test.Hspec
+import           Language.Quell.Prelude
+import           Test.Hspec
 
-import Language.Quell.Parsing.Lexer.Rules
+import           Language.Quell.Parsing.Lexer.Rules
 
-import qualified Data.CharSet as CharSet
+import qualified Data.CharSet                       as CharSet
 
 
 spec :: Spec

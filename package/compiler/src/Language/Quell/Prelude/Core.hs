@@ -27,15 +27,22 @@ module Language.Quell.Prelude.Core (
   module Prettyprinter,
 ) where
 
-import           Prelude                          hiding (String, foldl, foldr,
-                                                   head, pi, tail, ($), takeWhile, take, splitAt, span, reverse, replicate, dropWhile, drop, break, words, unwords, unlines, lines, filter)
+import           Prelude                          hiding (String, break, drop,
+                                                   dropWhile, filter, foldl,
+                                                   foldr, head, lines, pi,
+                                                   replicate, reverse, span,
+                                                   splitAt, tail, take,
+                                                   takeWhile, unlines, unwords,
+                                                   words, ($))
 
 import           Control.Applicative
 import           Control.Monad.IO.Class
-import           Control.Monad.Trans.State.Strict hiding (modify, liftCallCC, liftCatch)
 import           Control.Monad.Trans.Reader       hiding (liftCallCC, liftCatch)
+import           Control.Monad.Trans.State.Strict hiding (liftCallCC, liftCatch,
+                                                   modify)
 import           Data.ByteString                  (ByteString)
 import           Data.Coerce
+import           Data.Constraint                  (Dict (..), withDict)
 import           Data.Function                    hiding (($))
 import           Data.Functor
 import           Data.Functor.Compose
@@ -43,14 +50,14 @@ import           Data.Functor.Identity
 import           Data.Ix                          (Ix)
 import           Data.Kind                        (Type)
 import           Data.List.NonEmpty               (NonEmpty (..))
-import           Data.MonoTraversable              hiding (omapM, oforM)
+import           Data.MonoTraversable             hiding (oforM, omapM)
 import           Data.Ord                         (Down (..))
 import           Data.Proxy                       (Proxy (..))
 import           Data.Sequences
-import           Data.Text                         (Text)
+import           Data.Text                        (Text)
 import           Data.Typeable                    (Typeable)
 import           Data.Word                        (Word, Word8)
 import           GHC.Prim
-import           Prettyprinter                     (Pretty (..), Doc)
-import Data.Constraint (Dict (..), withDict)
-import GHC.Stack (CallStack, HasCallStack, callStack)
+import           GHC.Stack                        (CallStack, HasCallStack,
+                                                   callStack)
+import           Prettyprinter                    (Doc, Pretty (..))

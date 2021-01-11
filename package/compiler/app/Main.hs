@@ -1,6 +1,6 @@
 module Main where
 
-import Language.Quell.Prelude
+import           Language.Quell.Prelude
 
 
 main :: IO ()

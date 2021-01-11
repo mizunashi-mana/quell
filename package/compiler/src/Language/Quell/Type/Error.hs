@@ -8,7 +8,7 @@ module Language.Quell.Type.Error (
   errorUnknown,
 ) where
 
-import Language.Quell.Prelude
+import           Language.Quell.Prelude
 
 import qualified Language.Quell.Type.ErrorCode as ErrorCode
 

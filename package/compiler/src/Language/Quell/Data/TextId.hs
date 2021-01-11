@@ -5,9 +5,9 @@ module Language.Quell.Data.TextId (
   showByText,
 ) where
 
-import Language.Quell.Prelude
+import           Language.Quell.Prelude
 
-import qualified Data.Text.Encoding as TextEnc
+import qualified Data.Text.Encoding     as TextEnc
 
 
 type T = TextId

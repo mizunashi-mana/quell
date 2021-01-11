@@ -6,7 +6,7 @@ module Language.Quell.Type.ErrorCode (
   toLevel,
 ) where
 
-import Language.Quell.Prelude
+import           Language.Quell.Prelude
 
 
 type T = ErrorCode

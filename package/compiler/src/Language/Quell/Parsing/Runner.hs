@@ -6,7 +6,7 @@ module Language.Quell.Parsing.Runner (
   LayoutContext (..),
 ) where
 
-import Language.Quell.Prelude
+import           Language.Quell.Prelude
 
 import qualified Language.Quell.Parsing.Spanned as Spanned
 
@@ -16,7 +16,7 @@ newtype Runner a = Runner {
 } deriving (Functor, Applicative, Monad) via StateT Context Result
 
 data Context = Context {
-  currentLoc :: Spanned.Loc,
+  currentLoc  :: Spanned.Loc,
   layoutStack :: [LayoutContext]
 } deriving (Eq, Show)
 
