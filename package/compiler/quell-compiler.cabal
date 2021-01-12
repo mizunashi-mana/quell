@@ -112,7 +112,7 @@ common general
     prettyprinter-ansi-terminal,
     tlex,
     tlex-th,
-    tlex-encoding,
+    tlex-core,
     transformers,
 
   build-tool-depends:
@@ -160,6 +160,7 @@ library
     Language.Quell.Parsing.Runner
     Language.Quell.Parsing.Lexer
     Language.Quell.Parsing.Lexer.Rules
+    Language.Quell.Parsing.Lexer.CodeUnit
   other-modules:
     Language.Quell.Prelude.Core
     Language.Quell.Prelude.Literal
@@ -200,3 +201,5 @@ test-suite spec
 
         hspec,
         QuickCheck,
+
+        charset,

@@ -183,8 +183,6 @@ instance Pretty Token where
     CommentMultiline v -> pretty do text "{-" <> v <> text "-}"
     CommentPragma v    -> pretty do text "{-#" <> v <> text "#-}"
     CommentDoc v       -> pretty do text "{-!" <> v <> text "\n|-}"
-    Whitespace         -> mempty
-    EndOfSource        -> mempty
 
 -- FIXME: Current implementation is approximately.
 -- Make to show complete representation.
