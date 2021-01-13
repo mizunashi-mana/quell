@@ -1,69 +1,54 @@
 module Language.Quell.Type.Error (
-  Errorable,
+  T,
   Error (..),
-  errorCode,
-  detailedMessage,
+  DetailedError (..),
+  detailedError,
+  toErrorCode,
 
-  errorUnknown,
+  detailedErrorUnknown,
 ) where
 
 import           Language.Quell.Prelude
 
+import qualified Prelude
 import qualified Language.Quell.Type.ErrorCode as ErrorCode
+import qualified Language.Quell.Parsing.Lexer.Encoding as LexerEncoding
 
 
-type ErrorConstraint code =
-  (
-    Show (Error code),
-    Pretty (Error code),
-    Typeable (Error code)
-  )
+type T = Error
 
-class ErrorConstraint code => Errorable (code :: ErrorCode.T) where
-  data Error code :: Type
+data DetailedError = DetailedError
+    {
+        getError :: Error,
+        detailedMessage :: Text,
+        getCallStack :: Maybe CallStack
+    }
+    deriving (Eq, Show)
 
-  errorCode :: Error code -> ErrorCode.T
+detailedError :: Text -> Error -> DetailedError
+detailedError msg err = DetailedError
+    {
+        getError = err,
+        detailedError = msg,
+        getCallStack = Nothing
+    }
 
-  detailedMessage :: Error code -> Maybe (Doc ann)
+data Error
+    = Unknown
+    | LexDecodeError LexerEncoding.BytesSpan
+    deriving (Eq, Show)
 
+toErrorCode :: Error -> ErrorCode.T
+toErrorCode = \case
+    Unknown             -> ErrorCode.Unknown
+    LexDecodeError{}    -> ErrorCode.LexBreakEncoding
 
-instance Errorable 'ErrorCode.Unknown where
-  data Error 'ErrorCode.Unknown where
-    ErrorUnknown :: CallStack -> Text -> Error 'ErrorCode.Unknown
-    deriving (Show, Typeable)
-
-  errorCode _ = ErrorCode.Unknown
-  detailedMessage _ = Nothing -- FIXME
-
-errorUnknown :: HasCallStack => Text -> Error 'ErrorCode.Unknown
-errorUnknown msg = ErrorUnknown callStack msg
-
-instance Pretty (Error 'ErrorCode.Unknown) where
-  pretty = \case
-    ErrorUnknown _ msg -> pretty msg
-
-
-instance Errorable 'ErrorCode.LexBreakEncoding where
-  data Error 'ErrorCode.LexBreakEncoding where
-    -- FIXME: Take encoding kind and lexing error info
-    ErrorLexBreakEncoding :: Error 'ErrorCode.LexBreakEncoding
-    deriving (Eq, Show, Typeable)
-
-  errorCode _ = ErrorCode.LexBreakEncoding
-  detailedMessage _ = Nothing
-
-instance Pretty (Error 'ErrorCode.LexBreakEncoding) where
-  pretty e = pretty do show e -- FIXME
-
-
-instance Errorable 'ErrorCode.LexUnclosedCommentBlock where
-  data Error 'ErrorCode.LexUnclosedCommentBlock where
-    -- FIXME: Take comment block kind and lexing error info
-    ErrorUnclosedCommentBlock :: Error 'ErrorCode.LexUnclosedCommentBlock
-    deriving (Eq, Show, Typeable)
-
-  errorCode _ = ErrorCode.LexUnclosedCommentBlock
-  detailedMessage _ = Nothing
-
-instance Pretty (Error 'ErrorCode.LexUnclosedCommentBlock) where
-  pretty e = pretty do show e -- FIXME
+detailedErrorUnknown :: HasCallStack => Prelude.String -> DetailedError
+detailedErrorUnknown msg =
+    let cs = callStack
+    in DetailedError
+        {
+            getError = Unknown,
+            detailedError = text msg,
+            getCallStack = Just cs
+        }

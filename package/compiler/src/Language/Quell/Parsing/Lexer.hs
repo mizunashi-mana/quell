@@ -16,17 +16,42 @@ import qualified Language.Lexer.Tlex                as Tlex
 import qualified Language.Quell.Parsing.Lexer.Rules as Rules
 import qualified Language.Quell.Parsing.Spanned     as Spanned
 import qualified Language.Quell.Parsing.Lexer.CodeUnit as CodeUnit
+import qualified Language.Quell.Parsing.Lexer.Encoding as Encoding
+import qualified Language.Quell.Parsing.Lexer.Error as Error
 import qualified Language.Quell.Type.Token          as Token
 
 
 $(Rules.buildLexer)
 
-lexerConduit :: Monad m => Conduit.ConduitT CodeUnit.T Token.T m ()
-lexerConduit = Conduit.evalStateC
+class Monad m => LexerMonad m where
+    reportDecodeError :: Text -> Encoding.BytesSpan -> m ()
+    reportLexingError :: Text -> Error.T -> m ()
+
+lexerConduit :: LexerMonad m => Encoding.T
+    -> Conduit.ConduitT ByteString Token.T m ()
+lexerConduit enc =
+    Encoding.decodeConduit enc Conduit..|
+    reportDecodeResultConduit Conduit..|
+    charLexerConduit
+    where
+        reportDecodeResultConduit = do
+            Conduit.await >>= \case
+                Nothing -> pure ()
+                Just (s, u) -> case u of
+                    Encoding.DecodeError msg -> do
+                        reportDecodeError msg s
+                        reportDecodeResultConduit
+                    Encoding.DecodedChar c ->
+                        Conduit.yield (s, c)
+                        reportDecodeResultConduit
+
+charLexerConduit :: LexerMonad m
+    => Conduit.ConduitT (Encoding.BytesSpan, Char) Token.T m ()
+charLexerConduit = Conduit.evalStateC
     initialLexerContext
     do unLexer lexer
 
-lexer :: forall m. Monad m => Lexer m ()
+lexer :: forall m. LexerMonad m => Lexer m ()
 lexer = go where
     go :: Lexer m ()
     go = do
@@ -43,24 +68,27 @@ lexer = go where
     errorRecoverByTlexScan = undefined
 
 newtype Lexer m a = Lexer
-  { unLexer :: Conduit.ConduitT ByteString Token.T (StateT LexerContext m) a
-  }
-  deriving (
-    Functor,
-    Applicative,
-    Monad
-  ) via Conduit.ConduitT ByteString Token.T (StateT LexerContext m)
+    {
+        unLexer ::
+            Conduit.ConduitT (Encoding.BytesSpan, Char) Token.T
+                (StateT LexerContext m) a
+    }
+    deriving (
+        Functor,
+        Applicative,
+        Monad
+    ) via Conduit.ConduitT ByteString Token.T (StateT LexerContext m)
 
 data LexerContext = LexerContext
-  {
-    currentBuffer          :: ByteString,
-    currentPositionContext :: PositionContext,
-    bufferEndOfSource      :: Bool,
-    lastToken              :: Maybe Token.T,
-    lastLoc                :: Spanned.Loc,
-    lastLexerState         :: Rules.LexerState
-  }
-  deriving (Eq, Show)
+    {
+        currentBuffer          :: ByteString,
+        currentPositionContext :: PositionContext,
+        bufferEndOfSource      :: Bool,
+        lastToken              :: Maybe Token.T,
+        lastLoc                :: Spanned.Loc,
+        lastLexerState         :: Rules.LexerState
+    }
+    deriving (Eq, Show)
 
 initialLexerContext :: LexerContext
 initialLexerContext = LexerContext

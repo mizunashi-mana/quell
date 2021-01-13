@@ -36,12 +36,6 @@ data LexerAction
 type LexerCodeUnit = CodeUnit.T
 type CharSet = EnumSet.EnumSet LexerCodeUnit
 
-instance Semigroup CharSet where
-    (<>) = EnumSet.union
-
-instance Monoid CharSet where
-    mempty = EnumSet.empty
-
 type ScannerBuilder = TlexTH.THScannerBuilder LexerState LexerCodeUnit LexerAction
 type Pattern = Tlex.Pattern LexerCodeUnit
 

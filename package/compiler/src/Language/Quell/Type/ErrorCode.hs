@@ -17,9 +17,7 @@ data ErrorCode
   -- lexer error
   | LexBreakEncoding
   | LexUnclosedCommentBlock
-
-  -- should not be Enum instances
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord, Enum, Bounded, Show)
 
 data ErrorLevel
   = Bug
@@ -29,7 +27,7 @@ data ErrorLevel
   | Suggestion
   | Note
   | Message
-  deriving (Eq, Ord, Enum, Show)
+  deriving (Eq, Ord, Enum, Bounded, Show)
 
 toInt :: ErrorCode -> Int
 toInt = \case
