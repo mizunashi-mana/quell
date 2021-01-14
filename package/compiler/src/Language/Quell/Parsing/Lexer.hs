@@ -4,6 +4,7 @@
 module Language.Quell.Parsing.Lexer (
   lexerConduit,
   lexer,
+  LexerMonad (..),
   Lexer (..),
   LexerContext (..),
   LayoutContext (..),
@@ -24,29 +25,35 @@ import qualified Language.Quell.Type.Token          as Token
 $(Rules.buildLexer)
 
 class Monad m => LexerMonad m where
-    reportDecodeError :: Text -> Encoding.BytesSpan -> m ()
-    reportLexingError :: Text -> Error.T -> m ()
+    reportDecodeError :: Text -> Spanned.BytesSpan -> m ()
+    reportLexingError :: Text -> Spanned.Span -> Error.T -> m ()
 
-lexerConduit :: LexerMonad m => Encoding.T
+lexerConduit :: forall m. LexerMonad m => Encoding.T
     -> Conduit.ConduitT ByteString Token.T m ()
 lexerConduit enc =
     Encoding.decodeConduit enc Conduit..|
     reportDecodeResultConduit Conduit..|
     charLexerConduit
     where
+        reportDecodeResultConduit :: Conduit.ConduitT
+            (Spanned.BytesSpan, Encoding.DecodedUnit)
+            (Spanned.BytesSpan, Char)
+            m ()
         reportDecodeResultConduit = do
             Conduit.await >>= \case
-                Nothing -> pure ()
+                Nothing ->
+                    pure ()
                 Just (s, u) -> case u of
                     Encoding.DecodeError msg -> do
-                        reportDecodeError msg s
+                        Conduit.lift do reportDecodeError msg s
                         reportDecodeResultConduit
-                    Encoding.DecodedChar c ->
+                    Encoding.DecodedChar c -> do
                         Conduit.yield (s, c)
                         reportDecodeResultConduit
 
-charLexerConduit :: LexerMonad m
-    => Conduit.ConduitT (Encoding.BytesSpan, Char) Token.T m ()
+type CharLexerConduitT = Conduit.ConduitT (Spanned.BytesSpan, Char) Token.T
+
+charLexerConduit :: LexerMonad m => CharLexerConduitT m ()
 charLexerConduit = Conduit.evalStateC
     initialLexerContext
     do unLexer lexer
@@ -69,21 +76,20 @@ lexer = go where
 
 newtype Lexer m a = Lexer
     {
-        unLexer ::
-            Conduit.ConduitT (Encoding.BytesSpan, Char) Token.T
-                (StateT LexerContext m) a
+        unLexer :: CharLexerConduitT (StateT LexerContext m) a
     }
     deriving (
         Functor,
         Applicative,
         Monad
-    ) via Conduit.ConduitT ByteString Token.T (StateT LexerContext m)
+    ) via CharLexerConduitT (StateT LexerContext m)
 
 data LexerContext = LexerContext
     {
-        currentBuffer          :: ByteString,
-        currentPositionContext :: PositionContext,
+        currentBuffer          :: Vector (Spanned.T (Char, CodeUnit.T)),
         bufferEndOfSource      :: Bool,
+        currentPositionContext :: PositionContext,
+        layoutContextStack     :: [LayoutContext],
         lastToken              :: Maybe Token.T,
         lastLoc                :: Spanned.Loc,
         lastLexerState         :: Rules.LexerState
@@ -92,85 +98,124 @@ data LexerContext = LexerContext
 
 initialLexerContext :: LexerContext
 initialLexerContext = LexerContext
-  {
-    currentBuffer = mempty,
-    currentPositionContext = PositionContext
-      {
-        bufferPosition = 0,
-        locPosition = initialLoc,
-        layoutContextStack = []
-      },
-    bufferEndOfSource = False,
-    lastToken = Nothing,
-    lastLoc = initialLoc,
-    lastLexerState = Rules.Initial
-  }
-  where
-    initialLoc = Spanned.Loc
-      {
-        Spanned.locLine = 0,
-        Spanned.locCol = 0,
-        Spanned.locAbsPosition = 0
-      }
+    {
+        currentBuffer = mempty,
+        currentPositionContext = PositionContext
+            {
+                bufferPosition = 0,
+                locPosition = initialLoc,
+                lastChar = Nothing
+            },
+        bufferEndOfSource = False,
+        layoutContextStack = [],
+        lastToken = Nothing,
+        lastLoc = initialLoc,
+        lastLexerState = Rules.Initial
+    }
+    where
+        initialLoc = Spanned.Loc
+            {
+                Spanned.locLine = 0,
+                Spanned.locCol = 0,
+                Spanned.locBytesPos = 0
+            }
 
 data PositionContext = PositionContext
-  {
-    bufferPosition :: Int,
-    locPosition :: Spanned.Loc,
-    layoutContextStack     :: [LayoutContext]
-  }
-  deriving (Eq, Show)
+    {
+        bufferPosition :: Int,
+        locPosition :: Spanned.Loc,
+        lastChar :: Maybe Char
+    }
+    deriving (Eq, Show)
 
 data LayoutContext
-  = NoLayout
-  | BraceLayout Int
-  | DBraceLayout DBraceKind Int
-  deriving (Eq, Show)
+    = NoLayout
+    | BraceLayout Int
+    | DBraceLayout DBraceKind Int
+    deriving (Eq, Show)
 
 data DBraceKind
-  = DBraceConcrete
-  | DBraceVirtualConcrete
-  | DBraceVirtual
-  deriving (Eq, Ord, Enum, Show)
+    = DBraceConcrete
+    | DBraceVirtualConcrete
+    | DBraceVirtual
+    deriving (Eq, Ord, Enum, Bounded, Show)
 
-instance Monad m => Tlex.TlexContext PositionContext Word8 (Lexer m) where
-  tlexGetInputPart = Lexer do
-    ctx <- Conduit.lift get
-    let oldPos = currentPositionContext ctx
-    let bufferPos = bufferPosition oldPos + 1
-    case currentBuffer ctx `index` bufferPos of
-      Just w -> do
-        Conduit.lift do
-          put do
-            ctx
-              {
-                currentPositionContext = undefined
-              }
-        pure do Just w
-      Nothing | bufferEndOfSource ctx ->
-        pure Nothing
-      Nothing -> Conduit.await >>= \case
-        Nothing -> do
-          Conduit.lift do
-            put do
-              ctx
-                {
-                  bufferEndOfSource = True
-                }
-          pure Nothing
-        Just bs -> do
-          let newBuf = currentBuffer ctx <> bs
-          Conduit.lift do
-            put do
-              ctx
-                {
-                  currentBuffer = newBuf,
-                  currentPositionContext = undefined
-                }
-          case newBuf `index` bufferPos of
-            Nothing -> error "unreachable"
-            Just w  -> pure do Just w
+instance Monad m => Tlex.TlexContext PositionContext CodeUnit.T (Lexer m) where
+    tlexGetInputPart = Lexer do
+        ctx <- Conduit.lift get
+        let posCtx = currentPositionContext ctx
+        case currentBuffer ctx `index` bufferPosition posCtx of
+            Just scu ->
+                returnCodeUnit ctx posCtx scu
+            Nothing
+                | bufferEndOfSource ctx ->
+                    pure Nothing
+                | otherwise ->
+                    awaitNewUnit ctx posCtx
+        where
+            awaitNewUnit ctx posCtx = Conduit.await >>= \case
+                Nothing -> do
+                    conduitPut do
+                        ctx
+                            {
+                                bufferEndOfSource = True
+                            }
+                    pure Nothing
+                Just (bs, c) -> do
+                    let u = CodeUnit.fromChar c
+                        loc = locPosition posCtx
+                        nlocBytesPos = Spanned.bytesIndex bs + Spanned.bytesLength bs
+                        nloc = case undefined Rules.newlineCs of
+                            False -> loc
+                                {
+                                    Spanned.locCol = Spanned.locCol loc + 1,
+                                    Spanned.locBytesPos = nlocBytesPos
+                                }
+                            True  -> case lastChar posCtx of
+                                Just '\r' | c == '\n' -> loc
+                                    {
+                                        Spanned.locBytesPos = nlocBytesPos
+                                    }
+                                _ -> loc
+                                    {
+                                        Spanned.locLine = Spanned.locLine loc + 1,
+                                        Spanned.locBytesPos = nlocBytesPos
+                                    }
+                        scu = Spanned.Spanned
+                            {
+                                Spanned.getSpan = Spanned.Span
+                                    {
+                                        Spanned.beginLoc = loc,
+                                        Spanned.endLoc = nloc
+                                    },
+                                Spanned.unSpanned = (c, u)
+                            }
+                        nctx = ctx
+                            {
+                                currentBuffer = snoc
+                                    do currentBuffer ctx
+                                    do scu
+                            }
+                    returnCodeUnit nctx posCtx scu
 
-  tlexGetMark = Lexer do
-    ctx <- Conduit.lift get
-    pure do currentPositionContext ctx
+            returnCodeUnit ctx posCtx scu = do
+                let (c, u) = Spanned.unSpanned scu
+                    nposCtx = posCtx
+                        {
+                            bufferPosition = bufferPosition posCtx + 1,
+                            locPosition = Spanned.endLoc do Spanned.getSpan scu,
+                            lastChar = Just c
+                        }
+                conduitPut do
+                    ctx
+                        {
+                            currentPositionContext = nposCtx
+                        }
+                pure do Just u
+
+    tlexGetMark = Lexer do
+        ctx <- Conduit.lift get
+        pure do currentPositionContext ctx
+
+conduitPut :: Monad m => s -> Conduit.ConduitT i o (StateT s m) ()
+conduitPut s = Conduit.lift do put s

@@ -5,6 +5,8 @@ module Language.Quell.Parsing.Lexer.Error (
     LayoutBlockKind (..),
 ) where
 
+import Language.Quell.Prelude
+
 
 type T = Error
 

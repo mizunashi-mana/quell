@@ -1,4 +1,5 @@
 module Language.Quell.Parsing.Lexer.Encoding (
+    T,
     DecodedUnit (..),
     Encoding (..),
     decodeConduit,
@@ -9,6 +10,7 @@ import           Language.Quell.Prelude
 
 import qualified Conduit
 import qualified Data.Bits as Bits
+import qualified Language.Quell.Parsing.Spanned as Spanned
 
 
 type T = Encoding
@@ -17,19 +19,12 @@ data Encoding
     = EncodingUtf8
     deriving (Eq, Ord, Enum, Bounded, Show)
 
-data BytesSpan = BytesSpan
-    {
-        bytesIndex :: Int,
-        bytesLength :: Int
-    }
-    deriving (Eq, Show)
-
 data DecodedUnit
     = DecodedChar Char
     | DecodeError Text
     deriving (Eq, Show)
 
-type BytesSpannedUnit = (BytesSpan, DecodeUnit)
+type BytesSpannedUnit = (Spanned.BytesSpan, DecodedUnit)
 
 decodeConduit :: Monad m => Encoding
     -> Conduit.ConduitT ByteString BytesSpannedUnit m ()
@@ -48,16 +43,16 @@ decodeUtf8Conduit = go ctx0 where
     go ctx = case headMay do bufferByteString ctx of
         Just w
             | w <= 0x7F ->
-                goConsume 0 ctx do fromIntegral w
+                goConsume 0 ctx w
             | 0xC2 <= w && w <= 0xDF ->
                 goConsume 1 ctx
-                    do fromIntegral do w Bits..&. 0b11111
+                    do w Bits..&. 0b11111
             | 0xE0 <= w && w <= 0xEF ->
                 goConsume 2 ctx
-                    do fromIntegral do w Bits..&. 0b1111
+                    do w Bits..&. 0b1111
             | 0xF0 <= w && w <= 0xF4 ->
                 goConsume 3 ctx
-                    do fromIntegral do w Bits..&. 0b111
+                    do w Bits..&. 0b111
             | otherwise -> do
                 yieldError "Found an illegal first byte." ctx 1
                 go do consumeBuffer 1 ctx
@@ -67,10 +62,11 @@ decodeUtf8Conduit = go ctx0 where
             Just bs ->
                 go do ctx { bufferByteString = bs }
 
-    goConsume b n ctx = do
-        let ctx1 = consumeBuffer 1 ctx
-        consumeAndAwaitBuffer b n 0 ctx1 >>= \case
-            Left (m, mctx2)
+    goConsume n ctx b = do
+        let bi = fromIntegral b :: Int
+            ctx1 = consumeBuffer 1 ctx
+        consumeAndAwaitBuffer bi n 0 ctx1 >>= \case
+            Left (m, mctx2) -> do
                 let consumed = 1 + m
                 if
                     | m < n ->
@@ -82,7 +78,7 @@ decodeUtf8Conduit = go ctx0 where
                         pure ()
                     Just ctx2 ->
                         go ctx2
-            Right (c, m, ctx2) ->
+            Right (c, m, ctx2) -> do
                 if
                     | 0xD800 <= c && c <= 0xDFFF ->
                         yieldError "Not allowed surrogate code points." ctx m
@@ -96,14 +92,14 @@ decodeUtf8Conduit = go ctx0 where
                 go ctx2
 
     consumeAndAwaitBuffer b n m ctx = case n of
-        0 -> Right (b, m, ctx)
+        0 -> pure do Right (b, m, ctx)
         _ -> case headMay do bufferByteString ctx of
             Just w
                 | w <= 0x7F ->
                     consumeAndAwaitBufferWithError m n ctx
                 | otherwise ->
                     consumeAndAwaitBuffer
-                        do b * 0x100 + w Bits..&. 0x7F
+                        do b * 0x100 + fromIntegral do w Bits..&. 0x7F
                         do n - 1
                         do m + 1
                         do consumeBuffer 1 ctx
@@ -117,11 +113,11 @@ decodeUtf8Conduit = go ctx0 where
     consumeAndAwaitBufferWithError m n ctx =
         let bufferLen = olength do bufferByteString ctx
         in if
-            | n <= bufferLen
-                Left (m + n, Just do consumeBuffer n ctx)
+            | n <= bufferLen ->
+                pure do Left (m + n, Just do consumeBuffer n ctx)
             | otherwise -> Conduit.await >>= \case
                 Nothing ->
-                    Left (m + bufferLen, Nothing)
+                    pure do Left (m + bufferLen, Nothing)
                 Just bs ->
                     consumeAndAwaitBufferWithError
                         do m + bufferLen
@@ -140,7 +136,7 @@ decodeUtf8Conduit = go ctx0 where
 
     yieldByInt i ctx n = Conduit.yield
         (
-            BytesSpan {
+            Spanned.BytesSpan {
                 bytesIndex = currentBytesCount ctx,
                 bytesLength = n
             },
@@ -149,9 +145,9 @@ decodeUtf8Conduit = go ctx0 where
 
     yieldError msg ctx n = Conduit.yield
         (
-            BytesSpan {
+            Spanned.BytesSpan {
                 bytesIndex = currentBytesCount ctx,
-                bytesLength = m
+                bytesLength = n
             },
             DecodeError do text msg
         )

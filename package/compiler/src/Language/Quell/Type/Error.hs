@@ -12,7 +12,7 @@ import           Language.Quell.Prelude
 
 import qualified Prelude
 import qualified Language.Quell.Type.ErrorCode as ErrorCode
-import qualified Language.Quell.Parsing.Lexer.Encoding as LexerEncoding
+import qualified Language.Quell.Parsing.Spanned as Spanned
 
 
 type T = Error
@@ -23,19 +23,19 @@ data DetailedError = DetailedError
         detailedMessage :: Text,
         getCallStack :: Maybe CallStack
     }
-    deriving (Eq, Show)
+    deriving Show
 
 detailedError :: Text -> Error -> DetailedError
 detailedError msg err = DetailedError
     {
         getError = err,
-        detailedError = msg,
+        detailedMessage = msg,
         getCallStack = Nothing
     }
 
 data Error
     = Unknown
-    | LexDecodeError LexerEncoding.BytesSpan
+    | LexDecodeError Spanned.BytesSpan
     deriving (Eq, Show)
 
 toErrorCode :: Error -> ErrorCode.T
@@ -49,6 +49,6 @@ detailedErrorUnknown msg =
     in DetailedError
         {
             getError = Unknown,
-            detailedError = text msg,
+            detailedMessage = text msg,
             getCallStack = Just cs
         }

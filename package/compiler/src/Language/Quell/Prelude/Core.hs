@@ -1,30 +1,31 @@
 module Language.Quell.Prelude.Core (
-  module Prelude,
+    module Prelude,
 
-  module Control.Applicative,
-  module Control.Monad.IO.Class,
-  module Control.Monad.Trans.Reader,
-  module Control.Monad.Trans.State.Strict,
-  module Data.ByteString,
-  module Data.Coerce,
-  module Data.Constraint,
-  module Data.Function,
-  module Data.Functor,
-  module Data.Functor.Identity,
-  module Data.Functor.Compose,
-  module Data.Ix,
-  module Data.Kind,
-  module Data.List.NonEmpty,
-  module Data.MonoTraversable,
-  module Data.Ord,
-  module Data.Proxy,
-  module Data.Sequences,
-  module Data.Text,
-  module Data.Typeable,
-  module Data.Word,
-  module GHC.Prim,
-  module GHC.Stack,
-  module Prettyprinter,
+    module Control.Applicative,
+    module Control.Monad.IO.Class,
+    module Control.Monad.Trans.Reader,
+    module Control.Monad.Trans.State.Strict,
+    module Data.ByteString,
+    module Data.Coerce,
+    module Data.Constraint,
+    module Data.Function,
+    module Data.Functor,
+    module Data.Functor.Identity,
+    module Data.Functor.Compose,
+    module Data.Ix,
+    module Data.Kind,
+    module Data.List.NonEmpty,
+    module Data.MonoTraversable,
+    module Data.Ord,
+    module Data.Proxy,
+    module Data.Sequences,
+    module Data.Text,
+    module Data.Typeable,
+    module Data.Vector,
+    module Data.Word,
+    module GHC.Prim,
+    module GHC.Stack,
+    module Prettyprinter,
 ) where
 
 -- FIXME: hiding (error)
@@ -57,6 +58,7 @@ import           Data.Proxy                       (Proxy (..))
 import           Data.Sequences
 import           Data.Text                        (Text)
 import           Data.Typeable                    (Typeable)
+import           Data.Vector                      (Vector)
 import           Data.Word                        (Word, Word8)
 import           GHC.Prim
 import           GHC.Stack                        (CallStack, HasCallStack,

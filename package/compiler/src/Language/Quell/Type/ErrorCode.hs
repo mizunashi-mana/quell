@@ -38,5 +38,5 @@ toInt = \case
 toLevel :: ErrorCode -> ErrorLevel
 toLevel = \case
   Unknown                 -> Bug
-  LexBreakEncoding        -> CriticalError
+  LexBreakEncoding        -> RecoverableError
   LexUnclosedCommentBlock -> RecoverableError

@@ -16,155 +16,158 @@ bug-reports:         https://github.com/mizunashi-mana/quell/issues
 description:
 
 license-file:
-  LICENSE.md
+    LICENSE.md
 extra-source-files:
-  README.md
+    README.md
 
 source-repository head
-  type:     git
-  location: https://github.com/mizunashi-mana/quell.git
+    type:     git
+    location: https://github.com/mizunashi-mana/quell.git
 
 flag develop
-  default:     False
-  manual:      True
-  description: Turn on some options for development
+    default:     False
+    manual:      True
+    description: Turn on some options for development
 
 common general
-  default-language:
-    Haskell2010
-  default-extensions:
-    NoImplicitPrelude
+    default-language:
+        Haskell2010
+    default-extensions:
+        NoImplicitPrelude
 
-    BangPatterns
-    BinaryLiterals
-    BlockArguments
-    ConstrainedClassMethods
-    ConstraintKinds
-    DataKinds
-    DefaultSignatures
-    DeriveFoldable
-    DeriveFunctor
-    DeriveGeneric
-    DeriveLift
-    DeriveTraversable
-    DerivingStrategies
-    DerivingVia
-    DuplicateRecordFields
-    EmptyCase
-    FlexibleContexts
-    FlexibleInstances
-    FunctionalDependencies
-    GADTs
-    InstanceSigs
-    LambdaCase
-    MagicHash
-    MultiParamTypeClasses
-    MultiWayIf
-    NamedFieldPuns
-    NegativeLiterals
-    NumericUnderscores
-    OverloadedLabels
-    PackageImports
-    PatternSynonyms
-    PolyKinds
-    QuantifiedConstraints
-    RankNTypes
-    RoleAnnotations
-    ScopedTypeVariables
-    StandaloneDeriving
-    Strict
-    TypeApplications
-    TypeFamilies
-    TypeFamilyDependencies
-    TypeOperators
-    TypeSynonymInstances
-    UnboxedSums
-    UnboxedTuples
-    ViewPatterns
+        BangPatterns
+        BinaryLiterals
+        BlockArguments
+        ConstrainedClassMethods
+        ConstraintKinds
+        DataKinds
+        DefaultSignatures
+        DeriveFoldable
+        DeriveFunctor
+        DeriveGeneric
+        DeriveLift
+        DeriveTraversable
+        DerivingStrategies
+        DerivingVia
+        DuplicateRecordFields
+        EmptyCase
+        FlexibleContexts
+        FlexibleInstances
+        FunctionalDependencies
+        GADTs
+        InstanceSigs
+        LambdaCase
+        MagicHash
+        MultiParamTypeClasses
+        MultiWayIf
+        NamedFieldPuns
+        NegativeLiterals
+        NumericUnderscores
+        OverloadedLabels
+        PackageImports
+        PatternSynonyms
+        PolyKinds
+        QuantifiedConstraints
+        RankNTypes
+        RoleAnnotations
+        ScopedTypeVariables
+        StandaloneDeriving
+        Strict
+        TypeApplications
+        TypeFamilies
+        TypeFamilyDependencies
+        TypeOperators
+        TypeSynonymInstances
+        UnboxedSums
+        UnboxedTuples
+        ViewPatterns
 
-  if flag(develop)
-    ghc-options:
-      -Wall
-      -Wcompat
-      -Wincomplete-uni-patterns
-      -Wmonomorphism-restriction
-      -Wpartial-fields
+    if flag(develop)
+        ghc-options:
+            -Wall
+            -Wcompat
+            -Wincomplete-uni-patterns
+            -Wmonomorphism-restriction
+            -Wpartial-fields
 
-      -fprint-explicit-foralls
-      -fprint-potential-instances
-      -frefinement-level-hole-fits=1
+            -fprint-explicit-foralls
+            -fprint-potential-instances
+            -frefinement-level-hole-fits=1
 
-      -dcore-lint
+            -dcore-lint
 
-  build-depends:
-    array,
-    base,
-    bytestring,
-    ghc-prim,
-    template-haskell,
-    text,
+    build-depends:
+        array,
+        base,
+        bytestring,
+        ghc-prim,
+        template-haskell,
+        text,
 
-    charset,
-    conduit,
-    constraints,
-    mono-traversable,
-    prettyprinter,
-    prettyprinter-ansi-terminal,
-    tlex,
-    tlex-th,
-    tlex-core,
-    transformers,
+        charset,
+        conduit,
+        constraints,
+        mono-traversable,
+        prettyprinter,
+        prettyprinter-ansi-terminal,
+        tlex,
+        tlex-th,
+        tlex-core,
+        transformers,
+        vector,
 
-  build-tool-depends:
-    happy:happy,
+    build-tool-depends:
+        happy:happy,
 
-  autogen-modules:
-    Paths_quell_compiler
-  other-modules:
-    Paths_quell_compiler
+    autogen-modules:
+        Paths_quell_compiler
+    other-modules:
+        Paths_quell_compiler
 
 custom-setup
-  setup-depends:
-    base,
-    Cabal,
-    cabal-doctest,
+    setup-depends:
+        base,
+        Cabal,
+        cabal-doctest,
 
 executable quellc
-  import:
-    general
-  main-is:
-    Main.hs
-  hs-source-dirs:
-    app
-  build-depends:
-    quell-compiler,
-  ghc-options:
-    -rtsopts
-  ghc-prof-options:
-    -rtsopts
-    -with-rtsopts="-xc -p"
+    import:
+        general
+    main-is:
+        Main.hs
+    hs-source-dirs:
+        app
+    build-depends:
+        quell-compiler,
+    ghc-options:
+        -rtsopts
+    ghc-prof-options:
+        -rtsopts
+        -with-rtsopts="-xc -p"
 
 library
-  import:
-    general
-  hs-source-dirs:
-    src
-  exposed-modules:
-    Language.Quell.Prelude
-    Language.Quell.Data.TextId
-    Language.Quell.Type.Ast
-    Language.Quell.Type.Error
-    Language.Quell.Type.ErrorCode
-    Language.Quell.Type.Token
-    Language.Quell.Parsing.Spanned
-    Language.Quell.Parsing.Runner
-    Language.Quell.Parsing.Lexer
-    Language.Quell.Parsing.Lexer.Rules
-    Language.Quell.Parsing.Lexer.CodeUnit
-  other-modules:
-    Language.Quell.Prelude.Core
-    Language.Quell.Prelude.Literal
-    Language.Quell.Prelude.MonoTraversableM
+    import:
+        general
+    hs-source-dirs:
+        src
+    exposed-modules:
+        Language.Quell.Prelude
+        Language.Quell.Data.TextId
+        Language.Quell.Type.Ast
+        Language.Quell.Type.Error
+        Language.Quell.Type.ErrorCode
+        Language.Quell.Type.Token
+        Language.Quell.Parsing.Spanned
+        Language.Quell.Parsing.Runner
+        Language.Quell.Parsing.Lexer
+        Language.Quell.Parsing.Lexer.Rules
+        Language.Quell.Parsing.Lexer.CodeUnit
+        Language.Quell.Parsing.Lexer.Encoding
+        Language.Quell.Parsing.Lexer.Error
+    other-modules:
+        Language.Quell.Prelude.Core
+        Language.Quell.Prelude.Literal
+        Language.Quell.Prelude.MonoTraversableM
 
 test-suite doctest
     import:
