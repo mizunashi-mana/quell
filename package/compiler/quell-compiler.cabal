@@ -80,6 +80,7 @@ common general
         TypeSynonymInstances
         UnboxedSums
         UnboxedTuples
+        UnliftedNewtypes
         ViewPatterns
 
     if flag(develop)
@@ -110,6 +111,7 @@ common general
         mono-traversable,
         prettyprinter,
         prettyprinter-ansi-terminal,
+        primitive,
         tlex,
         tlex-th,
         tlex-core,
@@ -152,7 +154,10 @@ library
         src
     exposed-modules:
         Language.Quell.Prelude
+        Language.Quell.Data.Monad.MonadST
         Language.Quell.Data.TextId
+        Language.Quell.Data.STBuffer
+        Language.Quell.Data.Unlifted.MutInt
         Language.Quell.Type.Ast
         Language.Quell.Type.Error
         Language.Quell.Type.ErrorCode

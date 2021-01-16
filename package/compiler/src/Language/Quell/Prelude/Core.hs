@@ -3,6 +3,7 @@ module Language.Quell.Prelude.Core (
 
     module Control.Applicative,
     module Control.Monad.IO.Class,
+    module Control.Monad.ST,
     module Control.Monad.Trans.Reader,
     module Control.Monad.Trans.State.Strict,
     module Data.ByteString,
@@ -17,6 +18,7 @@ module Language.Quell.Prelude.Core (
     module Data.List.NonEmpty,
     module Data.MonoTraversable,
     module Data.Ord,
+    module Data.Primitive.Types,
     module Data.Proxy,
     module Data.Sequences,
     module Data.Text,
@@ -25,6 +27,7 @@ module Language.Quell.Prelude.Core (
     module Data.Word,
     module GHC.Prim,
     module GHC.Stack,
+    module GHC.Types,
     module Prettyprinter,
 ) where
 
@@ -39,6 +42,7 @@ import           Prelude                          hiding (String, break, drop,
 
 import           Control.Applicative
 import           Control.Monad.IO.Class
+import           Control.Monad.ST
 import           Control.Monad.Trans.Reader       hiding (liftCallCC, liftCatch)
 import           Control.Monad.Trans.State.Strict hiding (liftCallCC, liftCatch,
                                                    modify)
@@ -54,6 +58,7 @@ import           Data.Kind                        (Type)
 import           Data.List.NonEmpty               (NonEmpty (..))
 import           Data.MonoTraversable             hiding (oforM, omapM)
 import           Data.Ord                         (Down (..))
+import           Data.Primitive.Types             (sizeOf#)
 import           Data.Proxy                       (Proxy (..))
 import           Data.Sequences
 import           Data.Text                        (Text)
@@ -61,6 +66,7 @@ import           Data.Typeable                    (Typeable)
 import           Data.Vector                      (Vector)
 import           Data.Word                        (Word, Word8)
 import           GHC.Prim
+import           GHC.Types
 import           GHC.Stack                        (CallStack, HasCallStack,
                                                    callStack)
 import           Prettyprinter                    (Doc, Pretty (..))

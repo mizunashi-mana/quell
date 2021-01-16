@@ -1,6 +1,7 @@
 module Language.Quell.Prelude.Literal (
-  text,
-  byteString,
+    StringLit,
+    text,
+    byteString,
 ) where
 
 import qualified Prelude
@@ -9,10 +10,12 @@ import qualified Data.ByteString.Char8 as ByteString
 import qualified Data.Text             as Text
 
 
+type StringLit = Prelude.String
+
 {-# INLINE text #-}
-text :: Prelude.String -> Text.Text
+text :: StringLit -> Text.Text
 text = Text.pack
 
 {-# INLINE byteString #-}
-byteString :: Prelude.String -> ByteString.ByteString
+byteString :: StringLit -> ByteString.ByteString
 byteString = ByteString.pack

@@ -10,7 +10,6 @@ module Language.Quell.Type.Error (
 
 import           Language.Quell.Prelude
 
-import qualified Prelude
 import qualified Language.Quell.Type.ErrorCode as ErrorCode
 import qualified Language.Quell.Parsing.Spanned as Spanned
 
@@ -43,7 +42,7 @@ toErrorCode = \case
     Unknown             -> ErrorCode.Unknown
     LexDecodeError{}    -> ErrorCode.LexBreakEncoding
 
-detailedErrorUnknown :: HasCallStack => Prelude.String -> DetailedError
+detailedErrorUnknown :: HasCallStack => StringLit -> DetailedError
 detailedErrorUnknown msg =
     let cs = callStack
     in DetailedError

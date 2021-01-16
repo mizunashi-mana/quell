@@ -13,7 +13,6 @@ import qualified Language.Quell.Data.TextId          as TextId
 import qualified Language.Quell.Type.Token           as Token
 import qualified Language.Quell.Parsing.Lexer.CodeUnit       as CodeUnit
 import qualified Language.Lexer.Tlex.Data.EnumSet    as EnumSet
-import qualified Prelude
 
 
 data LexerState = Initial
@@ -408,5 +407,5 @@ charSetP = Tlex.straightEnumSetP
 chP :: Char -> Pattern
 chP c = charSetP do charsCs [c]
 
-stringP :: Prelude.String -> Pattern
+stringP :: StringLit -> Pattern
 stringP s = foldMap chP s
