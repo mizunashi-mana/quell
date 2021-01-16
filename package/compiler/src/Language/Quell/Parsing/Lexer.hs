@@ -4,6 +4,7 @@
 module Language.Quell.Parsing.Lexer (
   lexerConduit,
   lexer,
+  runLexer,
   LexerMonad (..),
   Lexer (..),
   LexerContext (..),
@@ -27,16 +28,16 @@ import qualified Language.Quell.Data.Monad.MonadST as MonadST
 
 $(Rules.buildLexer)
 
-class (Monad m, MonadST.T m) => LexerMonad m where
+class (Monad m, MonadST.T s m) => LexerMonad s m where
     reportDecodeError :: Text -> Spanned.BytesSpan -> m ()
     reportLexingError :: Text -> Spanned.Span -> Error.T -> m ()
 
-lexerConduit :: forall m. LexerMonad m => Encoding.T
+lexerConduit :: forall s m. LexerMonad s m => Encoding.T
     -> Conduit.ConduitT ByteString Token.T m ()
 lexerConduit enc =
     Encoding.decodeConduit enc Conduit..|
     reportDecodeResultConduit Conduit..|
-    charLexerConduit
+    runLexer lexer
     where
         reportDecodeResultConduit :: Conduit.ConduitT
             (Spanned.BytesSpan, Encoding.DecodedUnit)
@@ -56,15 +57,15 @@ lexerConduit enc =
 
 type CharLexerConduitT = Conduit.ConduitT (Spanned.BytesSpan, Char) Token.T
 
-runLexer :: LexerMonad m => Lexer m () -> CharLexerConduitT m ()
+runLexer :: LexerMonad s m => Lexer s m () -> CharLexerConduitT m ()
 runLexer m = do
     ictx <- conduitST buildInitialLexerContext
     Conduit.evalStateC ictx
         do unLexer m
 
-lexer :: forall m. LexerMonad m => Lexer m ()
+lexer :: forall s m. LexerMonad s m => Lexer s m ()
 lexer = go where
-    go :: Lexer m ()
+    go :: Lexer s m ()
     go = do
         ctx <- Lexer do Conduit.lift get
         result <- tlexScan do lastLexerState ctx
@@ -78,9 +79,7 @@ lexer = go where
 
     errorRecoverByTlexScan = undefined
 
-type Lexer m = LexerBase (Marker m) m
-
-newtype LexerBase s m a = Lexer
+newtype Lexer s m a = Lexer
     {
         unLexer :: CharLexerConduitT (StateT (LexerContext s) m) a
     }
@@ -88,7 +87,7 @@ newtype LexerBase s m a = Lexer
         Functor,
         Applicative,
         Monad
-    ) via CharLexerConduitT (StateT LexerContext m)
+    ) via CharLexerConduitT (StateT (LexerContext s) m)
 
 data LexerContext s = LexerContext
     {
@@ -100,7 +99,6 @@ data LexerContext s = LexerContext
         lastLoc                :: Spanned.Loc,
         lastLexerState         :: Rules.LexerState
     }
-    deriving (Eq, Show)
 
 buildInitialLexerContext :: ST s (LexerContext s)
 buildInitialLexerContext = do
@@ -131,7 +129,8 @@ newtype PositionContext = PositionContext
     {
         bufferPosition :: Int
     }
-    deriving (Eq, Ord, Enum, Show)
+    deriving (Eq, Ord, Show)
+    deriving Enum via Int
 
 data LayoutContext
     = NoLayout
@@ -145,15 +144,16 @@ data DBraceKind
     | DBraceVirtual
     deriving (Eq, Ord, Enum, Bounded, Show)
 
-instance LexerMonad m => Tlex.TlexContext PositionContext CodeUnit.T (Lexer m) where
+instance LexerMonad s m => Tlex.TlexContext PositionContext CodeUnit.T (Lexer s m) where
     tlexGetInputPart = Lexer do
         ctx <- Conduit.lift get
         let posCtx = currentPositionContext ctx
         mscu <- conduitST do
             codeUnitsBuffer ctx `STBuffer.index` bufferPosition posCtx
         case mscu of
-            Just scu ->
-                returnCodeUnit ctx posCtx scu
+            Just scu -> do
+                let (_, u) = Spanned.unSpanned scu
+                returnCodeUnit ctx posCtx u
             Nothing
                 | bufferEndOfSource ctx ->
                     pure Nothing
@@ -170,7 +170,7 @@ instance LexerMonad m => Tlex.TlexContext PositionContext CodeUnit.T (Lexer m) w
                     pure Nothing
                 Just (bs, c) -> do
                     let u = CodeUnit.fromChar c
-                        buffer = currentBuffer ctx
+                        buffer = codeUnitsBuffer ctx
                     lastMscu <- conduitST do STBuffer.last buffer
                     let sp = buildSpan lastMscu bs u
                         scu = Spanned.Spanned
@@ -194,6 +194,7 @@ instance LexerMonad m => Tlex.TlexContext PositionContext CodeUnit.T (Lexer m) w
                 in case lastMscu of
                     Just lastScu -> do
                         let lastLoc = Spanned.endLoc do Spanned.getSpan lastScu
+                            (_, lastU) = Spanned.unSpanned lastScu
                             loc = lastLoc
                                 {
                                     Spanned.locBytesPos = Spanned.bytesIndex bs
@@ -206,10 +207,11 @@ instance LexerMonad m => Tlex.TlexContext PositionContext CodeUnit.T (Lexer m) w
                                     }
                                 True
                                     -- "\r\n"
-                                    | lastU == LcU000D && u == LcU000A -> loc
-                                        {
-                                            Spanned.locBytesPos = nlocBytesPos
-                                        }
+                                    | [lastU, u] == [CodeUnit.LcU000D, CodeUnit.LcU000A] ->
+                                        loc
+                                            {
+                                                Spanned.locBytesPos = nlocBytesPos
+                                            }
                                     | otherwise -> loc
                                         {
                                             Spanned.locLine = Spanned.locLine loc + 1,
@@ -222,9 +224,9 @@ instance LexerMonad m => Tlex.TlexContext PositionContext CodeUnit.T (Lexer m) w
                                 Spanned.endLoc = nloc
                             }
                     Nothing -> do
-                        let loc = Spanned.Spanned
+                        let loc = Spanned.Loc
                                 {
-                                    Spanned.locLine = 0,
+                                    locLine = 0,
                                     Spanned.locCol = 0,
                                     Spanned.locBytesPos = Spanned.bytesIndex bs
                                 }
@@ -252,7 +254,7 @@ instance LexerMonad m => Tlex.TlexContext PositionContext CodeUnit.T (Lexer m) w
 newEmptyBuffer :: ST s (STBuffer.T s (Spanned.T (Char, CodeUnit.T)))
 newEmptyBuffer = STBuffer.new []
 
-conduitST :: MonadST.T m => ST (MonadST.Marker m) a -> Conduit.ConduitT i o m ()
+conduitST :: MonadST.T s m => ST s a -> Conduit.ConduitT i o m a
 conduitST mx = Conduit.lift do MonadST.liftST mx
 
 conduitPut :: Monad m => s -> Conduit.ConduitT i o (StateT s m) ()

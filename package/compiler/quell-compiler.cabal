@@ -53,7 +53,6 @@ common general
         EmptyCase
         FlexibleContexts
         FlexibleInstances
-        FunctionalDependencies
         GADTs
         InstanceSigs
         LambdaCase

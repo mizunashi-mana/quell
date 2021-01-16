@@ -11,7 +11,7 @@ Do Block
 
     do { e }                = e
     do { e ; stmts }        = e >> do { stmts }
-    do { x <- e ; stmts }   = e >>= \x -> do { stmts }
+    do { p <- e ; stmts }   = e >>= \p -> do { stmts }
     do { let decls; stmts } = let decls in do { stmts }
 
 Integer Literal
