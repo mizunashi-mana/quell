@@ -40,6 +40,21 @@ spec = do
             len <- stToIO do STBuffer.length buf
             len `shouldBe` length l0
 
+    describe "toList" do
+        it "returns nitialized list without any operations" do
+            let l0 = [0, 1, 2, 3, 4, 5, 4, 3] :: [Int]
+            buf <- stToIO do STBuffer.new l0
+            l1 <- stToIO do STBuffer.toList buf
+            l1 `shouldBe` l0
+
+        it "returns what is same as all consuming list" do
+            buf <- stToIO do STBuffer.new @Int [0, 1, 2, 3, 4, 5, 4, 3]
+            len <- stToIO do STBuffer.length buf
+            l1 <- stToIO do STBuffer.toList buf
+            length l1 `shouldBe` len
+            l2 <- stToIO do STBuffer.consumeLasts (:) [] buf len
+            Just l1 `shouldBe` l2
+
     describe "identity" do
         it "be satisfied for consumeHead / appendHead" do
             let l0 = [0,0,0,0,0,0,0] :: [Int]

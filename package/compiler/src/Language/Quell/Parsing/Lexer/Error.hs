@@ -11,7 +11,8 @@ import Language.Quell.Prelude
 type T = Error
 
 data Error
-    = UnclosedCommentBlock CommentBlockKind
+    = UnexpectedCodeUnits -- FIXME: split more detail
+    | UnclosedCommentBlock CommentBlockKind
     | UnclosedLayoutBlock LayoutBlockKind
     deriving (Eq, Show)
 

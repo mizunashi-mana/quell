@@ -167,6 +167,7 @@ library
         Language.Quell.Parsing.Lexer.Rules
         Language.Quell.Parsing.Lexer.CodeUnit
         Language.Quell.Parsing.Lexer.Encoding
+        Language.Quell.Parsing.Lexer.Lexing
         Language.Quell.Parsing.Lexer.Error
     other-modules:
         Language.Quell.Prelude.Core

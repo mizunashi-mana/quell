@@ -21,7 +21,7 @@ data LexerState = Initial
 data LexerAction
     = WithToken Token.T
     | WithIdToken (TextId.T -> Token.T)
-    | LexWhitespace
+    | WithWhitespace
     | LexLitIntegerOrRational
     | LexLitByteString
     | LexLitByteChar
@@ -242,8 +242,7 @@ interpStringContinueP = stringsP ["#}", "⦄"]
 
 whiteSpaceRules :: ScannerBuilder ()
 whiteSpaceRules = do
-    -- lex rests without standard lexer
-    initialRule whiteCharP [||LexWhitespace||]
+    initialRule (Tlex.someP whiteCharP) [||WithWhitespace||]
 
     commentRules
 
