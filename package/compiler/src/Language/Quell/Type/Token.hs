@@ -76,12 +76,12 @@ data Token
   | SpDBraceClose
   | SpParenOpen
   | SpParenClose
-  | SpSemis
+  | SpSemi
   | SpVBraceOpen
   | SpVBraceClose
   | SpVDBraceOpen
   | SpVDBraceClose
-  | SpVSemis
+  | SpVSemi
 
   | IdConId TextId.T
   | IdConOp TextId.T
@@ -163,12 +163,12 @@ instance Pretty Token where
     SpDBraceClose      -> pretty "}}"
     SpParenOpen        -> pretty "("
     SpParenClose       -> pretty ")"
-    SpSemis            -> pretty ";"
+    SpSemi             -> pretty ";"
     SpVBraceOpen       -> pretty "{- { -}"
     SpVBraceClose      -> pretty "{- } -}"
     SpVDBraceOpen      -> pretty "{- {{ -}"
     SpVDBraceClose     -> pretty "{- }} -}"
-    SpVSemis           -> pretty "{- ; -}"
+    SpVSemi            -> pretty ""
     IdConId v          -> pretty v
     IdConOp v          -> pretty v
     IdVarId v          -> pretty v

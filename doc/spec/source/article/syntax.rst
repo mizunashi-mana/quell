@@ -104,9 +104,9 @@ Lexical Syntax
             : "["
             : "]"
             : "`"
+            : ";"
     brace   : "{{" | "}}" : "❴" | "❵"
             : "{" | "}"
-    semis   : ";"+
 
 .. productionlist::
     literal : integer
@@ -235,7 +235,7 @@ Lexical Syntax
             : "\p{General_Category=Letter_Number}"
             : "\p{General_Category=Format}"<whitechar>
             : "'"
-    other_special: ";" | "#" | "\"" | "{" | "}" | "⦃" | "⦄" | "❴" | "❵"
+    other_special: "#" | "\"" | "{" | "}" | "⦃" | "⦄" | "❴" | "❵"
     other_graphic: other_graphic_char<symbolchar | special | other_special>
     other_graphic_char: "\p{General_Category=Punctuation}"
 
@@ -252,7 +252,6 @@ These nonterminals must be disjoint:
 * ``reserved_id``
 * ``reserved_op``
 * ``special``
-* ``semis``
 * ``brace``
 * ``literal``
 
@@ -278,7 +277,7 @@ These expressions must be empty:
 * ``((lexeme | whitespace)*)<ANY*>``
 * ``reserved_id<(small | large) (small | large | digit | other)*>``
 * ``reserved_op<symbol (symbol | other)*>``
-* ``(brace | semis)<other_special>``
+* ``(brace)<other_special*>``
 * ``literal<("+" | "-" | digit | "'" | other_special) ANY*>``
 * ``(multiline_comment | doc_comment | pragma_comment | nested_comment)<comment_open ANY* comment_close>``
 * ``(multiline_comment | doc_comment | pragma_comment)<doc_comment | nested_comment>``
@@ -302,30 +301,30 @@ Layout
 
 .. code-block::
 
-  PosToken(t) = ...
+    PosToken(t) = ...
 
 .. code-block::
 
-  IsWhitespace(t)         = t match whitespace
-  IncludeNewline(t)       = t match (ANY* newline ANY*)
-  IsBraceKeyword(t)       = t match ("where" | "of" | "do"
-                                    | "record" | "signature"
-                                    )
-  IsDBraceKeyword(t)      = t match "let"
-  IsDBraceCloseKeyword(t) = t match "in"
+    IsWhitespace(t)         = t match whitespace
+    IncludeNewline(t)       = t match (ANY* newline ANY*)
+    IsBraceKeyword(t)       = t match ("where" | "of" | "do"
+                                        | "record" | "signature"
+                                        )
+    IsDBraceKeyword(t)      = t match "let"
+    IsDBraceCloseKeyword(t) = t match "in"
 
 .. code-block::
 
-  PostProcess ts                          = <{{>:PostProcess1 ts
+    PostProcess ts                          = <{{>:PostProcess1 ts
 
-  PostProcess1 []                         = []
-  PostProcess1 (t:ts)
-    | IsWhitespace(t) & IncludeNewline(t) = <;>:PostProcess1 ts
-    | IsWhitespace(t)                     = PostProcess1 ts
-    | IsBraceKeyword(t)                   = t:<{>:PostProcess1 ts
-    | IsDBraceKeyword(t)                  = t:<{{>:PostProcess1 ts
-    | IsDBraceCloseKeyword(t)             = <}}>:t:PostProcess1 ts
-    | otherwise                           = t:PostProcess1 ts
+    PostProcess1 []                         = []
+    PostProcess1 (t:ts)
+        | IsWhitespace(t) & IncludeNewline(t) = <;>:PostProcess1 ts
+        | IsWhitespace(t)                     = PostProcess1 ts
+        | IsBraceKeyword(t)                   = t:<{>:PostProcess1 ts
+        | IsDBraceKeyword(t)                  = t:<{{>:PostProcess1 ts
+        | IsDBraceCloseKeyword(t)             = <}}>:t:PostProcess1 ts
+        | otherwise                           = t:PostProcess1 ts
 
 .. code-block::
 
@@ -382,9 +381,9 @@ Layout
                                 = ParseError -- Not corresponding braces.
         | t match interp_string_end
                                 = ParseError -- Not corresponding braces.
-        | t == "`"              = ParseError -- Not corresponding braces.
-        | t == ")"              = ParseError -- Not corresponding braces.
-        | t == "]"              = ParseError -- Not corresponding braces.
+        | t == "`"              = ParseError -- Not corresponding quotes.
+        | t == ")"              = ParseError -- Not corresponding brackets.
+        | t == "]"              = ParseError -- Not corresponding brackets.
         | t == "}"              = ParseError -- Not corresponding braces.
         | t == "}}"             = ParseError -- Not corresponding braces.
         | t == <}}>             = ParseError -- Not corresponding braces.
@@ -658,9 +657,12 @@ Grammar
     guard_qual: expr
 
 .. productionlist::
-    bind_var: var_id
-            : "_"
-            : "(" var_id ":" type ")"
+    bind_var: simple_bind_var
+            : "(" simple_bind_var ":" type ")"
+            : "@" simple_bind_var
+            : "@" "(" simple_bind_var ":" type ")"
+    simple_bind_var : var_id
+                    : "_"
     con: con_id
         : "(" ")"
         : "(" ( "->" | con_sym ) ")"
@@ -673,6 +675,7 @@ Grammar
         : "`" var_id "`"
     qual_conop: (con ".")* conop
     qual_op: (con ".")* op
+    semis: ";"*
 
 Note:
 

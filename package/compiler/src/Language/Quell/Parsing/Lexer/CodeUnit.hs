@@ -143,6 +143,8 @@ data CodeUnit
     | LcU21D0 -- '⇐'
     | LcU21D2 -- '⇒'
     | LcU2200 -- '∀'
+    | LcU2774 -- '❴'
+    | LcU2775 -- '❵'
     | LcU2983 -- '⦃'
     | LcU2984 -- '⦄'
 
@@ -305,6 +307,8 @@ fromChar c = case fromEnum c of
     0x21D0 -> LcU21D0
     0x21D2 -> LcU21D2
     0x2200 -> LcU2200
+    0x2774 -> LcU2774
+    0x2775 -> LcU2775
     0x2983 -> LcU2983
     0x2984 -> LcU2984
     _      -> case Char.generalCategory c of
@@ -429,7 +433,7 @@ catDashPunctuation = EnumSet.fromList
 catClosePunctuation :: EnumSet.EnumSet CodeUnit
 catClosePunctuation = EnumSet.fromList
     [
-        LcU0029, LcU005D, LcU007D, LcU2984,
+        LcU0029, LcU005D, LcU007D, LcU2775, LcU2984,
         LcOtherCatPe
     ]
 
@@ -457,7 +461,7 @@ catOtherPunctuation = EnumSet.fromList
 catOpenPunctuation :: EnumSet.EnumSet CodeUnit
 catOpenPunctuation = EnumSet.fromList
     [
-        LcU0028, LcU005B, LcU007B, LcU2983,
+        LcU0028, LcU005B, LcU007B, LcU2774, LcU2983,
         LcOtherCatPs
     ]
 

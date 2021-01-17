@@ -172,6 +172,7 @@ library
         Language.Quell.Prelude.Core
         Language.Quell.Prelude.Literal
         Language.Quell.Prelude.MonoTraversableM
+        Language.Quell.Prelude.Debug
 
 test-suite doctest
     import:

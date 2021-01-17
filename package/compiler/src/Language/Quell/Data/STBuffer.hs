@@ -10,12 +10,17 @@ module Language.Quell.Data.STBuffer (
     unsafeHead,
     last,
     unsafeLast,
+    toList,
     appendHead,
     appendLast,
     consumeHead,
     consumeLast,
     unsafeConsumeHead,
     unsafeConsumeLast,
+    consumeHeads,
+    consumeLasts,
+    unsafeConsumeHeads,
+    unsafeConsumeLasts,
 ) where
 
 import Language.Quell.Prelude hiding (length, index, unsafeIndex, unsafeHead, last, unsafeLast)
@@ -262,6 +267,66 @@ unsafeConsumeLast buf = ST.ST \s0# ->
             do s0#
     in unsafeConsumeLast# bufLen0# buf s1#
 
+consumeHeads :: STBuffer s e -> Int -> ST s (Maybe [e])
+consumeHeads buf (I# c#) = ST.ST \s0# ->
+    let !(# s1#, bufLen0# #) = MutInt.read#
+            do bufferLength# buf
+            do s0#
+    in case c# <=# bufLen0# of
+        0# -> (# s1#, Nothing #)
+        _ ->
+            let !(# s2#, xs #) = unsafeConsumeHeads# bufLen0# buf c# s1#
+            in (# s2#, Just xs #)
+
+unsafeConsumeHeads :: STBuffer s e -> Int -> ST s [e]
+unsafeConsumeHeads buf (I# c#) = ST.ST \s0# ->
+    let !(# s1#, bufLen0# #) = MutInt.read#
+            do bufferLength# buf
+            do s0#
+    in unsafeConsumeHeads# bufLen0# buf c# s1#
+
+consumeLasts :: STBuffer s e -> Int -> ST s (Maybe [e])
+consumeLasts buf (I# c#) = ST.ST \s0# ->
+    let !(# s1#, bufLen0# #) = MutInt.read#
+            do bufferLength# buf
+            do s0#
+    in case c# <=# bufLen0# of
+        0# -> (# s1#, Nothing #)
+        _ ->
+            let !(# s2#, xs #) = unsafeConsumeLasts# bufLen0# buf c# s1#
+            in (# s2#, Just xs #)
+
+unsafeConsumeLasts :: STBuffer s e -> Int -> ST s [e]
+unsafeConsumeLasts buf (I# c#) = ST.ST \s0# ->
+    let !(# s1#, bufLen0# #) = MutInt.read#
+            do bufferLength# buf
+            do s0#
+    in unsafeConsumeLasts# bufLen0# buf c# s1#
+
+toList :: STBuffer s e -> ST s [e]
+toList buf = ST.ST \s0# ->
+    let !(# s1#, iH# #) = MutInt.read#
+            do indexHead# buf
+            do s0#
+        !(# s2#, arr #) = readMutVar#
+            do unSTBuffer# buf
+            do s1#
+        arr# = unSTBufferArray# arr
+        arrLen# = sizeofMutableArray# arr#
+        !(# s3#, bufLen# #) = MutInt.read#
+            do bufferLength# buf
+            do s2#
+        iL# = incIndex# arrLen# iH# bufLen#
+        !(# s4#, xs #) = go# arr# arrLen# iH# iL# [] s3#
+    in (# s4#, xs #)
+    where
+        go# arr# arrLen# iH# iL0# xs s0# = case iH# ==# iL0# of
+            0# ->
+                let iL1# = decIndex# arrLen# iL0# 1#
+                    !(# s1#, x #) = readArray# arr# iL1# s0#
+                in go# arr# arrLen# iH# iL1# (x:xs) s1#
+            _  -> (# s0#, xs #)
+
 unsafeConsumeHead# :: Int# -> STBuffer s e -> State# s -> (# State# s, e #)
 unsafeConsumeHead# bufLen0# buf s0# =
     let !(# s1#, arr #) = readMutVar#
@@ -302,6 +367,61 @@ unsafeConsumeLast# bufLen0# buf s0# =
             do bufLen1#
             do s3#
     in (# s4#, x #)
+
+unsafeConsumeHeads# :: Int# -> STBuffer s e -> Int# -> State# s -> (# State# s, [e] #)
+unsafeConsumeHeads# bufLen0# buf c# = \s0# ->
+    let !(# s1#, arr #) = readMutVar#
+            do unSTBuffer# buf
+            do s0#
+        arr# = unSTBufferArray# arr
+        arrLen# = sizeofMutableArray# arr#
+        !(# s2#, iH0# #) = MutInt.read#
+            do indexHead# buf
+            do s1#
+        iH1# = incIndex# arrLen# iH0# c#
+        !(# s3#, xs #) = go# arr# arrLen# iH0# iH1# [] s2#
+        s4# = MutInt.write#
+            do indexHead# buf
+            do iH1#
+            do s3#
+        s5# = MutInt.write#
+            do bufferLength# buf
+            do bufLen0# -# c#
+            do s4#
+    in (# s5#, xs #)
+    where
+        go# arr# arrLen# iH0# iH1# xs s0# = case iH0# ==# iH1# of
+            0# ->
+                let !(# s1#, x #) = readArray# arr# iH1# s0#
+                    iH2# = decIndex# arrLen# iH1# 1#
+                in go# arr# arrLen# iH0# iH2# (x:xs) s1#
+            _  -> (# s0#, xs #)
+
+unsafeConsumeLasts# :: Int# -> STBuffer s e -> Int# -> State# s -> (# State# s, [e] #)
+unsafeConsumeLasts# bufLen0# buf c# = \s0# ->
+    let !(# s1#, arr #) = readMutVar#
+            do unSTBuffer# buf
+            do s0#
+        arr# = unSTBufferArray# arr
+        arrLen# = sizeofMutableArray# arr#
+        !(# s2#, iH0# #) = MutInt.read#
+            do indexHead# buf
+            do s1#
+        iL0# = incIndex# arrLen# iH0# do bufLen0# -# 1#
+        iL1# = decIndex# arrLen# iL0# c#
+        !(# s3#, xs #) = go# arr# arrLen# iL0# iL1# [] s2#
+        s4# = MutInt.write#
+            do bufferLength# buf
+            do bufLen0# -# c#
+            do s3#
+    in (# s4#, xs #)
+    where
+        go# arr# arrLen# iL0# iL1# xs s0# = case iL0# ==# iL1# of
+            0# ->
+                let !(# s1#, x #) = readArray# arr# iL1# s0#
+                    iL2# = incIndex# arrLen# iL1# 1#
+                in go# arr# arrLen# iL0# iL2# (x:xs) s1#
+            _  -> (# s0#, xs #)
 
 reallocBufferArray :: MutableArray# s e -> Int# -> Int# -> e
     -> STBuffer s e -> State# s -> (# State# s, Int# #)

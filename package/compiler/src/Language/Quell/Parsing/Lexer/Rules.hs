@@ -27,6 +27,8 @@ data LexerAction
     | LexLitByteChar
     | LexLitString
     | LexLitChar
+    | LexInterpStringStart
+    | LexInterpStringContinue
     | LexCommentLineWithContent
     | LexCommentMultilineWithContent
     | LexCommentDoc
@@ -57,7 +59,6 @@ lexerRules = do
     literalRules
 
     specialRules
-    semisRules
     braceRules
 
     -- be before varIdRule / conIdRule to avoid conflicting
@@ -65,6 +66,10 @@ lexerRules = do
     -- be before varOpRule / conOpRule to avoid conflicting
     reservedOpRules
 
+    varIdRule
+    varOpRule
+    conIdRule
+    conOpRule
 
 varIdRule :: ScannerBuilder ()
 varIdRule =
@@ -156,61 +161,51 @@ reservedIdRules = do
 
 reservedOpRules :: ScannerBuilder ()
 reservedOpRules = do
-    initialRule (stringP "!")       [||WithToken do Token.SymBang||]
-    initialRule (stringP "->")      [||WithToken do Token.SymArrow||]
-    initialRule (stringP "..")      [||WithToken do Token.SymDots||]
-    initialRule (stringP ".")       [||WithToken do Token.SymDot||]
-    initialRule (stringP "<-")      [||WithToken do Token.SymLeftArrow||]
-    initialRule (stringP "<=")      [||WithToken do Token.SymDLeftArrow||]
-    initialRule (stringP "=>")      [||WithToken do Token.SymDArrow||]
-    initialRule (stringP "=")       [||WithToken do Token.SymEqual||]
-    initialRule (stringP "?")       [||WithToken do Token.SymUnknown||]
-    initialRule (stringP "@")       [||WithToken do Token.SymAt||]
-    initialRule (stringP "\\/")     [||WithToken do Token.SymForall||]
-    initialRule (stringP "\\")      [||WithToken do Token.SymLambda||]
-    initialRule (stringP "|")       [||WithToken do Token.SymOr||]
-    initialRule (stringP "~")       [||WithToken do Token.SymTilde||]
-    initialRule (stringP "∀")       [||WithToken do Token.SymForall||]
-    initialRule (stringP "λ")       [||WithToken do Token.SymLambda||]
-    initialRule (stringP "→")       [||WithToken do Token.SymArrow||]
-    initialRule (stringP "←")       [||WithToken do Token.SymLeftArrow||]
-    initialRule (stringP "⇒")       [||WithToken do Token.SymDArrow||]
-    initialRule (stringP "⇐")       [||WithToken do Token.SymDLeftArrow||]
-    initialRule (stringP "…")       [||WithToken do Token.SymDots||]
+    initialRule (stringP "!")           [||WithToken do Token.SymBang||]
+    initialRule (stringsP ["->", "→"])  [||WithToken do Token.SymArrow||]
+    initialRule (stringsP ["..", "…"])  [||WithToken do Token.SymDots||]
+    initialRule (stringP ".")           [||WithToken do Token.SymDot||]
+    initialRule (stringsP ["<-", "←"])  [||WithToken do Token.SymLeftArrow||]
+    initialRule (stringsP ["<=", "⇐"])  [||WithToken do Token.SymDLeftArrow||]
+    initialRule (stringsP ["=>", "⇒"])  [||WithToken do Token.SymDArrow||]
+    initialRule (stringP "=")           [||WithToken do Token.SymEqual||]
+    initialRule (stringP "?")           [||WithToken do Token.SymUnknown||]
+    initialRule (stringP "@")           [||WithToken do Token.SymAt||]
+    initialRule (stringsP ["\\/", "∀"]) [||WithToken do Token.SymForall||]
+    initialRule (stringsP ["\\", "λ"])  [||WithToken do Token.SymLambda||]
+    initialRule (stringP "|")           [||WithToken do Token.SymOr||]
+    initialRule (stringP "~")           [||WithToken do Token.SymTilde||]
 
 specialRules :: ScannerBuilder ()
 specialRules = do
-    initialRule (stringP "(")       [||WithToken do Token.SpParenOpen||]
-    initialRule (stringP ")")       [||WithToken do Token.SpParenClose||]
-    initialRule (stringP ",")       [||WithToken do Token.SpComma||]
-    initialRule (stringP "[")       [||WithToken do Token.SpBrackOpen||]
-    initialRule (stringP "]")       [||WithToken do Token.SpBrackClose||]
-    initialRule (stringP "`")       [||WithToken do Token.SpBackquote||]
+    initialRule (stringP "(")   [||WithToken do Token.SpParenOpen||]
+    initialRule (stringP ")")   [||WithToken do Token.SpParenClose||]
+    initialRule (stringP ",")   [||WithToken do Token.SpComma||]
+    initialRule (stringP "[")   [||WithToken do Token.SpBrackOpen||]
+    initialRule (stringP "]")   [||WithToken do Token.SpBrackClose||]
+    initialRule (stringP "`")   [||WithToken do Token.SpBackquote||]
+    initialRule (stringP ";")   [||WithToken do Token.SpSemi||]
 
-specialCs = charsCs ['(', ')', ',', '[', ']', '`']
+specialCs = charsCs ['(', ')', ',', '[', ']', '`', ';']
 
 braceRules :: ScannerBuilder ()
 braceRules = do
-    initialRule (stringP "{{")        [||WithToken do Token.SpDBraceOpen||]
-    initialRule (stringP "}}")        [||WithToken do Token.SpDBraceClose||]
-    initialRule (stringP "{")         [||WithToken do Token.SpBraceOpen||]
-    initialRule (stringP "}")         [||WithToken do Token.SpBraceClose||]
-    initialRule (stringP "⦃")         [||WithToken do Token.SpDBraceOpen||]
-    initialRule (stringP "⦄")         [||WithToken do Token.SpDBraceClose||]
-
-semisRules :: ScannerBuilder ()
-semisRules =
-    initialRule (Tlex.someP do chP ';') [||WithToken do Token.SpSemis||]
+    initialRule (stringsP ["{{", "❴"]) [||WithToken do Token.SpDBraceOpen||]
+    initialRule (stringsP ["}}", "❵"]) [||WithToken do Token.SpDBraceClose||]
+    initialRule (stringP "{")          [||WithToken do Token.SpBraceOpen||]
+    initialRule (stringP "}")          [||WithToken do Token.SpBraceClose||]
 
 
 literalRules :: ScannerBuilder ()
 literalRules = do
     -- lex rests without standard lexer
-    initialRule integerOrRationalOpenP [||LexLitIntegerOrRational||]
-    initialRule byteStringOpenP [||LexLitByteString||]
-    initialRule stringOpenP [||LexLitString||]
-    initialRule byteCharOpenP [||LexLitByteChar||]
-    initialRule charOpenP [||LexLitChar||]
+    initialRule integerOrRationalOpenP  [||LexLitIntegerOrRational||]
+    initialRule byteStringOpenP         [||LexLitByteString||]
+    initialRule stringOpenP             [||LexLitString||]
+    initialRule byteCharOpenP           [||LexLitByteChar||]
+    initialRule charOpenP               [||LexLitChar||]
+
+    interpStringPartRules
 
 
 integerOrRationalOpenP = Tlex.maybeP signP <> digitP
@@ -219,17 +214,30 @@ signP = charSetP signCs
 signCs = charsCs ['+', '-']
 
 
-byteStringOpenP = chP '#' <> strSepP
+byteStringOpenP = splitOpenP <> chP 'r' <> strSepP
 
 stringOpenP = strSepP
 
-byteCharOpenP = chP '#' <> charSepP
+byteCharOpenP = splitOpenP <> chP 'r' <> charSepP
 
 charOpenP = charSepP
+
+splitOpenP = chP '#'
 
 strSepP = chP '"'
 
 charSepP = chP '\''
+
+
+interpStringPartRules :: ScannerBuilder ()
+interpStringPartRules = do
+    -- lex rests without standard lexer
+    initialRule interpStringStartP      [||LexInterpStringStart||]
+    initialRule interpStringContinueP   [||LexInterpStringContinue||]
+
+interpStringStartP = splitOpenP <> chP 's' <> strSepP
+
+interpStringContinueP = stringsP ["#}", "⦄"]
 
 
 whiteSpaceRules :: ScannerBuilder ()
@@ -375,7 +383,7 @@ otherCs = mconcat
     ]
 
 otherSpecialCs = charsCs
-    [';', '#', '"', '{', '}', '⦃', '⦄']
+    ['#', '"', '{', '}', '⦃', '⦄', '❴', '❵']
 
 otherGraphicCs = otherGraphicCharCs `csDifference` mconcat
     [
@@ -409,3 +417,6 @@ chP c = charSetP do charsCs [c]
 
 stringP :: StringLit -> Pattern
 stringP s = foldMap chP s
+
+stringsP :: [StringLit] -> Pattern
+stringsP ss = Tlex.orP [stringP s | s <- ss]

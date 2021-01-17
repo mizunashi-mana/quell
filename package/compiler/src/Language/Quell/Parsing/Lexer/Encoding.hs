@@ -65,14 +65,13 @@ decodeUtf8Conduit = go ctx0 where
     goConsume n ctx b = do
         let bi = fromIntegral b :: Int
             ctx1 = consumeBuffer 1 ctx
-        consumeAndAwaitBuffer bi n 0 ctx1 >>= \case
+        consumeAndAwaitBuffer bi n 1 ctx1 >>= \case
             Left (m, mctx2) -> do
-                let consumed = 1 + m
                 if
-                    | m < n ->
-                        yieldError "Contents is not enough." ctx consumed
+                    | m <= n ->
+                        yieldError "Contents are not enough." ctx m
                     | otherwise ->
-                        yieldError "Found a ill-formed sequence." ctx consumed
+                        yieldError "Found a ill-formed sequence." ctx m
                 case mctx2 of
                     Nothing ->
                         pure ()
@@ -95,11 +94,11 @@ decodeUtf8Conduit = go ctx0 where
         0 -> pure do Right (b, m, ctx)
         _ -> case headMay do bufferByteString ctx of
             Just w
-                | w <= 0x7F ->
+                | w <= 0x7F || w >= 0xC0 ->
                     consumeAndAwaitBufferWithError m n ctx
                 | otherwise ->
                     consumeAndAwaitBuffer
-                        do b * 0x100 + fromIntegral do w Bits..&. 0x7F
+                        do b * 0x40 + fromIntegral do w Bits..&. 0x3F
                         do n - 1
                         do m + 1
                         do consumeBuffer 1 ctx
@@ -157,3 +156,4 @@ data DecodeUtf8Context = DecodeUtf8Context
         bufferByteString :: ByteString,
         currentBytesCount :: Int
     }
+    deriving (Eq, Show)
