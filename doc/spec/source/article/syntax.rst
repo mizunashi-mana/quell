@@ -118,10 +118,10 @@ Lexical Syntax
             : interp_string_part
 
 .. productionlist::
-    integer : sign? decimal
-            : sign? zero ("b" | "B") bit (bit | "_")*
+    integer : sign? zero ("b" | "B") bit (bit | "_")*
             : sign? zero ("o" | "O") octit (octit | "_")*
             : sign? zero ("x" | "X") hexit (hexit | "_")*
+            : sign? decimal
     rational: sign? decimal "." decimal exponent?
             : sign? decimal ("." decimal)? exponent
     decimal: digit (digit | "_")*

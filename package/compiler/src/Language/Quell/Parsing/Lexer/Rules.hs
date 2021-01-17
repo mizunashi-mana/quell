@@ -22,6 +22,9 @@ data LexerAction
     = WithToken Token.T
     | WithIdToken (TextId.T -> Token.T)
     | WithWhitespace
+    | LexLitBitInteger
+    | LexLitOctitInteger
+    | LexLitHexitInteger
     | LexLitIntegerOrRational
     | LexLitByteString
     | LexLitByteChar
@@ -198,8 +201,9 @@ braceRules = do
 
 literalRules :: ScannerBuilder ()
 literalRules = do
+    integerOrRationalRules
+
     -- lex rests without standard lexer
-    initialRule integerOrRationalOpenP  [||LexLitIntegerOrRational||]
     initialRule byteStringOpenP         [||LexLitByteString||]
     initialRule stringOpenP             [||LexLitString||]
     initialRule byteCharOpenP           [||LexLitByteChar||]
@@ -208,10 +212,26 @@ literalRules = do
     interpStringPartRules
 
 
+integerOrRationalRules :: ScannerBuilder ()
+integerOrRationalRules = do
+    initialRule bitIntegerOpenP         [||LexLitBitInteger||]
+    initialRule octitIntegerOpenP       [||LexLitOctitInteger||]
+    initialRule hexitIntegerOpenP       [||LexLitHexitInteger||]
+    initialRule integerOrRationalOpenP  [||LexLitIntegerOrRational||]
+
+bitIntegerOpenP = Tlex.maybeP signP <> zeroP <> charsP ['b', 'B']
+
+octitIntegerOpenP = Tlex.maybeP signP <> zeroP <> charsP ['o', 'O']
+
+hexitIntegerOpenP = Tlex.maybeP signP <> zeroP <> charsP ['x', 'X']
+
 integerOrRationalOpenP = Tlex.maybeP signP <> digitP
 
 signP = charSetP signCs
 signCs = charsCs ['+', '-']
+
+zeroP = charSetP zeroCs
+zeroCs = charsCs ['0']
 
 
 byteStringOpenP = splitOpenP <> chP 'r' <> strSepP
@@ -413,6 +433,9 @@ charSetP = Tlex.straightEnumSetP
 
 chP :: Char -> Pattern
 chP c = charSetP do charsCs [c]
+
+charsP :: [Char] -> Pattern
+charsP cs = charSetP do charsCs cs
 
 stringP :: StringLit -> Pattern
 stringP s = foldMap chP s

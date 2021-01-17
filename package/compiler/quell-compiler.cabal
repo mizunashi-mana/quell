@@ -172,6 +172,7 @@ library
     other-modules:
         Language.Quell.Prelude.Core
         Language.Quell.Prelude.Literal
+        Language.Quell.Prelude.TextBuilder
         Language.Quell.Prelude.MonoTraversableM
         Language.Quell.Prelude.Debug
 

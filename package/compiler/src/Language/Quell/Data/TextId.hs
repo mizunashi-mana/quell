@@ -7,8 +7,6 @@ module Language.Quell.Data.TextId (
 
 import           Language.Quell.Prelude
 
-import qualified Data.Text.Encoding     as TextEnc
-
 
 type T = TextId
 
@@ -16,8 +14,8 @@ newtype TextId = UnsafeTextId
   { unsafeUnTextId :: Text -- FIXME: Use memorized hash integer
   } deriving (Eq, Show)
 
-textId :: ByteString -> TextId
-textId bs = UnsafeTextId do TextEnc.decodeUtf8 bs
+textId :: Text -> TextId
+textId txt = UnsafeTextId do txt
 
 -- FIXME: Reference memorized hash table
 showByText :: TextId -> Text
