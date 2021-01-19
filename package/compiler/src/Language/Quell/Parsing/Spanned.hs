@@ -2,6 +2,7 @@ module Language.Quell.Parsing.Spanned (
     T,
     Spanned (..),
     appendSpan,
+    prependSpan,
     Span (..),
     BytesSpan (..),
     Loc (..),
@@ -30,6 +31,13 @@ appendSpan :: Spanned a -> Span -> Spanned a
 appendSpan sx sp = Spanned
     {
         getSpan = getSpan sx <> sp,
+        unSpanned = unSpanned sx
+    }
+
+prependSpan :: Span -> Spanned a -> Spanned a
+prependSpan sp sx = Spanned
+    {
+        getSpan = sp <> getSpan sx,
         unSpanned = unSpanned sx
     }
 

@@ -50,7 +50,7 @@ lexer = go Rules.Initial where
             Tlex.TlexEndOfInput ->
                 pure ()
             Tlex.TlexError ->
-                yieldError
+                yieldTlexError
             Tlex.TlexAccepted pos act -> do
                 setPosition pos
                 case act of
@@ -135,18 +135,6 @@ newtype PositionContext = PositionContext
     deriving (Eq, Ord, Show)
     deriving Enum via Int
 
-data LayoutContext
-    = NoLayout
-    | BraceLayout Int
-    | DBraceLayout DBraceKind Int
-    deriving (Eq, Show)
-
-data DBraceKind
-    = DBraceConcrete
-    | DBraceVirtualConcrete
-    | DBraceVirtual
-    deriving (Eq, Ord, Enum, Bounded, Show)
-
 instance MonadST.T s m => Tlex.TlexContext PositionContext CodeUnit.T (Lexer s m) where
     tlexGetInputPart = do
         ctx <- lexerGet
@@ -197,8 +185,8 @@ awaitBufferItem = Lexer Conduit.await >>= \case
             sp = buildSpan lastMitem bs u
             item = Spanned.Spanned
                 {
-                    Spanned.getSpan = sp,
-                    Spanned.unSpanned = (c, u)
+                    getSpan = sp,
+                    unSpanned = (c, u)
                 }
         lexerPut do
             ctx
@@ -244,7 +232,7 @@ awaitBufferItem = Lexer Conduit.await >>= \case
                 Nothing -> do
                     let loc = Spanned.Loc
                             {
-                                locLine = 0,
+                                Spanned.locLine = 0,
                                 Spanned.locCol = 0,
                                 Spanned.locBytesPos = Spanned.bytesIndex bs
                             }
@@ -276,6 +264,9 @@ lexerModify f = Lexer do Conduit.lift do modify' f
 
 lexerPut :: Monad m => LexerContext s -> Lexer s m ()
 lexerPut ctx = Lexer do Conduit.lift do put ctx
+
+lexerYield :: Monad m => Spanned.T LexedUnit -> Lexer s m ()
+lexerYield u = Lexer do Conduit.yield u
 
 consumeBuffer :: MonadST.T s m => (BufferItem -> a) -> (a -> BufferItem -> a) -> Lexer s m a
 consumeBuffer z0f f = do
@@ -311,10 +302,40 @@ consumeBufferItem = do
         Just item0 -> pure do Just item0
         Nothing    -> awaitBufferItem
 
+restoreBufferItem :: MonadST.T s m => BufferItem -> Lexer s m ()
+restoreBufferItem item = do
+    ctx <- lexerGet
+    let buf = codeUnitsBuffer ctx
+    MonadST.liftST do
+        STBuffer.appendHead item buf
+
+lexBufferItem :: MonadST.T s m
+    => Spanned.Span -> (CodeUnit.T -> Maybe a) -> Lexer s m (Maybe (Spanned.T a))
+lexBufferItem sp f = consumeBufferItem >>= \case
+    Nothing -> pure Nothing
+    Just item -> do
+        let (_, u) = Spanned.unSpanned item
+        case f u of
+            Nothing -> do
+                restoreBufferItem item
+                pure Nothing
+            Just x  -> pure do
+                Just do
+                    Spanned.Spanned
+                        {
+                            getSpan = sp <> Spanned.getSpan item,
+                            unSpanned = x
+                        }
+
 -- FIXME: try error recovering and report detailed and suggestions
-yieldError :: MonadST.T s m => Lexer s m ()
-yieldError = Lexer do
-    Conduit.yield do undefined do LexError Error.UnexpectedCodeUnits do text "TODO"
+yieldTlexError :: MonadST.T s m => Lexer s m ()
+yieldTlexError = lexerYield do
+    Spanned.Spanned
+        {
+            getSpan = undefined,
+            unSpanned = LexError Error.UnexpectedCodeUnits
+                do text "TODO"
+        }
 
 yieldToken :: MonadST.T s m => Token.T -> Lexer s m ()
 yieldToken t = do
@@ -325,10 +346,10 @@ yieldToken t = do
             sp <> Spanned.getSpan item
     let u = Spanned.Spanned
             {
-                Spanned.getSpan = sp0,
-                Spanned.unSpanned = LexedToken t
+                getSpan = sp0,
+                unSpanned = LexedToken t
             }
-    Lexer do Conduit.yield u
+    lexerYield u
 
 yieldIdToken :: MonadST.T s m => (TextId.T -> Token.T) -> Lexer s m ()
 yieldIdToken t = do
@@ -338,14 +359,14 @@ yieldIdToken t = do
             let (c, _) = Spanned.unSpanned item
             Spanned.Spanned
                 {
-                    Spanned.getSpan =
+                    getSpan =
                         Spanned.getSpan sptxtB <> Spanned.getSpan item,
-                    Spanned.unSpanned =
+                    unSpanned =
                         Spanned.unSpanned sptxtB <> textBuilderFromChar c
                 }
     let u = sptxtB0 <&> \txtB0 ->
             LexedToken do t do TextId.textId do buildStrictText txtB0
-    Lexer do Conduit.yield u
+    lexerYield u
 
 consumeBufferWithNothing :: MonadST.T s m => Lexer s m ()
 consumeBufferWithNothing = consumeBuffer
@@ -359,23 +380,51 @@ lexAndYieldLitBitInteger = do
         do \spIsNegate item -> Spanned.appendSpan
             spIsNegate
             do Spanned.getSpan item
-    go
+    go0
         do Spanned.unSpanned spIsNegate
         do Spanned.getSpan spIsNegate
-        do 0
     where
-        go isN sp i0 = consumeBufferItem >>= \case
-            Nothing -> do
-                let i1 = case isN of
-                        True  -> negate i0
-                        False -> i0
-                    u = Spanned.Spanned
+        go0 isN sp = do
+            mb <- lexBit sp
+            case mb of
+                Nothing  -> lexerYield do
+                    Spanned.Spanned
                         {
                             getSpan = sp,
-                            unSpanned = LexedToken do Token.LitInteger i1
+                            unSpanned = LexError Error.UnconcludedBitIntegerLiteral
+                                do text "Expected a bit."
                         }
-                Lexer do Conduit.yield u
-            Just item -> undefined item
+                Just spb -> go1 isN
+                    do Spanned.getSpan spb
+                    do Spanned.unSpanned spb
+
+        go1 isN sp i0 = do
+            mi1 <- lexBit_ sp i0
+            case mi1 of
+                Just spi1 -> go1 isN
+                    do Spanned.getSpan spi1
+                    do Spanned.unSpanned spi1
+                Nothing -> do
+                    let t = Token.LitInteger case isN of
+                            True  -> negate i0
+                            False -> i0
+                    lexerYield do
+                        Spanned.Spanned
+                            {
+                                getSpan = sp,
+                                unSpanned = LexedToken t
+                            }
+
+        lexBit sp = lexBufferItem sp \case
+            CodeUnit.LcUNum0 -> Just 0
+            CodeUnit.LcUNum1 -> Just 1
+            _                -> Nothing
+
+        lexBit_ sp i0 = lexBufferItem sp \case
+            CodeUnit.LcUSymUnscore  -> Just do i0
+            CodeUnit.LcUNum0        -> Just do i0 * 2
+            CodeUnit.LcUNum1        -> Just do i0 * 2 + 1
+            _                       -> Nothing
 
 lexAndYieldLitOctitInteger :: MonadST.T s m => Lexer s m ()
 lexAndYieldLitOctitInteger = undefined

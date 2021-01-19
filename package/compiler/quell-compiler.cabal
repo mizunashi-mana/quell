@@ -35,6 +35,9 @@ common general
     default-extensions:
         NoImplicitPrelude
 
+        NoCUSKs
+        NoStarIsType
+
         BangPatterns
         BinaryLiterals
         BlockArguments
@@ -153,6 +156,7 @@ library
         src
     exposed-modules:
         Language.Quell.Prelude
+        Language.Quell.Data.Bag
         Language.Quell.Data.Monad.MonadST
         Language.Quell.Data.TextId
         Language.Quell.Data.STBuffer
@@ -172,7 +176,7 @@ library
     other-modules:
         Language.Quell.Prelude.Core
         Language.Quell.Prelude.Literal
-        Language.Quell.Prelude.TextBuilder
+        Language.Quell.Prelude.Text
         Language.Quell.Prelude.MonoTraversableM
         Language.Quell.Prelude.Debug
 

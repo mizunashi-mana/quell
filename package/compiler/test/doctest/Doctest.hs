@@ -12,13 +12,15 @@ import qualified Test.DocTest       as DocTest
 
 main :: IO ()
 main = forM_ BuildF.components \(BuildF.Component name flags pkgs sources) -> do
-  putStrLn "============================================="
-  print name
-  putStrLn "---------------------------------------------"
-  IO.hFlush IO.stdout
-  let args = flags ++ pkgs ++ sources
-  IO.unsetEnv "GHC_ENVIRONMENT"
-  DocTest.doctest args `Exception.catch` \(e :: Exception.SomeException) ->
-      print e
-  putStrLn "============================================="
-  IO.hFlush IO.stdout
+    putStrLn "============================================="
+    print name
+    putStrLn "---------------------------------------------"
+    IO.hFlush IO.stdout
+    let args = ["--verbose"] ++ flags ++ pkgs ++ sources
+    IO.unsetEnv "GHC_ENVIRONMENT"
+    Exception.mask \restore ->
+        restore do DocTest.doctest args
+            `Exception.catch` \(e :: Exception.SomeException) ->
+                print e
+    putStrLn "============================================="
+    IO.hFlush IO.stdout

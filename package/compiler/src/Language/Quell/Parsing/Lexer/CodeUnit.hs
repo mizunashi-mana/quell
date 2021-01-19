@@ -4,6 +4,11 @@ module Language.Quell.Parsing.Lexer.CodeUnit (
     fromCharPoint,
     fromChar,
 
+    pattern LcUSymHTab,
+    pattern LcUSymUnscore,
+    pattern LcUNum0,
+    pattern LcUNum1,
+
     catFormat,
     catUppercaseLetter,
     catModifierLetter,
@@ -173,6 +178,18 @@ data CodeUnit
 
     | LcOther
     deriving (Eq, Ord, Enum, Bounded, Ix, Show)
+
+pattern LcUSymHTab :: CodeUnit
+pattern LcUSymHTab = LcU0009
+
+pattern LcUSymUnscore :: CodeUnit
+pattern LcUSymUnscore = LcU005F
+
+pattern LcUNum0 :: CodeUnit
+pattern LcUNum0 = LcU0030
+
+pattern LcUNum1 :: CodeUnit
+pattern LcUNum1 = LcU0031
 
 fromCharPoint :: Char -> Maybe CodeUnit
 fromCharPoint c = case fromChar c of
