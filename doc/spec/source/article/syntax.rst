@@ -229,10 +229,10 @@ Lexical Syntax
                 : "\p{General_Category=Other_Punctuation}"
                 : "\p{General_Category=Symbol}"
     digit   : "\p{General_Category=Decimal_Number}"
-            : "\p{General_Category=Other_Number}"
     other   : "\p{General_Category=Modifier_Letter}"
             : "\p{General_Category=Mark}"
             : "\p{General_Category=Letter_Number}"
+            : "\p{General_Category=Other_Number}"
             : "\p{General_Category=Format}"<whitechar>
             : "'"
     other_special: "#" | "\"" | "{" | "}" | "⦃" | "⦄" | "❴" | "❵"

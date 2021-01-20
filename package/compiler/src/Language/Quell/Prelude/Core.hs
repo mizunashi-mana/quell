@@ -2,6 +2,7 @@ module Language.Quell.Prelude.Core (
     module Prelude,
 
     module Control.Applicative,
+    module Control.Monad,
     module Control.Monad.IO.Class,
     module Control.Monad.ST,
     module Control.Monad.Trans.Reader,
@@ -41,6 +42,7 @@ import           Prelude                          hiding (String, break, drop,
                                                    words, ($))
 
 import           Control.Applicative
+import           Control.Monad                    hiding (filterM, replicateM)
 import           Control.Monad.IO.Class
 import           Control.Monad.ST
 import           Control.Monad.Trans.Reader       hiding (liftCallCC, liftCatch)

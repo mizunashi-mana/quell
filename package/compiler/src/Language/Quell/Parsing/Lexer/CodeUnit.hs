@@ -8,6 +8,26 @@ module Language.Quell.Parsing.Lexer.CodeUnit (
     pattern LcUSymUnscore,
     pattern LcUNum0,
     pattern LcUNum1,
+    pattern LcUNum2,
+    pattern LcUNum3,
+    pattern LcUNum4,
+    pattern LcUNum5,
+    pattern LcUNum6,
+    pattern LcUNum7,
+    pattern LcUNum8,
+    pattern LcUNum9,
+    pattern LcULargeAlphaA,
+    pattern LcULargeAlphaB,
+    pattern LcULargeAlphaC,
+    pattern LcULargeAlphaD,
+    pattern LcULargeAlphaE,
+    pattern LcULargeAlphaF,
+    pattern LcUSmallAlphaA,
+    pattern LcUSmallAlphaB,
+    pattern LcUSmallAlphaC,
+    pattern LcUSmallAlphaD,
+    pattern LcUSmallAlphaE,
+    pattern LcUSmallAlphaF,
 
     catFormat,
     catUppercaseLetter,
@@ -190,6 +210,66 @@ pattern LcUNum0 = LcU0030
 
 pattern LcUNum1 :: CodeUnit
 pattern LcUNum1 = LcU0031
+
+pattern LcUNum2 :: CodeUnit
+pattern LcUNum2 = LcU0032
+
+pattern LcUNum3 :: CodeUnit
+pattern LcUNum3 = LcU0033
+
+pattern LcUNum4 :: CodeUnit
+pattern LcUNum4 = LcU0034
+
+pattern LcUNum5 :: CodeUnit
+pattern LcUNum5 = LcU0035
+
+pattern LcUNum6 :: CodeUnit
+pattern LcUNum6 = LcU0036
+
+pattern LcUNum7 :: CodeUnit
+pattern LcUNum7 = LcU0037
+
+pattern LcUNum8 :: CodeUnit
+pattern LcUNum8 = LcU0038
+
+pattern LcUNum9 :: CodeUnit
+pattern LcUNum9 = LcU0039
+
+pattern LcULargeAlphaA :: CodeUnit
+pattern LcULargeAlphaA = LcU0041
+
+pattern LcULargeAlphaB :: CodeUnit
+pattern LcULargeAlphaB = LcU0042
+
+pattern LcULargeAlphaC :: CodeUnit
+pattern LcULargeAlphaC = LcU0043
+
+pattern LcULargeAlphaD :: CodeUnit
+pattern LcULargeAlphaD = LcU0044
+
+pattern LcULargeAlphaE :: CodeUnit
+pattern LcULargeAlphaE = LcU0045
+
+pattern LcULargeAlphaF :: CodeUnit
+pattern LcULargeAlphaF = LcU0046
+
+pattern LcUSmallAlphaA :: CodeUnit
+pattern LcUSmallAlphaA = LcU0061
+
+pattern LcUSmallAlphaB :: CodeUnit
+pattern LcUSmallAlphaB = LcU0062
+
+pattern LcUSmallAlphaC :: CodeUnit
+pattern LcUSmallAlphaC = LcU0063
+
+pattern LcUSmallAlphaD :: CodeUnit
+pattern LcUSmallAlphaD = LcU0064
+
+pattern LcUSmallAlphaE :: CodeUnit
+pattern LcUSmallAlphaE = LcU0065
+
+pattern LcUSmallAlphaF :: CodeUnit
+pattern LcUSmallAlphaF = LcU0066
 
 fromCharPoint :: Char -> Maybe CodeUnit
 fromCharPoint c = case fromChar c of

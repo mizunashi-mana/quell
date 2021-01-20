@@ -387,8 +387,7 @@ symbolCharCs = mconcat
 digitP = charSetP digitCs
 digitCs = mconcat
     [
-        CodeUnit.catDecimalNumber,
-        CodeUnit.catOtherNumber
+        CodeUnit.catDecimalNumber
     ]
 
 otherP = charSetP otherCs
@@ -398,6 +397,7 @@ otherCs = mconcat
         CodeUnit.catModifierLetter,
         CodeUnit.catMark,
         CodeUnit.catLetterNumber,
+        CodeUnit.catOtherNumber,
         CodeUnit.catFormat `csDifference` whiteCharCs
     ]
 

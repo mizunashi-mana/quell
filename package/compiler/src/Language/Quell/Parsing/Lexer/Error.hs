@@ -13,6 +13,8 @@ type T = Error
 data Error
     = UnexpectedCodeUnits -- FIXME: split more detail
     | UnconcludedBitIntegerLiteral
+    | UnconcludedOctitIntegerLiteral
+    | UnconcludedHexitIntegerLiteral
     | UnclosedCommentBlock CommentBlockKind
     | UnclosedLayoutBlock LayoutBlockKind
     deriving (Eq, Show)

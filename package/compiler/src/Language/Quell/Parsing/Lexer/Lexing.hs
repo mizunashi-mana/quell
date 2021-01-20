@@ -1,13 +1,6 @@
 {-# LANGUAGE TemplateHaskell #-}
 
-module Language.Quell.Parsing.Lexer.Lexing (
-  lexer,
-  runLexer,
-  LexedUnit (..),
-
-  Lexer (..),
-  LexerContext (..),
-) where
+module Language.Quell.Parsing.Lexer.Lexing where
 
 import           Language.Quell.Prelude
 
@@ -309,13 +302,13 @@ restoreBufferItem item = do
     MonadST.liftST do
         STBuffer.appendHead item buf
 
-lexBufferItem :: MonadST.T s m
-    => Spanned.Span -> (CodeUnit.T -> Maybe a) -> Lexer s m (Maybe (Spanned.T a))
-lexBufferItem sp f = consumeBufferItem >>= \case
+lexBufferItemWithChar :: MonadST.T s m
+    => Spanned.Span -> (Char -> CodeUnit.T -> Maybe a) -> Lexer s m (Maybe (Spanned.T a))
+lexBufferItemWithChar sp f = consumeBufferItem >>= \case
     Nothing -> pure Nothing
     Just item -> do
-        let (_, u) = Spanned.unSpanned item
-        case f u of
+        let (c, u) = Spanned.unSpanned item
+        case f c u of
             Nothing -> do
                 restoreBufferItem item
                 pure Nothing
@@ -326,6 +319,10 @@ lexBufferItem sp f = consumeBufferItem >>= \case
                             getSpan = sp <> Spanned.getSpan item,
                             unSpanned = x
                         }
+
+lexBufferItem :: MonadST.T s m
+    => Spanned.Span -> (CodeUnit.T -> Maybe a) -> Lexer s m (Maybe (Spanned.T a))
+lexBufferItem sp f = lexBufferItemWithChar sp \_ -> f
 
 -- FIXME: try error recovering and report detailed and suggestions
 yieldTlexError :: MonadST.T s m => Lexer s m ()
@@ -384,53 +381,174 @@ lexAndYieldLitBitInteger = do
         do Spanned.unSpanned spIsNegate
         do Spanned.getSpan spIsNegate
     where
-        go0 isN sp = do
-            mb <- lexBit sp
-            case mb of
-                Nothing  -> lexerYield do
+        go0 isN sp = lexBit sp >>= \case
+            Just spi -> go1 isN
+                do Spanned.getSpan spi
+                do toInteger do Spanned.unSpanned spi
+            Nothing  -> lexerYield do
+                Spanned.Spanned
+                    {
+                        getSpan = sp,
+                        unSpanned = LexError Error.UnconcludedBitIntegerLiteral
+                            do text "Expected a bit."
+                    }
+
+        go1 isN sp i0 = lexBit_ sp i0 >>= \case
+            Just spi1 -> go1 isN
+                do Spanned.getSpan spi1
+                do Spanned.unSpanned spi1
+            Nothing -> do
+                let t = Token.LitInteger case isN of
+                        True  -> negate i0
+                        False -> i0
+                lexerYield do
                     Spanned.Spanned
                         {
                             getSpan = sp,
-                            unSpanned = LexError Error.UnconcludedBitIntegerLiteral
-                                do text "Expected a bit."
+                            unSpanned = LexedToken t
                         }
-                Just spb -> go1 isN
-                    do Spanned.getSpan spb
-                    do Spanned.unSpanned spb
 
-        go1 isN sp i0 = do
-            mi1 <- lexBit_ sp i0
-            case mi1 of
-                Just spi1 -> go1 isN
-                    do Spanned.getSpan spi1
-                    do Spanned.unSpanned spi1
-                Nothing -> do
-                    let t = Token.LitInteger case isN of
-                            True  -> negate i0
-                            False -> i0
-                    lexerYield do
-                        Spanned.Spanned
-                            {
-                                getSpan = sp,
-                                unSpanned = LexedToken t
-                            }
+        lexBit sp = lexBufferItem sp \u -> case lexBitUnit u of
+            Nothing -> Nothing
+            Just -1 -> Nothing
+            Just n  -> Just n
 
-        lexBit sp = lexBufferItem sp \case
-            CodeUnit.LcUNum0 -> Just 0
-            CodeUnit.LcUNum1 -> Just 1
-            _                -> Nothing
+        lexBit_ sp i0 = lexBufferItem sp \u -> case lexBitUnit u of
+            Nothing -> Nothing
+            Just -1 -> Just i0
+            Just n  -> Just do i0 * 0b10 + toInteger n
 
-        lexBit_ sp i0 = lexBufferItem sp \case
-            CodeUnit.LcUSymUnscore  -> Just do i0
-            CodeUnit.LcUNum0        -> Just do i0 * 2
-            CodeUnit.LcUNum1        -> Just do i0 * 2 + 1
+        lexBitUnit = \case
+            CodeUnit.LcUSymUnscore  -> Just @Int -1
+            CodeUnit.LcUNum0        -> Just 0
+            CodeUnit.LcUNum1        -> Just 1
             _                       -> Nothing
 
 lexAndYieldLitOctitInteger :: MonadST.T s m => Lexer s m ()
-lexAndYieldLitOctitInteger = undefined
+lexAndYieldLitOctitInteger = do
+    spIsNegate <- consumeBuffer
+        do \item -> item <&> \(_, u) -> isNegateSign u
+        do \spIsNegate item -> Spanned.appendSpan
+            spIsNegate
+            do Spanned.getSpan item
+    go0
+        do Spanned.unSpanned spIsNegate
+        do Spanned.getSpan spIsNegate
+    where
+        go0 isN sp = lexOctit sp >>= \case
+            Just spi -> go1 isN
+                do Spanned.getSpan spi
+                do toInteger do Spanned.unSpanned spi
+            Nothing  -> lexerYield do
+                Spanned.Spanned
+                    {
+                        getSpan = sp,
+                        unSpanned = LexError Error.UnconcludedOctitIntegerLiteral
+                            do text "Expected a octit."
+                    }
+
+        go1 isN sp i0 = lexOctit_ sp i0 >>= \case
+            Just spi1 -> go1 isN
+                do Spanned.getSpan spi1
+                do Spanned.unSpanned spi1
+            Nothing -> do
+                let t = Token.LitInteger case isN of
+                        True  -> negate i0
+                        False -> i0
+                lexerYield do
+                    Spanned.Spanned
+                        {
+                            getSpan = sp,
+                            unSpanned = LexedToken t
+                        }
+
+        lexOctit sp = lexBufferItem sp \u -> case lexOctitUnit u of
+            Nothing -> Nothing
+            Just -1 -> Nothing
+            Just n  -> Just n
+
+        lexOctit_ sp i0 = lexBufferItem sp \u -> case lexOctitUnit u of
+            Nothing -> Nothing
+            Just -1 -> Just i0
+            Just n  -> Just do i0 * 0o10 + toInteger n
+
+        lexOctitUnit = \case
+            CodeUnit.LcUSymUnscore  -> Just @Int -1
+            CodeUnit.LcUNum0        -> Just 0
+            CodeUnit.LcUNum1        -> Just 1
+            CodeUnit.LcUNum2        -> Just 2
+            CodeUnit.LcUNum3        -> Just 3
+            CodeUnit.LcUNum4        -> Just 4
+            CodeUnit.LcUNum5        -> Just 5
+            CodeUnit.LcUNum6        -> Just 6
+            CodeUnit.LcUNum7        -> Just 7
+            _                       -> Nothing
 
 lexAndYieldLitHexitInteger :: MonadST.T s m => Lexer s m ()
-lexAndYieldLitHexitInteger = undefined
+lexAndYieldLitHexitInteger = do
+    spIsNegate <- consumeBuffer
+        do \item -> item <&> \(_, u) -> isNegateSign u
+        do \spIsNegate item -> Spanned.appendSpan
+            spIsNegate
+            do Spanned.getSpan item
+    go0
+        do Spanned.unSpanned spIsNegate
+        do Spanned.getSpan spIsNegate
+    where
+        go0 isN sp = lexHexit sp >>= \case
+            Just spi -> go1 isN
+                do Spanned.getSpan spi
+                do toInteger do Spanned.unSpanned spi
+            Nothing  -> lexerYield do
+                Spanned.Spanned
+                    {
+                        getSpan = sp,
+                        unSpanned = LexError Error.UnconcludedHexitIntegerLiteral
+                            do text "Expected a hexit."
+                    }
+
+        go1 isN sp i0 = lexHexit_ sp i0 >>= \case
+            Just spi1 -> go1 isN
+                do Spanned.getSpan spi1
+                do Spanned.unSpanned spi1
+            Nothing -> do
+                let t = Token.LitInteger case isN of
+                        True  -> negate i0
+                        False -> i0
+                lexerYield do
+                    Spanned.Spanned
+                        {
+                            getSpan = sp,
+                            unSpanned = LexedToken t
+                        }
+
+        lexHexit sp = lexBufferItemWithChar sp \c u ->
+            case lexHexitUnit c u of
+                Nothing -> Nothing
+                Just -1 -> Nothing
+                Just n  -> Just n
+
+        lexHexit_ sp i0 = lexBufferItemWithChar sp \c u ->
+            case lexHexitUnit c u of
+                Nothing -> Nothing
+                Just -1 -> Just i0
+                Just n  -> Just do i0 * 0x10 + toInteger n
+
+        lexHexitUnit c u = case u of
+            CodeUnit.LcUSymUnscore  -> Just -1
+            CodeUnit.LcUSmallAlphaA -> Just 0xA
+            CodeUnit.LcUSmallAlphaB -> Just 0xB
+            CodeUnit.LcUSmallAlphaC -> Just 0xC
+            CodeUnit.LcUSmallAlphaD -> Just 0xD
+            CodeUnit.LcUSmallAlphaE -> Just 0xE
+            CodeUnit.LcUSmallAlphaF -> Just 0xF
+            CodeUnit.LcULargeAlphaA -> Just 0xA
+            CodeUnit.LcULargeAlphaB -> Just 0xB
+            CodeUnit.LcULargeAlphaC -> Just 0xC
+            CodeUnit.LcULargeAlphaD -> Just 0xD
+            CodeUnit.LcULargeAlphaE -> Just 0xE
+            CodeUnit.LcULargeAlphaF -> Just 0xF
+            _                       -> lexDigitChar c
 
 lexAndYieldLitIntegerOrRational :: MonadST.T s m => Lexer s m ()
 lexAndYieldLitIntegerOrRational = undefined
@@ -439,6 +557,76 @@ isNegateSign :: CodeUnit.T -> Bool
 isNegateSign = \case
     CodeUnit.LcU002D -> True
     _                -> False
+
+-- | decode digit
+--
+-- * https://www.compart.com/en/unicode/category/Nd
+lexDigitChar :: Char -> Maybe Int
+lexDigitChar c = let i = fromEnum c in if
+    | 0x00030 <= i && i <= 0x00039 -> Just do i - 0x00030
+    | 0x00660 <= i && i <= 0x00669 -> Just do i - 0x00660
+    | 0x006F0 <= i && i <= 0x006F9 -> Just do i - 0x006F0
+    | 0x007C0 <= i && i <= 0x007C9 -> Just do i - 0x007C0
+    | 0x00966 <= i && i <= 0x0096F -> Just do i - 0x00966
+    | 0x009E6 <= i && i <= 0x009EF -> Just do i - 0x009E6
+    | 0x00A66 <= i && i <= 0x00A6F -> Just do i - 0x00A66
+    | 0x00AE6 <= i && i <= 0x00AEF -> Just do i - 0x00AE6
+    | 0x00B66 <= i && i <= 0x00B6F -> Just do i - 0x00B66
+    | 0x00BE6 <= i && i <= 0x00BEF -> Just do i - 0x00BE6
+    | 0x00C66 <= i && i <= 0x00C6F -> Just do i - 0x00C66
+    | 0x00CE6 <= i && i <= 0x00CEF -> Just do i - 0x00CE6
+    | 0x00D66 <= i && i <= 0x00D6F -> Just do i - 0x00D66
+    | 0x00DE6 <= i && i <= 0x00DEF -> Just do i - 0x00DE6
+    | 0x00E50 <= i && i <= 0x00E59 -> Just do i - 0x00E50
+    | 0x00ED0 <= i && i <= 0x00ED9 -> Just do i - 0x00ED0
+    | 0x00F20 <= i && i <= 0x00F29 -> Just do i - 0x00F20
+    | 0x01040 <= i && i <= 0x01049 -> Just do i - 0x01040
+    | 0x01090 <= i && i <= 0x01099 -> Just do i - 0x01090
+    | 0x017E0 <= i && i <= 0x017E9 -> Just do i - 0x017E0
+    | 0x01810 <= i && i <= 0x01819 -> Just do i - 0x01810
+    | 0x01946 <= i && i <= 0x0194F -> Just do i - 0x01946
+    | 0x019D0 <= i && i <= 0x019D9 -> Just do i - 0x019D0
+    | 0x01A80 <= i && i <= 0x01A89 -> Just do i - 0x01A80
+    | 0x01A90 <= i && i <= 0x01A99 -> Just do i - 0x01A90
+    | 0x01B50 <= i && i <= 0x01B59 -> Just do i - 0x01B50
+    | 0x01BB0 <= i && i <= 0x01BB9 -> Just do i - 0x01BB0
+    | 0x01C40 <= i && i <= 0x01C49 -> Just do i - 0x01C40
+    | 0x01C50 <= i && i <= 0x01C59 -> Just do i - 0x01C50
+    | 0x0A620 <= i && i <= 0x0A629 -> Just do i - 0x0A620
+    | 0x0A8D0 <= i && i <= 0x0A8D9 -> Just do i - 0x0A8D0
+    | 0x0A900 <= i && i <= 0x0A909 -> Just do i - 0x0A900
+    | 0x0A9D0 <= i && i <= 0x0A9D9 -> Just do i - 0x0A9D0
+    | 0x0A9F0 <= i && i <= 0x0A9F9 -> Just do i - 0x0A9F0
+    | 0x0AA50 <= i && i <= 0x0AA59 -> Just do i - 0x0AA50
+    | 0x0ABF0 <= i && i <= 0x0ABF9 -> Just do i - 0x0ABF0
+    | 0x0FF10 <= i && i <= 0x0FF19 -> Just do i - 0x0FF10
+    | 0x104A0 <= i && i <= 0x104A9 -> Just do i - 0x104A0
+    | 0x10D30 <= i && i <= 0x10D39 -> Just do i - 0x10D30
+    | 0x11066 <= i && i <= 0x1106F -> Just do i - 0x11066
+    | 0x110F0 <= i && i <= 0x110F9 -> Just do i - 0x110F0
+    | 0x11136 <= i && i <= 0x1113F -> Just do i - 0x11136
+    | 0x111D0 <= i && i <= 0x111D9 -> Just do i - 0x111D0
+    | 0x112F0 <= i && i <= 0x112F9 -> Just do i - 0x112F0
+    | 0x11450 <= i && i <= 0x11459 -> Just do i - 0x11450
+    | 0x114D0 <= i && i <= 0x114D9 -> Just do i - 0x114D0
+    | 0x11650 <= i && i <= 0x11659 -> Just do i - 0x11650
+    | 0x116C0 <= i && i <= 0x116C9 -> Just do i - 0x116C0
+    | 0x11730 <= i && i <= 0x11739 -> Just do i - 0x11730
+    | 0x118E0 <= i && i <= 0x118E9 -> Just do i - 0x118E0
+    | 0x11C50 <= i && i <= 0x11C59 -> Just do i - 0x11C50
+    | 0x11D50 <= i && i <= 0x11D59 -> Just do i - 0x11D50
+    | 0x11DA0 <= i && i <= 0x11DA9 -> Just do i - 0x11DA0
+    | 0x16A60 <= i && i <= 0x16A69 -> Just do i - 0x16A60
+    | 0x16B50 <= i && i <= 0x16B59 -> Just do i - 0x16B50
+    | 0x1D7CE <= i && i <= 0x1D7D7 -> Just do i - 0x1D7CE
+    | 0x1D7D8 <= i && i <= 0x1D7E1 -> Just do i - 0x1D7D8
+    | 0x1D7E2 <= i && i <= 0x1D7EB -> Just do i - 0x1D7E2
+    | 0x1D7EC <= i && i <= 0x1D7F5 -> Just do i - 0x1D7EC
+    | 0x1D7F6 <= i && i <= 0x1D7FF -> Just do i - 0x1D7F6
+    | 0x1E140 <= i && i <= 0x1E149 -> Just do i - 0x1E140
+    | 0x1E2F0 <= i && i <= 0x1E2F9 -> Just do i - 0x1E2F0
+    | 0x1E950 <= i && i <= 0x1E959 -> Just do i - 0x1E950
+    | otherwise                    -> Nothing
 
 lexAndYieldLitByteString :: MonadST.T s m => Lexer s m ()
 lexAndYieldLitByteString = undefined
