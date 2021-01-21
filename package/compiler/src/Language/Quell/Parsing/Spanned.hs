@@ -15,7 +15,7 @@ type T = Spanned
 
 data Spanned a = Spanned
     {
-        getSpan :: Span,
+        getSpan   :: Span,
         unSpanned :: a
     }
     deriving (Eq, Show, Functor)
@@ -57,15 +57,15 @@ instance Semigroup Span where
 
 data BytesSpan = BytesSpan
     {
-        bytesIndex :: Int,
+        bytesIndex  :: Int,
         bytesLength :: Int
     }
     deriving (Eq, Show)
 
 data Loc = Loc
     {
-        locLine        :: Int,
-        locCol         :: Int,
-        locBytesPos    :: Int
+        locLine     :: Int,
+        locCol      :: Int,
+        locBytesPos :: Int
     }
     deriving (Eq, Show)

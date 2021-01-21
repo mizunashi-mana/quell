@@ -5,10 +5,10 @@ import           Test.Hspec
 
 import           Language.Quell.Parsing.Lexer.Encoding
 
-import           Language.Quell.Parsing.Spanned
 import qualified Conduit
-import qualified Data.Conduit.List as ConduitList
-import qualified Data.ByteString as ByteString
+import qualified Data.ByteString                       as ByteString
+import qualified Data.Conduit.List                     as ConduitList
+import           Language.Quell.Parsing.Spanned
 
 
 spec :: Spec

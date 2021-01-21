@@ -7,7 +7,7 @@ module Language.Quell.Prelude.Debug (
 import           Language.Quell.Prelude.Core
 import           Language.Quell.Prelude.Literal
 
-import qualified Debug.Trace as Debug
+import qualified Debug.Trace                    as Debug
 
 
 debugTrace :: StringLit -> a -> a

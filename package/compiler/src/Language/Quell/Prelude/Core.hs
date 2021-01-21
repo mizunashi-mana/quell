@@ -70,7 +70,7 @@ import           Data.Typeable                    (Typeable)
 import           Data.Vector                      (Vector)
 import           Data.Word                        (Word, Word8)
 import           GHC.Prim
-import           GHC.Types
 import           GHC.Stack                        (CallStack, HasCallStack,
                                                    callStack)
+import           GHC.Types
 import           Prettyprinter                    (Doc, Pretty (..))

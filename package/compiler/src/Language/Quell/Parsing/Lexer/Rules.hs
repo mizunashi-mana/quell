@@ -6,13 +6,13 @@ module Language.Quell.Parsing.Lexer.Rules where
 
 import           Language.Quell.Prelude
 
-import qualified Language.Haskell.TH                 as TH
-import qualified Language.Lexer.Tlex                 as Tlex
-import qualified Language.Lexer.Tlex.Plugin.TH       as TlexTH
-import qualified Language.Quell.Data.TextId          as TextId
-import qualified Language.Quell.Type.Token           as Token
-import qualified Language.Quell.Parsing.Lexer.CodeUnit       as CodeUnit
-import qualified Language.Lexer.Tlex.Data.EnumSet    as EnumSet
+import qualified Language.Haskell.TH                   as TH
+import qualified Language.Lexer.Tlex                   as Tlex
+import qualified Language.Lexer.Tlex.Data.EnumSet      as EnumSet
+import qualified Language.Lexer.Tlex.Plugin.TH         as TlexTH
+import qualified Language.Quell.Data.TextId            as TextId
+import qualified Language.Quell.Parsing.Lexer.CodeUnit as CodeUnit
+import qualified Language.Quell.Type.Token             as Token
 
 
 data LexerState = Initial

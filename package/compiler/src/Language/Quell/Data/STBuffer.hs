@@ -23,19 +23,21 @@ module Language.Quell.Data.STBuffer (
     unsafeConsumeLasts,
 ) where
 
-import Language.Quell.Prelude hiding (length, index, unsafeIndex, unsafeHead, last, unsafeLast)
+import           Language.Quell.Prelude              hiding (index, last,
+                                                      length, unsafeHead,
+                                                      unsafeIndex, unsafeLast)
 
+import qualified GHC.ST                              as ST
 import qualified Language.Quell.Data.Unlifted.MutInt as MutInt
-import qualified GHC.ST as ST
-import qualified Unsafe.Coerce as Unsafe
+import qualified Unsafe.Coerce                       as Unsafe
 
 
 type T = STBuffer
 
 data STBuffer s a = STBuffer
     {
-        unSTBuffer# :: MutVar# s (STBufferArray s a),
-        indexHead# :: MutInt.T# s,
+        unSTBuffer#   :: MutVar# s (STBufferArray s a),
+        indexHead#    :: MutInt.T# s,
         bufferLength# :: MutInt.T# s
     }
 

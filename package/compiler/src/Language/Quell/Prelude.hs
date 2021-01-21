@@ -7,7 +7,7 @@ module Language.Quell.Prelude (
 ) where
 
 import           Language.Quell.Prelude.Core
-import           Language.Quell.Prelude.Literal
-import           Language.Quell.Prelude.Text
-import           Language.Quell.Prelude.MonoTraversableM
 import           Language.Quell.Prelude.Debug
+import           Language.Quell.Prelude.Literal
+import           Language.Quell.Prelude.MonoTraversableM
+import           Language.Quell.Prelude.Text

@@ -11,9 +11,9 @@ module Language.Quell.Prelude.Text (
 import           Language.Quell.Prelude.Core
 import           Language.Quell.Prelude.Literal
 
-import qualified Data.Text.IO           as Text
-import qualified Data.Text.Lazy         as LazyText
-import qualified Data.Text.Lazy.Builder as TextBuilder
+import qualified Data.Text.IO                   as Text
+import qualified Data.Text.Lazy                 as LazyText
+import qualified Data.Text.Lazy.Builder         as TextBuilder
 
 
 putText :: Text -> IO ()

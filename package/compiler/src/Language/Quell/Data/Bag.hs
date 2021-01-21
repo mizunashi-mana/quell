@@ -31,14 +31,14 @@ instance Eq a => Eq (Bag a) where
     b1 == b2 = toList b1 == toList b2
 
 instance Semigroup (Bag a) where
-    ListBag []   <> b2           = b2
-    Bags []      <> b2           = b2
-    ListBag [x1] <> ListBag xs2  = ListBag do x1:xs2
-    Bags [b1]    <> Bags bs2     = Bags do b1:bs2
-    b1           <> ListBag []   = b1
-    b1           <> Bags []      = b1
-    b1           <> Bags bs2     = Bags do b1:bs2
-    b1           <> b2           = Bags [b1, b2]
+    ListBag []   <> b2          = b2
+    Bags []      <> b2          = b2
+    ListBag [x1] <> ListBag xs2 = ListBag do x1:xs2
+    Bags [b1]    <> Bags bs2    = Bags do b1:bs2
+    b1           <> ListBag []  = b1
+    b1           <> Bags []     = b1
+    b1           <> Bags bs2    = Bags do b1:bs2
+    b1           <> b2          = Bags [b1, b2]
 
 instance Monoid (Bag a) where
     mempty = ListBag []

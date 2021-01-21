@@ -7,7 +7,7 @@ module Language.Quell.Data.Unlifted.MutInt (
     modify#,
 ) where
 
-import Language.Quell.Prelude
+import           Language.Quell.Prelude
 
 
 type T# = MutInt#

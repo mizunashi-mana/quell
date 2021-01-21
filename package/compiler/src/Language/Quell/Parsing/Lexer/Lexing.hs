@@ -5,16 +5,16 @@ module Language.Quell.Parsing.Lexer.Lexing where
 import           Language.Quell.Prelude
 
 import qualified Conduit
-import qualified Language.Lexer.Tlex                as Tlex
-import qualified Language.Lexer.Tlex.Data.EnumSet                as EnumSet
-import qualified Language.Quell.Parsing.Lexer.Rules as Rules
-import qualified Language.Quell.Parsing.Spanned     as Spanned
+import qualified Language.Lexer.Tlex                   as Tlex
+import qualified Language.Lexer.Tlex.Data.EnumSet      as EnumSet
+import qualified Language.Quell.Data.Monad.MonadST     as MonadST
+import qualified Language.Quell.Data.STBuffer          as STBuffer
+import qualified Language.Quell.Data.TextId            as TextId
 import qualified Language.Quell.Parsing.Lexer.CodeUnit as CodeUnit
-import qualified Language.Quell.Parsing.Lexer.Error as Error
-import qualified Language.Quell.Type.Token          as Token
-import qualified Language.Quell.Data.STBuffer as STBuffer
-import qualified Language.Quell.Data.Monad.MonadST as MonadST
-import qualified Language.Quell.Data.TextId as TextId
+import qualified Language.Quell.Parsing.Lexer.Error    as Error
+import qualified Language.Quell.Parsing.Lexer.Rules    as Rules
+import qualified Language.Quell.Parsing.Spanned        as Spanned
+import qualified Language.Quell.Type.Token             as Token
 
 
 $(Rules.buildLexer)
@@ -526,9 +526,9 @@ lexAndYieldLitBitInteger = do
 
         go2 (i0 :: Integer) _ u = do
             let i1 = case u of
-                    CodeUnit.LcUNum0    -> i0 * 0b10
-                    CodeUnit.LcUNum1    -> i0 * 0b10 + 1
-                    _                   -> i0 -- [_]
+                    CodeUnit.LcUNum0 -> i0 * 0b10
+                    CodeUnit.LcUNum1 -> i0 * 0b10 + 1
+                    _                -> i0 -- [_]
             LexItemState i1 go2
 
 lexAndYieldLitOctitInteger :: MonadST.T s m => Lexer s m ()
@@ -563,15 +563,15 @@ lexAndYieldLitOctitInteger = do
 
         go2 (i0 :: Integer) _ u = do
             let i1 = case u of
-                    CodeUnit.LcUNum0    -> i0 * 0b10
-                    CodeUnit.LcUNum1    -> i0 * 0b10 + 1
-                    CodeUnit.LcUNum2    -> i0 * 0o10 + 2
-                    CodeUnit.LcUNum3    -> i0 * 0o10 + 3
-                    CodeUnit.LcUNum4    -> i0 * 0o10 + 4
-                    CodeUnit.LcUNum5    -> i0 * 0o10 + 5
-                    CodeUnit.LcUNum6    -> i0 * 0o10 + 6
-                    CodeUnit.LcUNum7    -> i0 * 0o10 + 7
-                    _                   -> i0 -- [_]
+                    CodeUnit.LcUNum0 -> i0 * 0b10
+                    CodeUnit.LcUNum1 -> i0 * 0b10 + 1
+                    CodeUnit.LcUNum2 -> i0 * 0o10 + 2
+                    CodeUnit.LcUNum3 -> i0 * 0o10 + 3
+                    CodeUnit.LcUNum4 -> i0 * 0o10 + 4
+                    CodeUnit.LcUNum5 -> i0 * 0o10 + 5
+                    CodeUnit.LcUNum6 -> i0 * 0o10 + 6
+                    CodeUnit.LcUNum7 -> i0 * 0o10 + 7
+                    _                -> i0 -- [_]
             LexItemState i1 go2
 
 lexAndYieldLitHexitInteger :: MonadST.T s m => Lexer s m ()

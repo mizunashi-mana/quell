@@ -3,7 +3,7 @@ module Language.Quell.Data.Monad.MonadST (
     MonadST (..),
 ) where
 
-import Language.Quell.Prelude
+import           Language.Quell.Prelude
 
 
 type T = MonadST

@@ -5,7 +5,7 @@ import           Test.Hspec
 
 import           Language.Quell.Parsing.Lexer.Rules
 
-import qualified Language.Lexer.Tlex.Data.EnumSet    as EnumSet
+import qualified Language.Lexer.Tlex.Data.EnumSet   as EnumSet
 
 
 spec :: Spec

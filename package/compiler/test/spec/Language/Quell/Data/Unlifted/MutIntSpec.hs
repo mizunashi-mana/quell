@@ -5,7 +5,7 @@ import           Test.Hspec
 
 import           Language.Quell.Data.Unlifted.MutInt
 
-import qualified GHC.ST as ST
+import qualified GHC.ST                              as ST
 
 
 spec :: Spec

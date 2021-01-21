@@ -1,19 +1,19 @@
 module Language.Quell.Parsing.LexerSpec where
 
-import           Test.Hspec
 import           Language.Quell.Prelude
+import           Test.Hspec
 
 import           Language.Quell.Parsing.Lexer
 import           Language.Quell.Parsing.Spanned
 
 import qualified Conduit
-import qualified Data.Conduit.List                    as ConduitList
-import qualified Language.Quell.Data.Bag              as Bag
-import qualified Language.Quell.Data.TextId           as TextId
-import qualified Language.Quell.Data.Monad.MonadST          as MonadST
-import qualified Language.Quell.Parsing.Lexer.Error as Error
+import qualified Data.Conduit.List                     as ConduitList
+import qualified Language.Quell.Data.Bag               as Bag
+import qualified Language.Quell.Data.Monad.MonadST     as MonadST
+import qualified Language.Quell.Data.TextId            as TextId
 import qualified Language.Quell.Parsing.Lexer.Encoding as Encoding
-import qualified Language.Quell.Type.Token            as Token
+import qualified Language.Quell.Parsing.Lexer.Error    as Error
+import qualified Language.Quell.Type.Token             as Token
 
 
 data LexerReport

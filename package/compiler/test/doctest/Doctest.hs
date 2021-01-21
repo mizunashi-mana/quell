@@ -3,8 +3,8 @@ module Main where
 import           Prelude
 
 import qualified Build_doctests     as BuildF
-import           Control.Monad
 import qualified Control.Exception  as Exception
+import           Control.Monad
 import qualified System.Environment as IO
 import qualified System.IO          as IO
 import qualified Test.DocTest       as DocTest

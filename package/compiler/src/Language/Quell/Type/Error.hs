@@ -10,17 +10,17 @@ module Language.Quell.Type.Error (
 
 import           Language.Quell.Prelude
 
-import qualified Language.Quell.Type.ErrorCode as ErrorCode
 import qualified Language.Quell.Parsing.Spanned as Spanned
+import qualified Language.Quell.Type.ErrorCode  as ErrorCode
 
 
 type T = Error
 
 data DetailedError = DetailedError
     {
-        getError :: Error,
+        getError        :: Error,
         detailedMessage :: Text,
-        getCallStack :: Maybe CallStack
+        getCallStack    :: Maybe CallStack
     }
     deriving Show
 
@@ -39,8 +39,8 @@ data Error
 
 toErrorCode :: Error -> ErrorCode.T
 toErrorCode = \case
-    Unknown             -> ErrorCode.Unknown
-    LexDecodeError{}    -> ErrorCode.LexBreakEncoding
+    Unknown          -> ErrorCode.Unknown
+    LexDecodeError{} -> ErrorCode.LexBreakEncoding
 
 detailedErrorUnknown :: HasCallStack => StringLit -> DetailedError
 detailedErrorUnknown msg =

@@ -6,12 +6,12 @@ module Language.Quell.Parsing.Lexer (
 import           Language.Quell.Prelude
 
 import qualified Conduit
-import qualified Language.Quell.Parsing.Spanned     as Spanned
+import qualified Language.Quell.Data.Monad.MonadST     as MonadST
 import qualified Language.Quell.Parsing.Lexer.Encoding as Encoding
-import qualified Language.Quell.Parsing.Lexer.Lexing as Lexing
-import qualified Language.Quell.Parsing.Lexer.Error as Error
-import qualified Language.Quell.Data.Monad.MonadST as MonadST
-import qualified Language.Quell.Type.Token as Token
+import qualified Language.Quell.Parsing.Lexer.Error    as Error
+import qualified Language.Quell.Parsing.Lexer.Lexing   as Lexing
+import qualified Language.Quell.Parsing.Spanned        as Spanned
+import qualified Language.Quell.Type.Token             as Token
 
 
 class (Monad m, MonadST.T s m) => LexerMonad s m where

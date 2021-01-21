@@ -9,7 +9,7 @@ module Language.Quell.Parsing.Lexer.Encoding (
 import           Language.Quell.Prelude
 
 import qualified Conduit
-import qualified Data.Bits as Bits
+import qualified Data.Bits                      as Bits
 import qualified Language.Quell.Parsing.Spanned as Spanned
 
 
@@ -153,7 +153,7 @@ decodeUtf8Conduit = go ctx0 where
 
 data DecodeUtf8Context = DecodeUtf8Context
     {
-        bufferByteString :: ByteString,
+        bufferByteString  :: ByteString,
         currentBytesCount :: Int
     }
     deriving (Eq, Show)
