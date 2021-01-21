@@ -15,6 +15,7 @@ data Error
     | UnconcludedBitIntegerLiteral
     | UnconcludedOctitIntegerLiteral
     | UnconcludedHexitIntegerLiteral
+    | UnconcludedIntegerLiteral
     | UnclosedCommentBlock CommentBlockKind
     | UnclosedLayoutBlock LayoutBlockKind
     deriving (Eq, Show)

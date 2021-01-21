@@ -1,4 +1,4 @@
-module Language.Quell.Parsing.Lexer.CodeUnitSpec (spec) where
+module Language.Quell.Parsing.Lexer.CodeUnitSpec where
 
 import           Test.Hspec
 

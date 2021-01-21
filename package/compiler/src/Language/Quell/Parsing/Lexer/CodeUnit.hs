@@ -5,6 +5,9 @@ module Language.Quell.Parsing.Lexer.CodeUnit (
     fromChar,
 
     pattern LcUSymHTab,
+    pattern LcUSymPlus,
+    pattern LcUSymHyphen,
+    pattern LcUSymDot,
     pattern LcUSymUnscore,
     pattern LcUNum0,
     pattern LcUNum1,
@@ -201,6 +204,15 @@ data CodeUnit
 
 pattern LcUSymHTab :: CodeUnit
 pattern LcUSymHTab = LcU0009
+
+pattern LcUSymPlus :: CodeUnit
+pattern LcUSymPlus = LcU002B
+
+pattern LcUSymHyphen :: CodeUnit
+pattern LcUSymHyphen = LcU002D
+
+pattern LcUSymDot :: CodeUnit
+pattern LcUSymDot = LcU002E
 
 pattern LcUSymUnscore :: CodeUnit
 pattern LcUSymUnscore = LcU005F

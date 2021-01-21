@@ -1,4 +1,4 @@
-module Language.Quell.Parsing.Lexer.RulesSpec (spec) where
+module Language.Quell.Parsing.Lexer.RulesSpec where
 
 import           Language.Quell.Prelude
 import           Test.Hspec

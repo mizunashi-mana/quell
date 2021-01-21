@@ -51,7 +51,7 @@ lexerConduit enc =
             Conduit.await >>= \case
                 Nothing ->
                     pure ()
-                Just (s, u) -> case u of
+                Just (s, u) -> debugTraceShow (s, u) case u of
                     Encoding.DecodeError msg -> do
                         Conduit.lift do reportDecodeError s msg
                         reportDecodeResultConduit

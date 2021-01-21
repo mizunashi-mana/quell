@@ -208,6 +208,8 @@ test-suite spec
         HSpecDriver.hs
     ghc-options:
         -Wno-missing-home-modules
+        -rtsopts
+        -with-rtsopts="-xc"
     build-tool-depends:
         hspec-discover:hspec-discover,
     build-depends:

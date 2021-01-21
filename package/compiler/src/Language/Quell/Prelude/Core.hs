@@ -21,6 +21,7 @@ module Language.Quell.Prelude.Core (
     module Data.Ord,
     module Data.Primitive.Types,
     module Data.Proxy,
+    module Data.Ratio,
     module Data.Sequences,
     module Data.Text,
     module Data.Typeable,
@@ -62,6 +63,7 @@ import           Data.MonoTraversable             hiding (oforM, omapM)
 import           Data.Ord                         (Down (..))
 import           Data.Primitive.Types             (sizeOf#)
 import           Data.Proxy                       (Proxy (..))
+import           Data.Ratio
 import           Data.Sequences
 import           Data.Text                        (Text)
 import           Data.Typeable                    (Typeable)

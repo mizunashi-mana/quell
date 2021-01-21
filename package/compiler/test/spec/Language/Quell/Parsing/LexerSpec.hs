@@ -1,4 +1,4 @@
-module Language.Quell.Parsing.LexerSpec (spec) where
+module Language.Quell.Parsing.LexerSpec where
 
 import           Test.Hspec
 import           Language.Quell.Prelude
@@ -57,7 +57,11 @@ spec :: Spec
 spec = do
     describe "lexerConduit" do
         it "returns tokens without any reports" do
-            let (rs, ts) = lexFromList [byteString "id\nx(0b0)"]
+            let (rs, ts) = lexFromList
+                    [
+                        byteString "[id\nx(0b0)aa00,1",
+                        byteString "01 +103-40.0a0,40e10o0]"
+                    ]
             rs `shouldBe` mempty
             ts `shouldBe`
                 [

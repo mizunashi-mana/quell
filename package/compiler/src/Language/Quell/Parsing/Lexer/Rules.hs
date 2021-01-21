@@ -22,10 +22,12 @@ data LexerAction
     = WithToken Token.T
     | WithIdToken (TextId.T -> Token.T)
     | WithWhitespace
+    | LexLitRationalWithDot
+    | LexLitRationalWithoutDot
     | LexLitBitInteger
     | LexLitOctitInteger
     | LexLitHexitInteger
-    | LexLitIntegerOrRational
+    | LexLitDecimalInteger
     | LexLitByteString
     | LexLitByteChar
     | LexLitString
@@ -201,7 +203,9 @@ braceRules = do
 
 literalRules :: ScannerBuilder ()
 literalRules = do
-    integerOrRationalRules
+    -- be before integerRules to avoid conflicting
+    rationalRules
+    integerRules
 
     -- lex rests without standard lexer
     initialRule byteStringOpenP         [||LexLitByteString||]
@@ -212,26 +216,56 @@ literalRules = do
     interpStringPartRules
 
 
-integerOrRationalRules :: ScannerBuilder ()
-integerOrRationalRules = do
-    initialRule bitIntegerOpenP         [||LexLitBitInteger||]
-    initialRule octitIntegerOpenP       [||LexLitOctitInteger||]
-    initialRule hexitIntegerOpenP       [||LexLitHexitInteger||]
-    initialRule integerOrRationalOpenP  [||LexLitIntegerOrRational||]
+rationalRules :: ScannerBuilder ()
+rationalRules = do
+    initialRule rationalWithDotP       [||LexLitRationalWithDot||]
+    initialRule rationalWithoutDotP    [||LexLitRationalWithoutDot||]
 
-bitIntegerOpenP = Tlex.maybeP signP <> zeroP <> charsP ['b', 'B']
+integerRules :: ScannerBuilder ()
+integerRules = do
+    initialRule bitIntegerP            [||LexLitBitInteger||]
+    initialRule octitIntegerP          [||LexLitOctitInteger||]
+    initialRule hexitIntegerP          [||LexLitHexitInteger||]
+    initialRule decimalIntegerP        [||LexLitDecimalInteger||]
 
-octitIntegerOpenP = Tlex.maybeP signP <> zeroP <> charsP ['o', 'O']
+rationalWithDotP =
+    maySignP <> decimalP <> chP '.' <> decimalP <> Tlex.maybeP exponentP
 
-hexitIntegerOpenP = Tlex.maybeP signP <> zeroP <> charsP ['x', 'X']
+rationalWithoutDotP = maySignP <> decimalP <> exponentP
 
-integerOrRationalOpenP = Tlex.maybeP signP <> digitP
+bitIntegerP = maySignP <> zeroP <> charsP ['b', 'B']
+    <> bitP <> Tlex.manyP do Tlex.orP [bitP, chP '_']
+octitIntegerP = maySignP <> zeroP <> charsP ['o', 'O']
+    <> octitP <> Tlex.manyP do Tlex.orP [octitP, chP '_']
+hexitIntegerP = maySignP <> zeroP <> charsP ['x', 'X']
+    <> hexitP <> Tlex.manyP do Tlex.orP [hexitP, chP '_']
+decimalIntegerP = maySignP <> decimalP
+
+decimalP = digitP <> Tlex.manyP do Tlex.orP [digitP, chP '_']
+
+maySignP = Tlex.maybeP signP
 
 signP = charSetP signCs
 signCs = charsCs ['+', '-']
 
 zeroP = charSetP zeroCs
 zeroCs = charsCs ['0']
+
+exponentP = charsP ['e', 'E'] <> maySignP <> decimalP
+
+bitP = charSetP bitCs
+bitCs = charsCs ['0', '1']
+
+octitP = charSetP octitCs
+octitCs = charsCs ['0', '1', '2', '3', '4', '5', '6', '7']
+
+hexitP = charSetP octitCs
+hexitCs = mconcat
+    [
+        digitCs,
+        charsCs ['a', 'b', 'c', 'd', 'e', 'f'],
+        charsCs ['A', 'B', 'C', 'D', 'E', 'F']
+    ]
 
 
 byteStringOpenP = splitOpenP <> chP 'r' <> strSepP

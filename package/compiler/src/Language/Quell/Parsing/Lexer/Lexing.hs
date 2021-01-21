@@ -40,46 +40,50 @@ lexer = go Rules.Initial where
     go lst = do
         result <- tlexScan lst
         case result of
-            Tlex.TlexEndOfInput ->
+            Tlex.TlexEndOfInput -> debugTrace "scan: end of input" do
                 pure ()
-            Tlex.TlexError ->
+            Tlex.TlexError -> debugTrace "scan: error" do
                 yieldTlexError
-            Tlex.TlexAccepted pos act -> do
+            Tlex.TlexAccepted pos act -> debugTrace "scan: accepted" do
                 setPosition pos
                 case act of
-                    Rules.WithToken t ->
+                    Rules.WithToken t -> debugTrace ("scan: with token: " <> show t) do
                         yieldToken t
-                    Rules.WithIdToken t ->
+                    Rules.WithIdToken t -> debugTrace "scan: with id token" do
                         yieldIdToken t
-                    Rules.WithWhitespace ->
+                    Rules.WithWhitespace -> debugTrace "scan: with whitespace" do
                         consumeBufferWithNothing
-                    Rules.LexLitBitInteger ->
+                    Rules.LexLitRationalWithDot -> debugTrace "scan: lex rational with dot" do
+                        lexAndYieldLitRationalWithDot
+                    Rules.LexLitRationalWithoutDot -> debugTrace "scan: lex rational without dot" do
+                        lexAndYieldLitRationalWithoutDot
+                    Rules.LexLitBitInteger -> debugTrace "scan: lex bit integer" do
                         lexAndYieldLitBitInteger
-                    Rules.LexLitOctitInteger ->
+                    Rules.LexLitOctitInteger -> debugTrace "scan: lex octit integer" do
                         lexAndYieldLitOctitInteger
-                    Rules.LexLitHexitInteger ->
+                    Rules.LexLitHexitInteger -> debugTrace "scan: lex hexit integer" do
                         lexAndYieldLitHexitInteger
-                    Rules.LexLitIntegerOrRational ->
-                        lexAndYieldLitIntegerOrRational
-                    Rules.LexLitByteString ->
+                    Rules.LexLitDecimalInteger -> debugTrace "scan: lex decimal integer" do
+                        lexAndYieldLitDecimalInteger
+                    Rules.LexLitByteString -> debugTrace "scan: lex byte string" do
                         lexAndYieldLitByteString
-                    Rules.LexLitByteChar ->
+                    Rules.LexLitByteChar -> debugTrace "scan: lex byte char" do
                         lexAndYieldLitByteChar
-                    Rules.LexLitString ->
+                    Rules.LexLitString -> debugTrace "scan: lex string" do
                         lexAndYieldLitString
-                    Rules.LexLitChar ->
+                    Rules.LexLitChar -> debugTrace "scan: lex char" do
                         lexAndYieldLitChar
-                    Rules.LexInterpStringStart ->
+                    Rules.LexInterpStringStart -> debugTrace "scan: lex interp string" do
                         lexAndYieldInterpStringStart
-                    Rules.LexInterpStringContinue ->
+                    Rules.LexInterpStringContinue -> debugTrace "scan: lex interp string continue" do
                         lexAndYieldInterpStringContinue
-                    Rules.LexCommentLineWithContent ->
+                    Rules.LexCommentLineWithContent -> debugTrace "scan: lex line comment" do
                         lexAndYieldCommentLineWithContent
-                    Rules.LexCommentMultilineWithContent ->
+                    Rules.LexCommentMultilineWithContent -> debugTrace "scan: lex multiline comment" do
                         lexAndYieldCommentMultilineWithContent
-                    Rules.LexCommentDoc ->
+                    Rules.LexCommentDoc -> debugTrace "scan: lex doc comment" do
                         lexAndYieldCommentDoc
-                    Rules.LexCommentPragma ->
+                    Rules.LexCommentPragma -> debugTrace "scan: lex pragma comment" do
                         lexAndYieldCommentPragma
                 go Rules.Initial
 
@@ -370,193 +374,295 @@ consumeBufferWithNothing = consumeBuffer
     do \_ -> ()
     do \_ _ -> ()
 
+data LexItemState a = LexItemState a
+    (a -> Char -> CodeUnit.T -> LexItemState a)
+
+lexAndYieldLitRationalWithDot :: MonadST.T s m => Lexer s m ()
+lexAndYieldLitRationalWithDot = do
+    spgo0 <- consumeBuffer
+        do \item -> item <&> \(c, u) -> go0 c u
+        do \spgo item -> Spanned.Spanned
+            {
+                getSpan = Spanned.getSpan spgo <> Spanned.getSpan item,
+                unSpanned = case Spanned.unSpanned item of
+                    (c, u) -> case Spanned.unSpanned spgo of
+                        (lexedSign, LexItemState i0 go) -> (lexedSign, go i0 c u)
+            }
+    lexerYield do
+        spgo0 <&> \(lexedSign, LexItemState (i0, n0, m0) _) -> do
+            let i1 = case lexedSign of
+                    LexedSignPositive -> i0
+                    LexedSignNegative -> negate i0
+                n1 = m0 - n0
+            LexedToken do
+                Token.LitRational if
+                    | n1 < 0    -> i1 % 10 ^ negate n1
+                    | otherwise -> i1 * 10 ^ n1 % 1
+    where
+        go0 c u = case lexMaySignUnit u of
+            Just lexedSign ->
+                (lexedSign, LexItemState (0, 0, 0) do go1)
+            Nothing ->
+                (LexedSignPositive, go1 (0, 0, 0) c u)
+
+        go1 i@(i0, n0, m0) c u = case u of
+            CodeUnit.LcUSymDot ->
+                LexItemState i go2
+            _ -> do
+                let i1 = case lexDigitChar c of
+                        Just n  -> i0 * 10 + toInteger n
+                        Nothing -> i0 -- [_]
+                LexItemState (i1, n0, m0) go1
+
+        go2 i@(i0, n0, m0) c u = case u of
+            CodeUnit.LcUSmallAlphaE ->
+                LexItemState i go3
+            CodeUnit.LcULargeAlphaE ->
+                LexItemState i go3
+            _ -> do
+                let i1 = case lexDigitChar c of
+                        Just n  -> i0 * 10 + toInteger n
+                        Nothing -> i0 -- [_]
+                    n1 = n0 + 1
+                LexItemState (i1, n1, m0) go2
+
+        go3 i c u = case lexMaySignUnit u of
+            Just lexedSign ->
+                LexItemState i do go4 lexedSign
+            Nothing ->
+                go4 LexedSignPositive i c u
+
+        go4 lexedSign (i0, n0, m0) c _ = do
+            let m1 = case lexDigitChar c of
+                    Nothing ->
+                        m0 -- [_]
+                    Just n -> case lexedSign of
+                        LexedSignPositive -> m0 * 10 + n
+                        LexedSignNegative -> m0 * 10 - n
+            LexItemState (i0, n0, m1) do go4 lexedSign
+
+lexAndYieldLitRationalWithoutDot :: MonadST.T s m => Lexer s m ()
+lexAndYieldLitRationalWithoutDot = do
+    spgo0 <- consumeBuffer
+        do \item -> item <&> \(c, u) -> go0 c u
+        do \spgo item -> Spanned.Spanned
+            {
+                getSpan = Spanned.getSpan spgo <> Spanned.getSpan item,
+                unSpanned = case Spanned.unSpanned item of
+                    (c, u) -> case Spanned.unSpanned spgo of
+                        (lexedSign, LexItemState i0 go) -> (lexedSign, go i0 c u)
+            }
+    lexerYield do
+        spgo0 <&> \(lexedSign, LexItemState (i0, m0) _) -> do
+            let i1 = case lexedSign of
+                    LexedSignPositive -> i0
+                    LexedSignNegative -> negate i0
+            LexedToken do
+                Token.LitRational if
+                    | m0 < 0    -> i1 % 10 ^ negate m0
+                    | otherwise -> i1 * 10 ^ m0 % 1
+    where
+        go0 c u = case lexMaySignUnit u of
+            Just lexedSign ->
+                (lexedSign, LexItemState (0, 0) do go1)
+            Nothing ->
+                (LexedSignPositive, go1 (0, 0) c u)
+
+        go1 i@(i0, m0) c u = case u of
+            CodeUnit.LcUSmallAlphaE ->
+                LexItemState i go2
+            CodeUnit.LcULargeAlphaE ->
+                LexItemState i go2
+            _ -> do
+                let i1 = case lexDigitChar c of
+                        Just n  -> i0 * 10 + toInteger n
+                        Nothing -> i0 -- [_]
+                LexItemState (i1, m0) go1
+
+        go2 i c u = case lexMaySignUnit u of
+            Just lexedSign ->
+                LexItemState i do go3 lexedSign
+            Nothing ->
+                go3 LexedSignPositive i c u
+
+        go3 lexedSign (i0, m0) c _ = do
+            let m1 = case lexDigitChar c of
+                    Nothing ->
+                        m0 -- [_]
+                    Just n -> case lexedSign of
+                        LexedSignPositive -> m0 * 10 + n
+                        LexedSignNegative -> m0 * 10 - n
+            LexItemState (i0, m1) do go3 lexedSign
+
 lexAndYieldLitBitInteger :: MonadST.T s m => Lexer s m ()
 lexAndYieldLitBitInteger = do
-    spIsNegate <- consumeBuffer
-        do \item -> item <&> \(_, u) -> isNegateSign u
-        do \spIsNegate item -> Spanned.appendSpan
-            spIsNegate
-            do Spanned.getSpan item
-    go0
-        do Spanned.unSpanned spIsNegate
-        do Spanned.getSpan spIsNegate
+    spgo0 <- consumeBuffer
+        do \item -> item <&> \(_, u) -> go0 u
+        do \spgo item -> Spanned.Spanned
+            {
+                getSpan = Spanned.getSpan spgo <> Spanned.getSpan item,
+                unSpanned = case Spanned.unSpanned item of
+                    (c, u) -> case Spanned.unSpanned spgo of
+                        (lexedSign, LexItemState i0 go) -> (lexedSign, go i0 c u)
+            }
+    lexerYield do
+        spgo0 <&> \(lexedSign, LexItemState i0 _) -> do
+            let i1 = case lexedSign of
+                    LexedSignPositive -> i0
+                    LexedSignNegative -> negate i0
+            LexedToken do Token.LitInteger i1
     where
-        go0 isN sp = lexBit sp >>= \case
-            Just spi -> go1 isN
-                do Spanned.getSpan spi
-                do toInteger do Spanned.unSpanned spi
-            Nothing  -> lexerYield do
-                Spanned.Spanned
-                    {
-                        getSpan = sp,
-                        unSpanned = LexError Error.UnconcludedBitIntegerLiteral
-                            do text "Expected a bit."
-                    }
+        go0 u = case lexMaySignUnit u of
+            -- rest 0[bB]
+            Just lexedSign ->
+                (lexedSign, LexItemState 0 do go1 2)
+            -- rest [bB]
+            Nothing  ->
+                (LexedSignPositive, LexItemState 0 do go1 1)
 
-        go1 isN sp i0 = lexBit_ sp i0 >>= \case
-            Just spi1 -> go1 isN
-                do Spanned.getSpan spi1
-                do Spanned.unSpanned spi1
-            Nothing -> do
-                let t = Token.LitInteger case isN of
-                        True  -> negate i0
-                        False -> i0
-                lexerYield do
-                    Spanned.Spanned
-                        {
-                            getSpan = sp,
-                            unSpanned = LexedToken t
-                        }
+        go1 (n :: Int) i0 _ _ = case n of
+            1 -> LexItemState i0 go2
+            _ -> LexItemState i0 do go1 do n - 1
 
-        lexBit sp = lexBufferItem sp \u -> case lexBitUnit u of
-            Nothing -> Nothing
-            Just -1 -> Nothing
-            Just n  -> Just n
-
-        lexBit_ sp i0 = lexBufferItem sp \u -> case lexBitUnit u of
-            Nothing -> Nothing
-            Just -1 -> Just i0
-            Just n  -> Just do i0 * 0b10 + toInteger n
-
-        lexBitUnit = \case
-            CodeUnit.LcUSymUnscore  -> Just @Int -1
-            CodeUnit.LcUNum0        -> Just 0
-            CodeUnit.LcUNum1        -> Just 1
-            _                       -> Nothing
+        go2 (i0 :: Integer) _ u = do
+            let i1 = case u of
+                    CodeUnit.LcUNum0    -> i0 * 0b10
+                    CodeUnit.LcUNum1    -> i0 * 0b10 + 1
+                    _                   -> i0 -- [_]
+            LexItemState i1 go2
 
 lexAndYieldLitOctitInteger :: MonadST.T s m => Lexer s m ()
 lexAndYieldLitOctitInteger = do
-    spIsNegate <- consumeBuffer
-        do \item -> item <&> \(_, u) -> isNegateSign u
-        do \spIsNegate item -> Spanned.appendSpan
-            spIsNegate
-            do Spanned.getSpan item
-    go0
-        do Spanned.unSpanned spIsNegate
-        do Spanned.getSpan spIsNegate
+    spgo0 <- consumeBuffer
+        do \item -> item <&> \(_, u) -> go0 u
+        do \spgo item -> Spanned.Spanned
+            {
+                getSpan = Spanned.getSpan spgo <> Spanned.getSpan item,
+                unSpanned = case Spanned.unSpanned item of
+                    (c, u) -> case Spanned.unSpanned spgo of
+                        (lexedSign, LexItemState i0 go) -> (lexedSign, go i0 c u)
+            }
+    lexerYield do
+        spgo0 <&> \(lexedSign, LexItemState i0 _) -> do
+            let i1 = case lexedSign of
+                    LexedSignPositive -> i0
+                    LexedSignNegative -> negate i0
+            LexedToken do Token.LitInteger i1
     where
-        go0 isN sp = lexOctit sp >>= \case
-            Just spi -> go1 isN
-                do Spanned.getSpan spi
-                do toInteger do Spanned.unSpanned spi
-            Nothing  -> lexerYield do
-                Spanned.Spanned
-                    {
-                        getSpan = sp,
-                        unSpanned = LexError Error.UnconcludedOctitIntegerLiteral
-                            do text "Expected a octit."
-                    }
+        go0 u = case lexMaySignUnit u of
+            -- rest 0[oO]
+            Just lexedSign ->
+                (lexedSign, LexItemState 0 do go1 2)
+            -- rest [oO]
+            Nothing  ->
+                (LexedSignPositive, LexItemState 0 do go1 1)
 
-        go1 isN sp i0 = lexOctit_ sp i0 >>= \case
-            Just spi1 -> go1 isN
-                do Spanned.getSpan spi1
-                do Spanned.unSpanned spi1
-            Nothing -> do
-                let t = Token.LitInteger case isN of
-                        True  -> negate i0
-                        False -> i0
-                lexerYield do
-                    Spanned.Spanned
-                        {
-                            getSpan = sp,
-                            unSpanned = LexedToken t
-                        }
+        go1 (n :: Int) i0 _ _ = case n of
+            1 -> LexItemState i0 go2
+            _ -> LexItemState i0 do go1 do n - 1
 
-        lexOctit sp = lexBufferItem sp \u -> case lexOctitUnit u of
-            Nothing -> Nothing
-            Just -1 -> Nothing
-            Just n  -> Just n
-
-        lexOctit_ sp i0 = lexBufferItem sp \u -> case lexOctitUnit u of
-            Nothing -> Nothing
-            Just -1 -> Just i0
-            Just n  -> Just do i0 * 0o10 + toInteger n
-
-        lexOctitUnit = \case
-            CodeUnit.LcUSymUnscore  -> Just @Int -1
-            CodeUnit.LcUNum0        -> Just 0
-            CodeUnit.LcUNum1        -> Just 1
-            CodeUnit.LcUNum2        -> Just 2
-            CodeUnit.LcUNum3        -> Just 3
-            CodeUnit.LcUNum4        -> Just 4
-            CodeUnit.LcUNum5        -> Just 5
-            CodeUnit.LcUNum6        -> Just 6
-            CodeUnit.LcUNum7        -> Just 7
-            _                       -> Nothing
+        go2 (i0 :: Integer) _ u = do
+            let i1 = case u of
+                    CodeUnit.LcUNum0    -> i0 * 0b10
+                    CodeUnit.LcUNum1    -> i0 * 0b10 + 1
+                    CodeUnit.LcUNum2    -> i0 * 0o10 + 2
+                    CodeUnit.LcUNum3    -> i0 * 0o10 + 3
+                    CodeUnit.LcUNum4    -> i0 * 0o10 + 4
+                    CodeUnit.LcUNum5    -> i0 * 0o10 + 5
+                    CodeUnit.LcUNum6    -> i0 * 0o10 + 6
+                    CodeUnit.LcUNum7    -> i0 * 0o10 + 7
+                    _                   -> i0 -- [_]
+            LexItemState i1 go2
 
 lexAndYieldLitHexitInteger :: MonadST.T s m => Lexer s m ()
 lexAndYieldLitHexitInteger = do
-    spIsNegate <- consumeBuffer
-        do \item -> item <&> \(_, u) -> isNegateSign u
-        do \spIsNegate item -> Spanned.appendSpan
-            spIsNegate
-            do Spanned.getSpan item
-    go0
-        do Spanned.unSpanned spIsNegate
-        do Spanned.getSpan spIsNegate
+    spgo0 <- consumeBuffer
+        do \item -> item <&> \(_, u) -> go0 u
+        do \spgo item -> Spanned.Spanned
+            {
+                getSpan = Spanned.getSpan spgo <> Spanned.getSpan item,
+                unSpanned = case Spanned.unSpanned item of
+                    (c, u) -> case Spanned.unSpanned spgo of
+                        (lexedSign, LexItemState i0 go) -> (lexedSign, go i0 c u)
+            }
+    lexerYield do
+        spgo0 <&> \(lexedSign, LexItemState i0 _) -> do
+            let i1 = case lexedSign of
+                    LexedSignPositive -> i0
+                    LexedSignNegative -> negate i0
+            LexedToken do Token.LitInteger i1
     where
-        go0 isN sp = lexHexit sp >>= \case
-            Just spi -> go1 isN
-                do Spanned.getSpan spi
-                do toInteger do Spanned.unSpanned spi
-            Nothing  -> lexerYield do
-                Spanned.Spanned
-                    {
-                        getSpan = sp,
-                        unSpanned = LexError Error.UnconcludedHexitIntegerLiteral
-                            do text "Expected a hexit."
-                    }
+        go0 u = case lexMaySignUnit u of
+            -- rest 0[xX]
+            Just lexedSign ->
+                (lexedSign, LexItemState 0 do go1 2)
+            -- rest [xX]
+            Nothing  ->
+                (LexedSignPositive, LexItemState 0 do go1 1)
 
-        go1 isN sp i0 = lexHexit_ sp i0 >>= \case
-            Just spi1 -> go1 isN
-                do Spanned.getSpan spi1
-                do Spanned.unSpanned spi1
-            Nothing -> do
-                let t = Token.LitInteger case isN of
-                        True  -> negate i0
-                        False -> i0
-                lexerYield do
-                    Spanned.Spanned
-                        {
-                            getSpan = sp,
-                            unSpanned = LexedToken t
-                        }
+        go1 (n :: Int) i0 _ _ = case n of
+            1 -> LexItemState i0 go2
+            _ -> LexItemState i0 do go1 do n - 1
 
-        lexHexit sp = lexBufferItemWithChar sp \c u ->
-            case lexHexitUnit c u of
-                Nothing -> Nothing
-                Just -1 -> Nothing
-                Just n  -> Just n
+        go2 i0 c u = do
+            let i1 = case u of
+                    CodeUnit.LcUSmallAlphaA -> i0 * 0x10 + 0xA
+                    CodeUnit.LcUSmallAlphaB -> i0 * 0x10 + 0xB
+                    CodeUnit.LcUSmallAlphaC -> i0 * 0x10 + 0xC
+                    CodeUnit.LcUSmallAlphaD -> i0 * 0x10 + 0xD
+                    CodeUnit.LcUSmallAlphaE -> i0 * 0x10 + 0xE
+                    CodeUnit.LcUSmallAlphaF -> i0 * 0x10 + 0xF
+                    CodeUnit.LcULargeAlphaA -> i0 * 0x10 + 0xA
+                    CodeUnit.LcULargeAlphaB -> i0 * 0x10 + 0xB
+                    CodeUnit.LcULargeAlphaC -> i0 * 0x10 + 0xC
+                    CodeUnit.LcULargeAlphaD -> i0 * 0x10 + 0xD
+                    CodeUnit.LcULargeAlphaE -> i0 * 0x10 + 0xE
+                    CodeUnit.LcULargeAlphaF -> i0 * 0x10 + 0xF
+                    _                       -> case lexDigitChar c of
+                        Just n  -> i0 * 0x10 + toInteger n
+                        Nothing -> i0 -- [_]
+            LexItemState i1 go2
 
-        lexHexit_ sp i0 = lexBufferItemWithChar sp \c u ->
-            case lexHexitUnit c u of
-                Nothing -> Nothing
-                Just -1 -> Just i0
-                Just n  -> Just do i0 * 0x10 + toInteger n
+lexAndYieldLitDecimalInteger :: MonadST.T s m => Lexer s m ()
+lexAndYieldLitDecimalInteger = do
+    spgo0 <- consumeBuffer
+        do \item -> item <&> \(c, u) -> go0 c u
+        do \spgo item -> Spanned.Spanned
+            {
+                getSpan = Spanned.getSpan spgo <> Spanned.getSpan item,
+                unSpanned = case Spanned.unSpanned item of
+                    (c, u) -> case Spanned.unSpanned spgo of
+                        (lexedSign, LexItemState i0 go) -> (lexedSign, go i0 c u)
+            }
+    lexerYield do
+        spgo0 <&> \(lexedSign, LexItemState i0 _) -> do
+            let i1 = case lexedSign of
+                    LexedSignPositive -> i0
+                    LexedSignNegative -> negate i0
+            LexedToken do Token.LitInteger i1
+    where
+        go0 c u = case lexMaySignUnit u of
+            Just lexedSign ->
+                (lexedSign, LexItemState 0 do go1)
+            Nothing  ->
+                (LexedSignPositive, go1 0 c u)
 
-        lexHexitUnit c u = case u of
-            CodeUnit.LcUSymUnscore  -> Just -1
-            CodeUnit.LcUSmallAlphaA -> Just 0xA
-            CodeUnit.LcUSmallAlphaB -> Just 0xB
-            CodeUnit.LcUSmallAlphaC -> Just 0xC
-            CodeUnit.LcUSmallAlphaD -> Just 0xD
-            CodeUnit.LcUSmallAlphaE -> Just 0xE
-            CodeUnit.LcUSmallAlphaF -> Just 0xF
-            CodeUnit.LcULargeAlphaA -> Just 0xA
-            CodeUnit.LcULargeAlphaB -> Just 0xB
-            CodeUnit.LcULargeAlphaC -> Just 0xC
-            CodeUnit.LcULargeAlphaD -> Just 0xD
-            CodeUnit.LcULargeAlphaE -> Just 0xE
-            CodeUnit.LcULargeAlphaF -> Just 0xF
-            _                       -> lexDigitChar c
+        go1 i0 c _ = do
+            let i1 = case lexDigitChar c of
+                    Just n  -> i0 * 10 + toInteger n
+                    Nothing -> i0 -- [_]
+            LexItemState i1 go1
 
-lexAndYieldLitIntegerOrRational :: MonadST.T s m => Lexer s m ()
-lexAndYieldLitIntegerOrRational = undefined
+data LexedSign
+    = LexedSignPositive
+    | LexedSignNegative
+    deriving (Eq, Ord, Bounded, Enum, Show)
 
-isNegateSign :: CodeUnit.T -> Bool
-isNegateSign = \case
-    CodeUnit.LcU002D -> True
-    _                -> False
+lexMaySignUnit :: CodeUnit.T -> Maybe LexedSign
+lexMaySignUnit = \case
+    CodeUnit.LcUSymPlus   -> Just LexedSignPositive
+    CodeUnit.LcUSymHyphen -> Just LexedSignNegative
+    _                     -> Nothing
 
 -- | decode digit
 --

@@ -109,8 +109,8 @@ Lexical Syntax
             : "{" | "}"
 
 .. productionlist::
-    literal : integer
-            : rational
+    literal : rational
+            : integer
             : bytestring
             : string
             : bytechar
@@ -118,12 +118,12 @@ Lexical Syntax
             : interp_string_part
 
 .. productionlist::
+    rational: sign? decimal "." decimal exponent?
+            : sign? decimal exponent
     integer : sign? zero ("b" | "B") bit (bit | "_")*
             : sign? zero ("o" | "O") octit (octit | "_")*
             : sign? zero ("x" | "X") hexit (hexit | "_")*
             : sign? decimal
-    rational: sign? decimal "." decimal exponent?
-            : sign? decimal ("." decimal)? exponent
     decimal: digit (digit | "_")*
     sign: "+"
         : "-"
