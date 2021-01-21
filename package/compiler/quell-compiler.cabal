@@ -99,6 +99,14 @@ common general
 
             -dcore-lint
 
+            -ddump-to-file
+            -ddump-splices
+            -ddump-deriv
+            -ddump-simpl
+            -ddump-prep
+            -ddump-stg
+            -ddump-cmm
+
     build-depends:
         array,
         base,
@@ -208,8 +216,6 @@ test-suite spec
         HSpecDriver.hs
     ghc-options:
         -Wno-missing-home-modules
-        -rtsopts
-        -with-rtsopts="-xc"
     build-tool-depends:
         hspec-discover:hspec-discover,
     build-depends:

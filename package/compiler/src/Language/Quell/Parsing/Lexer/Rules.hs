@@ -18,9 +18,22 @@ import qualified Language.Lexer.Tlex.Data.EnumSet    as EnumSet
 data LexerState = Initial
     deriving (Eq, Ord, Show, Enum)
 
+newtype IdToken = IdToken (TextId.T -> Token.T)
+
+instance Eq IdToken where
+    IdToken t1 == IdToken t2 =
+        let t1' = t1 do TextId.stringLit "x"
+            t2' = t2 do TextId.stringLit "x"
+        in t1' == t2'
+
+instance Show IdToken where
+    showsPrec i (IdToken t) = showsPrec i do t do TextId.stringLit "..."
+    show (IdToken t) = show do t do TextId.stringLit "..."
+    showList xs = showList [ t do TextId.stringLit "..." | IdToken t <- xs ]
+
 data LexerAction
     = WithToken Token.T
-    | WithIdToken (TextId.T -> Token.T)
+    | WithIdToken IdToken
     | WithWhitespace
     | LexLitRationalWithDot
     | LexLitRationalWithoutDot
@@ -38,6 +51,10 @@ data LexerAction
     | LexCommentMultilineWithContent
     | LexCommentDoc
     | LexCommentPragma
+    deriving (Eq, Show)
+
+withIdToken :: (TextId.T -> Token.T) -> LexerAction
+withIdToken t = WithIdToken do IdToken t
 
 type LexerCodeUnit = CodeUnit.T
 type CharSet = EnumSet.EnumSet LexerCodeUnit
@@ -78,7 +95,7 @@ lexerRules = do
 
 varIdRule :: ScannerBuilder ()
 varIdRule =
-    initialRule varIdP [||WithIdToken Token.IdVarId||]
+    initialRule varIdP [||withIdToken Token.IdVarId||]
 
 varIdP = smallP <> Tlex.manyP do
     Tlex.orP
@@ -91,7 +108,7 @@ varIdP = smallP <> Tlex.manyP do
 
 conIdRule :: ScannerBuilder ()
 conIdRule =
-    initialRule conIdP [||WithIdToken Token.IdConId||]
+    initialRule conIdP [||withIdToken Token.IdConId||]
 
 conIdP = largeP <> Tlex.manyP do
     Tlex.orP
@@ -104,7 +121,7 @@ conIdP = largeP <> Tlex.manyP do
 
 varOpRule :: ScannerBuilder ()
 varOpRule =
-    initialRule varOpP [||WithIdToken Token.IdVarOp||]
+    initialRule varOpP [||withIdToken Token.IdVarOp||]
 
 varOpP = symbolWithoutColonP <> Tlex.manyP do
     Tlex.orP
@@ -118,7 +135,7 @@ varOpP = symbolWithoutColonP <> Tlex.manyP do
 
 conOpRule :: ScannerBuilder ()
 conOpRule =
-    initialRule conOpP [||WithIdToken Token.IdConOp||]
+    initialRule conOpP [||withIdToken Token.IdConOp||]
 
 conOpP = chP ':' <> Tlex.manyP do
     Tlex.orP

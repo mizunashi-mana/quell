@@ -103,6 +103,52 @@ spec = do
                     }
                 ]
 
+        it "returns tokens without any reports (minimal)" do
+            let (rs, ts) = lexFromList
+                    [
+                        byteString "0b0"
+                    ]
+            rs `shouldBe` mempty
+            ts `shouldBe`
+                [
+                    Spanned {
+                        getSpan = Span
+                            {
+                                beginLoc = Loc {locLine = 0, locCol = 0, locBytesPos = 0},
+                                endLoc = Loc {locLine = 0, locCol = 2, locBytesPos = 2}
+                            },
+                        unSpanned = Token.IdVarId do textId "id"
+                    },
+                    Spanned {
+                        getSpan = Span {
+                            beginLoc = Loc {locLine = 1, locCol = 0, locBytesPos = 3},
+                            endLoc = Loc {locLine = 1, locCol = 1, locBytesPos = 4}
+                        },
+                        unSpanned = Token.IdVarId do textId "x"
+                    },
+                    Spanned {
+                        getSpan = Span {
+                            beginLoc = Loc {locLine = 1, locCol = 1, locBytesPos = 4},
+                            endLoc = Loc {locLine = 1, locCol = 2, locBytesPos = 5}
+                        },
+                        unSpanned = Token.SpParenOpen
+                    },
+                    Spanned {
+                        getSpan = Span {
+                            beginLoc = Loc {locLine = 1, locCol = 2, locBytesPos = 5},
+                            endLoc = Loc {locLine = 1, locCol = 5, locBytesPos = 8}
+                        },
+                        unSpanned = Token.LitInteger 0
+                    },
+                    Spanned {
+                        getSpan = Span {
+                            beginLoc = Loc {locLine = 1, locCol = 5, locBytesPos = 8},
+                            endLoc = Loc {locLine = 1, locCol = 6, locBytesPos = 9}
+                        },
+                        unSpanned = Token.SpParenClose
+                    }
+                ]
+
 textId :: StringLit -> TextId.T
 textId str = TextId.textId do text str
 
