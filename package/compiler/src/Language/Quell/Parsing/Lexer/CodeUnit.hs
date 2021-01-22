@@ -5,9 +5,11 @@ module Language.Quell.Parsing.Lexer.CodeUnit (
     fromChar,
 
     pattern LcUSymHTab,
+    pattern LcUSymDQuote,
     pattern LcUSymPlus,
     pattern LcUSymHyphen,
     pattern LcUSymDot,
+    pattern LcUSymBackslash,
     pattern LcUSymUnscore,
     pattern LcUNum0,
     pattern LcUNum1,
@@ -200,10 +202,13 @@ data CodeUnit
     | LcOtherCatZs -- Space Separator
 
     | LcOther
-    deriving (Eq, Ord, Enum, Bounded, Ix, Show)
+    deriving (Eq, Ord, Enum, Bounded, Show)
 
 pattern LcUSymHTab :: CodeUnit
 pattern LcUSymHTab = LcU0009
+
+pattern LcUSymDQuote :: CodeUnit
+pattern LcUSymDQuote = LcU0022
 
 pattern LcUSymPlus :: CodeUnit
 pattern LcUSymPlus = LcU002B
@@ -213,6 +218,9 @@ pattern LcUSymHyphen = LcU002D
 
 pattern LcUSymDot :: CodeUnit
 pattern LcUSymDot = LcU002E
+
+pattern LcUSymBackslash :: CodeUnit
+pattern LcUSymBackslash = LcU005C
 
 pattern LcUSymUnscore :: CodeUnit
 pattern LcUSymUnscore = LcU005F
@@ -575,9 +583,7 @@ catOpenPunctuation = EnumSet.fromList
     ]
 
 catPunctuation :: EnumSet.EnumSet CodeUnit
-catPunctuation = ofoldl'
-    do \s1 s2 -> s1 `EnumSet.union` s2
-    EnumSet.empty
+catPunctuation = mconcat
     [
         catClosePunctuation,
         catConnectorPunctuation,

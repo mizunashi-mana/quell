@@ -15,9 +15,13 @@ import qualified Language.Quell.Parsing.Lexer.Error    as Error
 import qualified Language.Quell.Parsing.Lexer.Rules    as Rules
 import qualified Language.Quell.Parsing.Spanned        as Spanned
 import qualified Language.Quell.Type.Token             as Token
+import qualified Data.ByteString.Builder         as BSBuilder
+import qualified Data.ByteString.Lazy as LazyByteString
 
 
 $(Rules.buildLexer)
+
+$(Rules.buildCharEscLexer)
 
 data LexedUnit
     = LexedToken Token.T
@@ -306,28 +310,6 @@ restoreBufferItem item = do
     MonadST.liftST do
         STBuffer.appendHead item buf
 
-lexBufferItemWithChar :: MonadST.T s m
-    => Spanned.Span -> (Char -> CodeUnit.T -> Maybe a) -> Lexer s m (Maybe (Spanned.T a))
-lexBufferItemWithChar sp f = consumeBufferItem >>= \case
-    Nothing -> pure Nothing
-    Just item -> do
-        let (c, u) = Spanned.unSpanned item
-        case f c u of
-            Nothing -> do
-                restoreBufferItem item
-                pure Nothing
-            Just x  -> pure do
-                Just do
-                    Spanned.Spanned
-                        {
-                            getSpan = sp <> Spanned.getSpan item,
-                            unSpanned = x
-                        }
-
-lexBufferItem :: MonadST.T s m
-    => Spanned.Span -> (CodeUnit.T -> Maybe a) -> Lexer s m (Maybe (Spanned.T a))
-lexBufferItem sp f = lexBufferItemWithChar sp \_ -> f
-
 -- FIXME: try error recovering and report detailed and suggestions
 yieldTlexError :: MonadST.T s m => Lexer s m ()
 yieldTlexError = lexerYield do
@@ -352,8 +334,8 @@ yieldToken t = do
             }
     lexerYield u
 
-yieldIdToken :: MonadST.T s m => (TextId.T -> Token.T) -> Lexer s m ()
-yieldIdToken t = do
+yieldIdToken :: MonadST.T s m => Rules.IdToken -> Lexer s m ()
+yieldIdToken (Rules.IdToken t) = do
     sptxtB0 <- consumeBuffer
         do \item -> item <&> \(c, _) -> textBuilderFromChar c
         do \sptxtB item -> do
@@ -368,6 +350,11 @@ yieldIdToken t = do
     let u = sptxtB0 <&> \txtB0 ->
             LexedToken do t do TextId.textId do buildStrictText txtB0
     lexerYield u
+
+consumeBufferWithSpan :: MonadST.T s m => Lexer s m Spanned.Span
+consumeBufferWithSpan = consumeBuffer
+    do \item -> Spanned.getSpan item
+    do \sp item -> sp <> Spanned.getSpan item
 
 consumeBufferWithNothing :: MonadST.T s m => Lexer s m ()
 consumeBufferWithNothing = consumeBuffer
@@ -734,8 +721,56 @@ lexDigitChar c = let i = fromEnum c in if
     | 0x1E950 <= i && i <= 0x1E959 -> Just do i - 0x1E950
     | otherwise                    -> Nothing
 
+pattern LexEscapeOpen :: CodeUnit.T
+pattern LexEscapeOpen = CodeUnit.LcUSymBackslash
+
 lexAndYieldLitByteString :: MonadST.T s m => Lexer s m ()
-lexAndYieldLitByteString = undefined
+lexAndYieldLitByteString = do
+    sp0 <- consumeBufferWithSpan
+    go0 sp0 mempty
+    where
+        go0 sp0 b0 = consumeBufferItem >>= \case
+            Nothing -> lexerYield do
+                Spanned.Spanned
+                    {
+                        getSpan = sp0,
+                        unSpanned = LexError
+                            Error.UnclosedByteStringLiteral
+                            do text "Found an unclosed byte string."
+                    }
+            Just item -> do
+                let (c, u) = Spanned.unSpanned item
+                    sp1 = sp0 <> Spanned.getSpan item
+                case u of
+                    CodeUnit.LcUSymDQuote -> lexerYield do
+                        let bs = LazyByteString.toStrict do
+                                BSBuilder.toLazyByteString b0
+                        Spanned.Spanned
+                            {
+                                getSpan = sp1,
+                                unSpanned = LexedToken do
+                                    Token.LitByteString bs
+                            }
+                    LexEscapeOpen ->
+                        go1 sp1 b0
+                    _ | EnumSet.member u Rules.graphicCs -> do
+                        let ci = fromEnum c
+                        if
+                            | ci >= 0x80 -> do
+                                lexerYield do
+                                    Spanned.Spanned
+                                        {
+                                            getSpan = sp1,
+                                            unSpanned = LexError
+                                                Error.NotAsciiCharInByteStringLiteral
+                                                do text "Found a char whoes codepoint is higher than 0x80."
+                                        }
+                                go0 sp1 do b0
+                            | otherwise ->
+                                go0 sp1 do b0 <> BSBuilder.word8 do fromInteger do toInteger ci
+                    _ ->
+
+        go1 = undefined
 
 lexAndYieldLitByteChar :: MonadST.T s m => Lexer s m ()
 lexAndYieldLitByteChar = undefined

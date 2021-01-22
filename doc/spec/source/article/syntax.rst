@@ -150,12 +150,12 @@ Lexical Syntax
                 : gap
     bchar_graphic   : graphic<char_sep | escape_open>
                     : " "
-                    : byte_escape<"\\&">
+                    : byte_escape
     byte_escape: escape_open (charesc | asciiesc | byteesc)
     uni_escape: escape_open "u{" hexit+ "}"
     gap: escape_open "|" whitechar* "|"
     charesc : "0" | "a" | "b" | "f" | "n" | "r" | "t" | "v"
-            : "&" | "$" | escape_open | str_sep | char_sep
+            : "$" | escape_open | str_sep | char_sep
     asciiesc: "^" cntrlesc
             : "NUL" | "SOH" | "STX" | "ETX" | "EOT" | "ENQ"
             : "ACK" | "BEL" | "BS" | "HT" | "LF" | "VT"
@@ -281,6 +281,7 @@ These expressions must be empty:
 * ``literal<("+" | "-" | digit | "'" | other_special) ANY*>``
 * ``(multiline_comment | doc_comment | pragma_comment | nested_comment)<comment_open ANY* comment_close>``
 * ``(multiline_comment | doc_comment | pragma_comment)<doc_comment | nested_comment>``
+* ``("\p{General_Category=Letter}" | "\p{General_Category=Mark}" | "\p{General_Category=Number}" | "\p{General_Category=Punctuation}" | "\p{General_Category=Symbol}" | "\p{General_Category=Separator}" | "\p{General_Category=Format}")<graphic | whitechar>``
 
 Aliases
 -------

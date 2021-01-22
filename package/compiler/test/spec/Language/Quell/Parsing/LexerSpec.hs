@@ -5,6 +5,7 @@ import           Test.Hspec
 
 import           Language.Quell.Parsing.Lexer
 import           Language.Quell.Parsing.Spanned
+import           Language.Quell.Type.Token
 
 import qualified Conduit
 import qualified Data.Conduit.List                     as ConduitList
@@ -13,7 +14,6 @@ import qualified Language.Quell.Data.Monad.MonadST     as MonadST
 import qualified Language.Quell.Data.TextId            as TextId
 import qualified Language.Quell.Parsing.Lexer.Encoding as Encoding
 import qualified Language.Quell.Parsing.Lexer.Error    as Error
-import qualified Language.Quell.Type.Token             as Token
 
 
 data LexerReport
@@ -66,93 +66,123 @@ spec = do
             ts `shouldBe`
                 [
                     Spanned {
-                        getSpan = Span
-                            {
-                                beginLoc = Loc {locLine = 0, locCol = 0, locBytesPos = 0},
-                                endLoc = Loc {locLine = 0, locCol = 2, locBytesPos = 2}
-                            },
-                        unSpanned = Token.IdVarId do textId "id"
+                        getSpan = Span {
+                            beginLoc = Loc {locLine = 0, locCol = 0, locBytesPos = 0},
+                            endLoc = Loc {locLine = 0, locCol = 1, locBytesPos = 1}
+                        },
+                        unSpanned = SpBrackOpen
                     },
                     Spanned {
                         getSpan = Span {
-                            beginLoc = Loc {locLine = 1, locCol = 0, locBytesPos = 3},
-                            endLoc = Loc {locLine = 1, locCol = 1, locBytesPos = 4}
+                            beginLoc = Loc {locLine = 0, locCol = 1, locBytesPos = 1},
+                            endLoc = Loc {locLine = 0, locCol = 3, locBytesPos = 3}
                         },
-                        unSpanned = Token.IdVarId do textId "x"
+                        unSpanned = IdVarId (TextId.stringLit "id")
                     },
                     Spanned {
                         getSpan = Span {
-                            beginLoc = Loc {locLine = 1, locCol = 1, locBytesPos = 4},
-                            endLoc = Loc {locLine = 1, locCol = 2, locBytesPos = 5}
+                            beginLoc = Loc {locLine = 1, locCol = 0, locBytesPos = 4},
+                            endLoc = Loc {locLine = 1, locCol = 1, locBytesPos = 5}
                         },
-                        unSpanned = Token.SpParenOpen
+                        unSpanned = IdVarId (TextId.stringLit "x")
                     },
                     Spanned {
                         getSpan = Span {
-                            beginLoc = Loc {locLine = 1, locCol = 2, locBytesPos = 5},
-                            endLoc = Loc {locLine = 1, locCol = 5, locBytesPos = 8}
+                            beginLoc = Loc {locLine = 1, locCol = 1, locBytesPos = 5},
+                            endLoc = Loc {locLine = 1, locCol = 2, locBytesPos = 6}
                         },
-                        unSpanned = Token.LitInteger 0
+                        unSpanned = SpParenOpen
                     },
                     Spanned {
                         getSpan = Span {
-                            beginLoc = Loc {locLine = 1, locCol = 5, locBytesPos = 8},
-                            endLoc = Loc {locLine = 1, locCol = 6, locBytesPos = 9}
+                            beginLoc = Loc {locLine = 1, locCol = 2, locBytesPos = 6},
+                            endLoc = Loc {locLine = 1, locCol = 5, locBytesPos = 9}
                         },
-                        unSpanned = Token.SpParenClose
-                    }
-                ]
-
-        it "returns tokens without any reports (minimal)" do
-            let (rs, ts) = lexFromList
-                    [
-                        byteString "0b0"
-                    ]
-            rs `shouldBe` mempty
-            ts `shouldBe`
-                [
-                    Spanned {
-                        getSpan = Span
-                            {
-                                beginLoc = Loc {locLine = 0, locCol = 0, locBytesPos = 0},
-                                endLoc = Loc {locLine = 0, locCol = 2, locBytesPos = 2}
-                            },
-                        unSpanned = Token.IdVarId do textId "id"
+                        unSpanned = LitInteger 0
                     },
                     Spanned {
                         getSpan = Span {
-                            beginLoc = Loc {locLine = 1, locCol = 0, locBytesPos = 3},
-                            endLoc = Loc {locLine = 1, locCol = 1, locBytesPos = 4}
+                            beginLoc = Loc {locLine = 1, locCol = 5, locBytesPos = 9},
+                            endLoc = Loc {locLine = 1, locCol = 6, locBytesPos = 10}
                         },
-                        unSpanned = Token.IdVarId do textId "x"
+                        unSpanned = SpParenClose
                     },
                     Spanned {
                         getSpan = Span {
-                            beginLoc = Loc {locLine = 1, locCol = 1, locBytesPos = 4},
-                            endLoc = Loc {locLine = 1, locCol = 2, locBytesPos = 5}
+                            beginLoc = Loc {locLine = 1, locCol = 6, locBytesPos = 10},
+                            endLoc = Loc {locLine = 1, locCol = 10, locBytesPos = 14}
                         },
-                        unSpanned = Token.SpParenOpen
+                        unSpanned = IdVarId (TextId.stringLit "aa00")
                     },
                     Spanned {
                         getSpan = Span {
-                            beginLoc = Loc {locLine = 1, locCol = 2, locBytesPos = 5},
-                            endLoc = Loc {locLine = 1, locCol = 5, locBytesPos = 8}
+                            beginLoc = Loc {locLine = 1, locCol = 10, locBytesPos = 14},
+                            endLoc = Loc {locLine = 1, locCol = 11, locBytesPos = 15}
                         },
-                        unSpanned = Token.LitInteger 0
+                        unSpanned = SpComma
                     },
                     Spanned {
                         getSpan = Span {
-                            beginLoc = Loc {locLine = 1, locCol = 5, locBytesPos = 8},
-                            endLoc = Loc {locLine = 1, locCol = 6, locBytesPos = 9}
+                            beginLoc = Loc {locLine = 1, locCol = 11, locBytesPos = 15},
+                            endLoc = Loc {locLine = 1, locCol = 14, locBytesPos = 18}
                         },
-                        unSpanned = Token.SpParenClose
+                        unSpanned = LitInteger 101
+                    },
+                    Spanned {
+                        getSpan = Span {
+                            beginLoc = Loc {locLine = 1, locCol = 15, locBytesPos = 19},
+                            endLoc = Loc {locLine = 1, locCol = 19, locBytesPos = 23}
+                        },
+                        unSpanned = LitInteger 103
+                    },
+                    Spanned {
+                        getSpan = Span {
+                            beginLoc = Loc {locLine = 1, locCol = 19, locBytesPos = 23},
+                            endLoc = Loc {locLine = 1, locCol = 24, locBytesPos = 28}
+                        },
+                        unSpanned = LitRational ((-40) % 1)
+                    },
+                    Spanned {
+                        getSpan = Span {
+                            beginLoc = Loc {locLine = 1, locCol = 24, locBytesPos = 28},
+                            endLoc = Loc {locLine = 1, locCol = 26, locBytesPos = 30}
+                        },
+                        unSpanned = IdVarId (TextId.stringLit "a0")
+                    },
+                    Spanned {
+                        getSpan = Span {
+                            beginLoc = Loc {locLine = 1, locCol = 26, locBytesPos = 30},
+                            endLoc = Loc {locLine = 1, locCol = 27, locBytesPos = 31}
+                        },
+                        unSpanned = SpComma
+                    },
+                    Spanned {
+                        getSpan = Span {
+                            beginLoc = Loc {locLine = 1, locCol = 27, locBytesPos = 31},
+                            endLoc = Loc {locLine = 1, locCol = 32, locBytesPos = 36}
+                        },
+                        unSpanned = LitRational (400000000000 % 1)
+                    },
+                    Spanned {
+                        getSpan = Span {
+                            beginLoc = Loc {locLine = 1, locCol = 32, locBytesPos = 36},
+                            endLoc = Loc {locLine = 1, locCol = 34, locBytesPos = 38}
+                        },
+                        unSpanned = IdVarId (TextId.stringLit "o0")
+                    },
+                    Spanned {
+                        getSpan = Span {
+                            beginLoc = Loc {locLine = 1, locCol = 34, locBytesPos = 38},
+                            endLoc = Loc {locLine = 1, locCol = 35, locBytesPos = 39}
+                        },
+                        unSpanned = SpBrackClose
                     }
                 ]
 
 textId :: StringLit -> TextId.T
 textId str = TextId.textId do text str
 
-lexFromList :: [ByteString] -> (Bag.T LexerReport, [Spanned Token.T])
+lexFromList :: [ByteString] -> (Bag.T LexerReport, [Spanned Token])
 lexFromList bss = runTestLexer do
     Conduit.runConduit do
         ConduitList.sourceList bss
