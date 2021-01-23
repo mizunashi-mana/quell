@@ -16,6 +16,13 @@ data Error
     | NonAsciiCharInByteStringLiteral
     | NonGraphicInByteStringLiteral
     | UniEscapeInByteStringLiteral
+    | UnclosedByteCharLiteral
+    | NoContentByteCharLiteral
+    | TooManyContentsInByteCharLiteral
+    | NonAsciiCharInByteCharLiteral
+    | NonGraphicInByteCharLiteral
+    | UniEscapeInByteCharLiteral
+    | GapInByteCharLiteral
     | UnclosedCommentBlock CommentBlockKind
     | UnclosedLayoutBlock LayoutBlockKind
     deriving (Eq, Show)

@@ -292,7 +292,7 @@ consumeBuffer z0f f = do
             }
     pure x
 
-consumeBufferItem :: MonadST.T s m => Lexer s m (Maybe BufferItem)
+consumeBufferItem :: forall s m. MonadST.T s m => Lexer s m (Maybe BufferItem)
 consumeBufferItem = do
     ctx <- lexerGet
     let buf = codeUnitsBuffer ctx
@@ -350,7 +350,7 @@ yieldIdToken (Rules.IdToken t) = do
             LexedToken do t do TextId.textId do buildStrictText txtB0
     lexerYield u
 
-consumeBufferWithSpan :: MonadST.T s m => Lexer s m Spanned.Span
+consumeBufferWithSpan :: forall s m. MonadST.T s m => Lexer s m Spanned.Span
 consumeBufferWithSpan = consumeBuffer
     do \item -> Spanned.getSpan item
     do \sp item -> sp <> Spanned.getSpan item
@@ -757,20 +757,26 @@ lexCharEscByteesc = do
                         Nothing -> error "unreachable: expect a hexit."
             LexItemState i1 go1
 
+graphicWhiteCharCs :: Rules.CharSet
+graphicWhiteCharCs = mconcat
+    [
+        Rules.graphicCs,
+        Rules.whiteCharCs
+    ]
 
 lexAndYieldLitByteString :: forall s m. MonadST.T s m => Lexer s m ()
 lexAndYieldLitByteString = do
     sp0 <- consumeBufferWithSpan
     go0 sp0 mempty
     where
-        go0 sp0 b0 = consumeBufferItem >>= \case
+        go0 sp0 b0 = consumeBufferItem @s @m >>= \case
             Nothing -> lexerYield do
                 Spanned.Spanned
                     {
                         getSpan = sp0,
                         unSpanned = LexError
                             Error.UnclosedByteStringLiteral
-                            do text "Found a byte string literal which is not closed."
+                            do text "Found an unclosed literal."
                     }
             Just item -> do
                 let (c, u) = Spanned.unSpanned item
@@ -781,21 +787,24 @@ lexAndYieldLitByteString = do
                     LexEscapeOpen -> do
                         restoreBufferItem item
                         go1 sp1 b0
-                    _ | EnumSet.member u Rules.graphicCs -> do
+                    _ | EnumSet.member u graphicWhiteCharCs -> do
                         let ci = fromEnum c
                         if
                             | ci >= 0x80 -> do
+                                let ci' = ci `mod` 0x100
                                 lexerYield do
                                     Spanned.Spanned
                                         {
                                             getSpan = Spanned.getSpan item,
                                             unSpanned = LexError
                                                 Error.NonAsciiCharInByteStringLiteral
-                                                do text "Found a char whoes codepoint is higher than 0x7F."
+                                                do text "Found a codepoint higher than 0x7F."
                                         }
-                                go0 sp1 b0
+                                go0 sp1
+                                    do b0 <> BSBuilder.word8 do fromIntegral ci'
                             | otherwise ->
-                                go0 sp1 do b0 <> BSBuilder.word8 do fromInteger do toInteger ci
+                                go0 sp1
+                                    do b0 <> BSBuilder.word8 do fromIntegral ci
                     _ -> do
                         lexerYield do
                             Spanned.Spanned
@@ -807,7 +816,6 @@ lexAndYieldLitByteString = do
                                 }
                         go0 sp1 b0
 
-        go1 :: Spanned.Span -> BSBuilder.Builder -> Lexer s m ()
         go1 sp0 b0 = CharEscLex.tlexScan () >>= \case
             Tlex.TlexEndOfInput -> lexerYield do
                 Spanned.Spanned
@@ -815,7 +823,7 @@ lexAndYieldLitByteString = do
                         getSpan = sp0,
                         unSpanned = LexError
                             Error.UnclosedByteStringLiteral
-                            do text "Found an unclosed byte string."
+                            do text "Found an unclosed literal."
                     }
             Tlex.TlexError -> do
                 yieldTlexError
@@ -823,7 +831,7 @@ lexAndYieldLitByteString = do
                 setPosition pos
                 case act of
                     Rules.WithGap -> do
-                        sp1 <- consumeBufferWithSpan
+                        sp1 <- consumeBufferWithSpan @s @m
                         go0
                             do sp0 <> sp1
                             do b0
@@ -850,7 +858,7 @@ lexAndYieldLitByteString = do
                                     getSpan = sp1,
                                     unSpanned = LexError
                                         Error.UniEscapeInByteStringLiteral
-                                        do text "Found an unicode escape in byte string."
+                                        do text "Found an unicode escape in byte literal."
                                 }
                         go0
                             do sp0 <> sp1
@@ -866,8 +874,171 @@ lexAndYieldLitByteString = do
                         Token.LitByteString bs
                 }
 
-lexAndYieldLitByteChar :: MonadST.T s m => Lexer s m ()
-lexAndYieldLitByteChar = undefined
+lexAndYieldLitByteChar :: forall s m. MonadST.T s m => Lexer s m ()
+lexAndYieldLitByteChar = do
+    sp0 <- consumeBufferWithSpan
+    go0 sp0
+    where
+        go0 sp0 = consumeBufferItem >>= \case
+            Nothing -> lexerYield do
+                Spanned.Spanned
+                    {
+                        getSpan = sp0,
+                        unSpanned = LexError
+                            Error.UnclosedByteCharLiteral
+                            do text "Found an unclosed literal."
+                    }
+            Just item -> do
+                let (c, u) = Spanned.unSpanned item
+                    sp1 = sp0 <> Spanned.getSpan item
+                case u of
+                    CodeUnit.LcUSymQuote -> lexerYield do
+                        Spanned.Spanned
+                            {
+                                getSpan = sp1,
+                                unSpanned = LexError
+                                    Error.NoContentByteCharLiteral
+                                    do text "Found an literal without contents."
+                            }
+                    LexEscapeOpen -> do
+                        restoreBufferItem item
+                        go1 sp1
+                    _ | u == CodeUnit.LcUSymSpace ||
+                        EnumSet.member u Rules.graphicCs -> do
+                        let ci = fromEnum c
+                        if
+                            | ci >= 0x80 -> do
+                                let ci' = ci `mod` 0x100
+                                lexerYield do
+                                    Spanned.Spanned
+                                        {
+                                            getSpan = Spanned.getSpan item,
+                                            unSpanned = LexError
+                                                Error.NonAsciiCharInByteCharLiteral
+                                                do text "Found a codepoint higher than 0x7F."
+                                        }
+                                go3 sp1 do fromIntegral ci'
+                            | otherwise ->
+                                go2 sp1 do fromIntegral ci
+                    _ -> do
+                        lexerYield do
+                            Spanned.Spanned
+                                {
+                                    getSpan = Spanned.getSpan item,
+                                    unSpanned = LexError
+                                        Error.NonGraphicInByteCharLiteral
+                                        do text "Found a non graphic char."
+                                }
+                        go3 sp1 0x0
+
+        go1 sp0 = CharEscLex.tlexScan () >>= \case
+            Tlex.TlexEndOfInput -> lexerYield do
+                Spanned.Spanned
+                    {
+                        getSpan = sp0,
+                        unSpanned = LexError
+                            Error.UnclosedByteStringLiteral
+                            do text "Found an unclosed literal."
+                    }
+            Tlex.TlexError -> do
+                yieldTlexError
+            Tlex.TlexAccepted pos act -> do
+                setPosition pos
+                case act of
+                    Rules.WithCharesc w -> do
+                        sp1 <- consumeBufferWithSpan
+                        go2
+                            do sp0 <> sp1
+                            w
+                    Rules.WithAsciiEsc w -> do
+                        sp1 <- consumeBufferWithSpan
+                        go2
+                            do sp0 <> sp1
+                            w
+                    Rules.LexByteesc -> do
+                        spw <- lexCharEscByteesc
+                        go2
+                            do sp0 <> Spanned.getSpan spw
+                            do Spanned.unSpanned spw
+                    Rules.WithGap -> do
+                        sp1 <- consumeBufferWithSpan
+                        lexerYield do
+                            Spanned.Spanned
+                                {
+                                    getSpan = sp1,
+                                    unSpanned = LexError
+                                        Error.GapInByteCharLiteral
+                                        do text "Found an gap in byte char literal."
+                                }
+                        go3
+                            do sp0 <> sp1
+                            0x0
+                    Rules.LexUniEscape -> do
+                        sp1 <- consumeBufferWithSpan
+                        lexerYield do
+                            Spanned.Spanned
+                                {
+                                    getSpan = sp1,
+                                    unSpanned = LexError
+                                        Error.UniEscapeInByteStringLiteral
+                                        do text "Found an unicode escape in byte literal."
+                                }
+                        go3
+                            do sp0 <> sp1
+                            0x0
+
+        go2 sp0 w = consumeBufferItem @s @m >>= \case
+            Nothing -> lexerYield do
+                Spanned.Spanned
+                    {
+                        getSpan = sp0,
+                        unSpanned = LexError
+                            Error.UnclosedByteCharLiteral
+                            do text "Found an unclosed literal."
+                    }
+            Just item -> do
+                let (_, u) = Spanned.unSpanned item
+                    sp1 = sp0 <> Spanned.getSpan item
+                case u of
+                    CodeUnit.LcUSymQuote -> lexerYield do
+                        Spanned.Spanned
+                            {
+                                getSpan = sp1,
+                                unSpanned = LexedToken do
+                                    Token.LitByteChar w
+                            }
+                    _ -> do
+                        lexerYield do
+                            Spanned.Spanned
+                                {
+                                    getSpan = Spanned.getSpan item,
+                                    unSpanned = LexError
+                                        Error.TooManyContentsInByteCharLiteral
+                                        do text "Found an excess escape in byte char literal."
+                                }
+                        go3 sp1 w
+
+        go3 sp0 w = consumeBufferItem @s @m >>= \case
+            Nothing -> lexerYield do
+                Spanned.Spanned
+                    {
+                        getSpan = sp0,
+                        unSpanned = LexError
+                            Error.UnclosedByteCharLiteral
+                            do text "Found an unclosed literal."
+                    }
+            Just item -> do
+                let (_, u) = Spanned.unSpanned item
+                    sp1 = sp0 <> Spanned.getSpan item
+                case u of
+                    CodeUnit.LcUSymQuote -> lexerYield do
+                        Spanned.Spanned
+                            {
+                                getSpan = sp1,
+                                unSpanned = LexedToken do
+                                    Token.LitByteChar w
+                            }
+                    _ -> go3 sp1 w
 
 lexAndYieldLitString :: MonadST.T s m => Lexer s m ()
 lexAndYieldLitString = undefined

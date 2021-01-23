@@ -52,7 +52,7 @@ Lexical Syntax
 .. productionlist::
     reserved_id : "alias"
                 : "as"
-                : "case"
+                : "match"
                 : "data"
                 : "derive"
                 : "do"
@@ -67,7 +67,6 @@ Lexical Syntax
                 : "module"
                 : "newtype"
                 : "none"
-                : "of"
                 : "pattern"
                 : "record"
                 : "rec"
@@ -78,6 +77,7 @@ Lexical Syntax
                 : "type"
                 : "use"
                 : "when"
+                : "with"
                 : "where"
                 : "_"
                 : "Default"
@@ -308,8 +308,8 @@ Layout
 
     IsWhitespace(t)         = t match whitespace
     IncludeNewline(t)       = t match (ANY* newline ANY*)
-    IsBraceKeyword(t)       = t match ("where" | "of" | "do"
-                                        | "record" | "signature"
+    IsBraceKeyword(t)       = t match ("do" | "record" | "signature"
+                                        | "when" | "where" | "with"
                                         )
     IsDBraceKeyword(t)      = t match "let"
     IsDBraceCloseKeyword(t) = t match "in"
@@ -577,10 +577,11 @@ Grammar
     expr_app: expr_qualified
             : "@" type_qualified
     expr_qualified: (con ".")* expr_block ("." expr_block)*
-    expr_block  : "\\" "case" case_body
+    expr_block  : "\\" "with" match_body
+                : "\\" "when" guarded_alt_body
                 : "\\" lambda_body
                 : "let" let_binds "in" expr
-                : "case" (expr ",")* expr ","? "of" case_body
+                : "match" (expr ",")* expr? "with" case_body
                 : "do" do_body
                 : expr_atomic
     expr_atomic: "(" expr ")"
@@ -650,11 +651,11 @@ Grammar
                     : derive_clause
 
 .. productionlist::
-    case_body: "{{" case_alt_items "}}"
-            : "{" case_alt_items "}"
-    case_alt_items: (case_alt_item semis)* case_alt_item?
-    case_alt_item: (pat ",")* pat? guarded_alt
-    guarded_alt: "->" expr
+    match_body  : "{{" match_alt_items "}}"
+                : "{" match_alt_items "}"
+    match_alt_items: (match_alt_item semis)* match_alt_item?
+    match_alt_item: (pat ",")* pat? guarded_alt
+    guarded_alt : "->" expr
                 : "when" guarded_alt_body
     guarded_alt_body: "{{" guarded_alt_items "}}"
                     : "{" guarded_alt_items "}"
@@ -696,25 +697,26 @@ Note:
 
 * ``if`` 式はいれない．以下の標準関数で代用::
 
-    if : \a -> Bool -> { then: a, else: a } -> a
-    if = \
+    if : \/a. Bool -> { then: a, else: a } -> a
+    if = \case
       True,  e -> e.then
       False, e -> e.else
 
-* multi way if / lambda case はラムダ抽象で代替::
+* multi way if は lambda case で代替::
 
-    func1 : \a -> Int -> a -> Maybe a
-    func1 = \
+    func1 : \/a. Int -> a -> Maybe a
+    func1 = \case
       0, x -> Just x
-      i, x
-        | i > 10 -> Just x
-        | else   -> Nothing
+      i, x when
+        i > 10 -> Just x
+        else   -> Nothing
 
     func2 : Int -> a -> Maybe a
-    func2 = \i x -> \
-      | i == 0 -> Just x
-      | i > 10 -> Just x
-      | else   -> Nothing
+    func2 = \i x -> \case
+        when
+            i == 0 -> Just x
+            i > 10 -> Just x
+            else   -> Nothing
 
 TODO:
 

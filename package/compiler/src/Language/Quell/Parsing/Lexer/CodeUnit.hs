@@ -5,7 +5,9 @@ module Language.Quell.Parsing.Lexer.CodeUnit (
     fromChar,
 
     pattern LcUSymHTab,
+    pattern LcUSymSpace,
     pattern LcUSymDQuote,
+    pattern LcUSymQuote,
     pattern LcUSymPlus,
     pattern LcUSymHyphen,
     pattern LcUSymDot,
@@ -73,6 +75,7 @@ data CodeUnit
     | LcU000B -- '\v'
     | LcU000C -- '\f'
     | LcU000D -- '\r'
+    | LcU0020 -- ' '
     | LcU0021 -- '!'
     | LcU0022 -- '"'
     | LcU0023 -- '#'
@@ -208,8 +211,14 @@ data CodeUnit
 pattern LcUSymHTab :: CodeUnit
 pattern LcUSymHTab = LcU0009
 
+pattern LcUSymSpace :: CodeUnit
+pattern LcUSymSpace = LcU0020
+
 pattern LcUSymDQuote :: CodeUnit
 pattern LcUSymDQuote = LcU0022
+
+pattern LcUSymQuote :: CodeUnit
+pattern LcUSymQuote = LcU0027
 
 pattern LcUSymPlus :: CodeUnit
 pattern LcUSymPlus = LcU002B
@@ -325,6 +334,7 @@ fromChar c = case fromEnum c of
     0x000B -> LcU000B
     0x000C -> LcU000C
     0x000D -> LcU000D
+    0x0020 -> LcU0020
     0x0021 -> LcU0021
     0x0022 -> LcU0022
     0x0023 -> LcU0023
@@ -499,7 +509,6 @@ catTitlecaseLetter = EnumSet.fromList
 catUppercaseLetter :: EnumSet.EnumSet CodeUnit
 catUppercaseLetter = EnumSet.fromList
     [
-
         LcU0041, LcU0042, LcU0043, LcU0044, LcU0045,
         LcU0046, LcU0047, LcU0048, LcU0049, LcU004A,
         LcU004B, LcU004C, LcU004D, LcU004E, LcU004F,
@@ -599,9 +608,9 @@ catPunctuation = mconcat
 catSymbol :: EnumSet.EnumSet CodeUnit
 catSymbol = EnumSet.fromList
     [
-        LcU002B, LcU003C, LcU003D, LcU003E, LcU005E,
-        LcU0060, LcU007C, LcU007E, LcU2190, LcU2192,
-        LcU21D0, LcU21D2, LcU2200,
+        LcU0024, LcU002B, LcU003C, LcU003D, LcU003E,
+        LcU005E, LcU0060, LcU007C, LcU007E, LcU2190,
+        LcU2192, LcU21D0, LcU21D2, LcU2200,
         LcOtherCatS
     ]
 
@@ -620,5 +629,6 @@ catParagraphSeparator = EnumSet.fromList
 catSpaceSeparator :: EnumSet.EnumSet CodeUnit
 catSpaceSeparator = EnumSet.fromList
     [
+        LcU0020,
         LcOtherCatZs
     ]
