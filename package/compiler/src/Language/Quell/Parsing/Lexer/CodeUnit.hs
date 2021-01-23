@@ -76,6 +76,7 @@ data CodeUnit
     | LcU0021 -- '!'
     | LcU0022 -- '"'
     | LcU0023 -- '#'
+    | LcU0024 -- '$'
     | LcU0026 -- '&'
     | LcU0027 -- '\''
     | LcU0028 -- '('
@@ -327,6 +328,7 @@ fromChar c = case fromEnum c of
     0x0021 -> LcU0021
     0x0022 -> LcU0022
     0x0023 -> LcU0023
+    0x0024 -> LcU0024
     0x0026 -> LcU0026
     0x0027 -> LcU0027
     0x0028 -> LcU0028

@@ -473,6 +473,7 @@ Grammar
 
 .. productionlist::
     val_decl: simpleval "=" expr ("where" val_decl_where)?
+    val_bind: pat "=" expr ("where" val_decl_where)?
     val_decl_where  : "{{" val_decl_where_items "}}"
                     : "{" val_decl_where_items "}"
     val_decl_where_items: (val_decl_where_item semis)* val_decl_where_item?
@@ -576,7 +577,8 @@ Grammar
     expr_app: expr_qualified
             : "@" type_qualified
     expr_qualified: (con ".")* expr_block ("." expr_block)*
-    expr_block  : "\\" case_body
+    expr_block  : "\\" "case" case_body
+                : "\\" lambda_body
                 : "let" let_binds "in" expr
                 : "case" (expr ",")* expr ","? "of" case_body
                 : "do" do_body
@@ -627,6 +629,9 @@ Grammar
     pat_simplrecord_item: var "=" pat
 
 .. productionlist::
+    lambda_body : pat_atomic* "->" expr
+
+.. productionlist::
     let_binds   : "{{" let_bind_items "}}"
                 : "{" let_bind_items "}"
     let_bind_items: (let_bind_item semis)* let_bind_item?
@@ -635,7 +640,7 @@ Grammar
                     : type_family_decl
                     : type_impl_decl
                     : data_decl
-                    : val_decl
+                    : val_bind
                     : module_decl
                     : pattern_decl
                     : trait_decl
@@ -656,6 +661,15 @@ Grammar
     guarded_alt_items: (guarded_alt_item semis)* guarded_alt_item?
     guarded_alt_item: guard_qual "->" expr
     guard_qual: expr
+
+.. productionlist::
+    do_body : "{{" do_stmt_items "}}"
+            : "{" do_stmt_items "}"
+    do_stmt_items   : (do_stmt_item semis)* expr semis?
+    do_stmt_item    : expr
+                    : pat "<-" expr
+                    : "let" let_binds
+                    : val_bind
 
 .. productionlist::
     bind_var: simple_bind_var

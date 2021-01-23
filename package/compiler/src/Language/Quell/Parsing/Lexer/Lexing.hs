@@ -17,11 +17,10 @@ import qualified Language.Quell.Parsing.Spanned        as Spanned
 import qualified Language.Quell.Type.Token             as Token
 import qualified Data.ByteString.Builder         as BSBuilder
 import qualified Data.ByteString.Lazy as LazyByteString
+import qualified Language.Quell.Parsing.Lexer.Lexing.CharEsc as CharEscLex
 
 
 $(Rules.buildLexer)
-
-$(Rules.buildCharEscLexer)
 
 data LexedUnit
     = LexedToken Token.T
@@ -724,7 +723,42 @@ lexDigitChar c = let i = fromEnum c in if
 pattern LexEscapeOpen :: CodeUnit.T
 pattern LexEscapeOpen = CodeUnit.LcUSymBackslash
 
-lexAndYieldLitByteString :: MonadST.T s m => Lexer s m ()
+lexCharEscByteesc :: MonadST.T s m => Lexer s m (Spanned.Spanned Word8)
+lexCharEscByteesc = do
+    spgo <- consumeBuffer
+        do \item -> item <&> \_ -> LexItemState 0 do go0
+        do \spgo item -> Spanned.Spanned
+            {
+                getSpan = Spanned.getSpan spgo <> Spanned.getSpan item,
+                unSpanned = case Spanned.unSpanned item of
+                    (c, u) -> case Spanned.unSpanned spgo of
+                        LexItemState w0 go -> go w0 c u
+            }
+    pure do spgo <&> \(LexItemState w _) -> w
+    where
+        go0 i0 _ _ = LexItemState i0 go1
+
+        go1 i0 c u = do
+            let i1 = case u of
+                    CodeUnit.LcUSmallAlphaA -> i0 * 0x10 + 0xA
+                    CodeUnit.LcUSmallAlphaB -> i0 * 0x10 + 0xB
+                    CodeUnit.LcUSmallAlphaC -> i0 * 0x10 + 0xC
+                    CodeUnit.LcUSmallAlphaD -> i0 * 0x10 + 0xD
+                    CodeUnit.LcUSmallAlphaE -> i0 * 0x10 + 0xE
+                    CodeUnit.LcUSmallAlphaF -> i0 * 0x10 + 0xF
+                    CodeUnit.LcULargeAlphaA -> i0 * 0x10 + 0xA
+                    CodeUnit.LcULargeAlphaB -> i0 * 0x10 + 0xB
+                    CodeUnit.LcULargeAlphaC -> i0 * 0x10 + 0xC
+                    CodeUnit.LcULargeAlphaD -> i0 * 0x10 + 0xD
+                    CodeUnit.LcULargeAlphaE -> i0 * 0x10 + 0xE
+                    CodeUnit.LcULargeAlphaF -> i0 * 0x10 + 0xF
+                    _                       -> case lexDigitChar c of
+                        Just n  -> i0 * 0x10 + fromIntegral n
+                        Nothing -> error "unreachable: expect a hexit."
+            LexItemState i1 go1
+
+
+lexAndYieldLitByteString :: forall s m. MonadST.T s m => Lexer s m ()
 lexAndYieldLitByteString = do
     sp0 <- consumeBufferWithSpan
     go0 sp0 mempty
@@ -736,22 +770,16 @@ lexAndYieldLitByteString = do
                         getSpan = sp0,
                         unSpanned = LexError
                             Error.UnclosedByteStringLiteral
-                            do text "Found an unclosed byte string."
+                            do text "Found a byte string literal which is not closed."
                     }
             Just item -> do
                 let (c, u) = Spanned.unSpanned item
                     sp1 = sp0 <> Spanned.getSpan item
                 case u of
-                    CodeUnit.LcUSymDQuote -> lexerYield do
-                        let bs = LazyByteString.toStrict do
-                                BSBuilder.toLazyByteString b0
-                        Spanned.Spanned
-                            {
-                                getSpan = sp1,
-                                unSpanned = LexedToken do
-                                    Token.LitByteString bs
-                            }
-                    LexEscapeOpen ->
+                    CodeUnit.LcUSymDQuote ->
+                        yieldBSBuilder sp1 b0
+                    LexEscapeOpen -> do
+                        restoreBufferItem item
                         go1 sp1 b0
                     _ | EnumSet.member u Rules.graphicCs -> do
                         let ci = fromEnum c
@@ -760,17 +788,83 @@ lexAndYieldLitByteString = do
                                 lexerYield do
                                     Spanned.Spanned
                                         {
-                                            getSpan = sp1,
+                                            getSpan = Spanned.getSpan item,
                                             unSpanned = LexError
-                                                Error.NotAsciiCharInByteStringLiteral
-                                                do text "Found a char whoes codepoint is higher than 0x80."
+                                                Error.NonAsciiCharInByteStringLiteral
+                                                do text "Found a char whoes codepoint is higher than 0x7F."
                                         }
-                                go0 sp1 do b0
+                                go0 sp1 b0
                             | otherwise ->
                                 go0 sp1 do b0 <> BSBuilder.word8 do fromInteger do toInteger ci
-                    _ ->
+                    _ -> do
+                        lexerYield do
+                            Spanned.Spanned
+                                {
+                                    getSpan = Spanned.getSpan item,
+                                    unSpanned = LexError
+                                        Error.NonGraphicInByteStringLiteral
+                                        do text "Found a non graphic char."
+                                }
+                        go0 sp1 b0
 
-        go1 = undefined
+        go1 :: Spanned.Span -> BSBuilder.Builder -> Lexer s m ()
+        go1 sp0 b0 = CharEscLex.tlexScan () >>= \case
+            Tlex.TlexEndOfInput -> lexerYield do
+                Spanned.Spanned
+                    {
+                        getSpan = sp0,
+                        unSpanned = LexError
+                            Error.UnclosedByteStringLiteral
+                            do text "Found an unclosed byte string."
+                    }
+            Tlex.TlexError -> do
+                yieldTlexError
+            Tlex.TlexAccepted pos act -> do
+                setPosition pos
+                case act of
+                    Rules.WithGap -> do
+                        sp1 <- consumeBufferWithSpan
+                        go0
+                            do sp0 <> sp1
+                            do b0
+                    Rules.WithCharesc w -> do
+                        sp1 <- consumeBufferWithSpan
+                        go0
+                            do sp0 <> sp1
+                            do b0 <> BSBuilder.word8 w
+                    Rules.WithAsciiEsc w -> do
+                        sp1 <- consumeBufferWithSpan
+                        go0
+                            do sp0 <> sp1
+                            do b0 <> BSBuilder.word8 w
+                    Rules.LexByteesc -> do
+                        spw <- lexCharEscByteesc
+                        go0
+                            do sp0 <> Spanned.getSpan spw
+                            do b0 <> BSBuilder.word8 do Spanned.unSpanned spw
+                    Rules.LexUniEscape -> do
+                        sp1 <- consumeBufferWithSpan
+                        lexerYield do
+                            Spanned.Spanned
+                                {
+                                    getSpan = sp1,
+                                    unSpanned = LexError
+                                        Error.UniEscapeInByteStringLiteral
+                                        do text "Found an unicode escape in byte string."
+                                }
+                        go0
+                            do sp0 <> sp1
+                            do b0
+
+        yieldBSBuilder sp b = lexerYield do
+            let bs = LazyByteString.toStrict do
+                    BSBuilder.toLazyByteString b
+            Spanned.Spanned
+                {
+                    getSpan = sp,
+                    unSpanned = LexedToken do
+                        Token.LitByteString bs
+                }
 
 lexAndYieldLitByteChar :: MonadST.T s m => Lexer s m ()
 lexAndYieldLitByteChar = undefined
