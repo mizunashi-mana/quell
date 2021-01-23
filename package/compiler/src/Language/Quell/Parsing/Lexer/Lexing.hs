@@ -5,19 +5,19 @@ module Language.Quell.Parsing.Lexer.Lexing where
 import           Language.Quell.Prelude
 
 import qualified Conduit
-import qualified Language.Lexer.Tlex                   as Tlex
-import qualified Language.Lexer.Tlex.Data.EnumSet      as EnumSet
-import qualified Language.Quell.Data.Monad.MonadST     as MonadST
-import qualified Language.Quell.Data.STBuffer          as STBuffer
-import qualified Language.Quell.Data.TextId            as TextId
-import qualified Language.Quell.Parsing.Lexer.CodeUnit as CodeUnit
-import qualified Language.Quell.Parsing.Lexer.Error    as Error
-import qualified Language.Quell.Parsing.Lexer.Rules    as Rules
-import qualified Language.Quell.Parsing.Spanned        as Spanned
-import qualified Language.Quell.Type.Token             as Token
-import qualified Data.ByteString.Builder         as BSBuilder
-import qualified Data.ByteString.Lazy as LazyByteString
+import qualified Data.ByteString.Builder                     as BSBuilder
+import qualified Data.ByteString.Lazy                        as LazyByteString
+import qualified Language.Lexer.Tlex                         as Tlex
+import qualified Language.Lexer.Tlex.Data.EnumSet            as EnumSet
+import qualified Language.Quell.Data.Monad.MonadST           as MonadST
+import qualified Language.Quell.Data.STBuffer                as STBuffer
+import qualified Language.Quell.Data.TextId                  as TextId
+import qualified Language.Quell.Parsing.Lexer.CodeUnit       as CodeUnit
+import qualified Language.Quell.Parsing.Lexer.Error          as Error
 import qualified Language.Quell.Parsing.Lexer.Lexing.CharEsc as CharEscLex
+import qualified Language.Quell.Parsing.Lexer.Rules          as Rules
+import qualified Language.Quell.Parsing.Spanned              as Spanned
+import qualified Language.Quell.Type.Token                   as Token
 
 
 $(Rules.buildLexer)
