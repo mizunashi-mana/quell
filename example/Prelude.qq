@@ -1,0 +1,7 @@
+module List where {{
+    type T = List
+
+    data List where
+        Cons : a -> List a -> List a
+        Nil  : List a
+}}

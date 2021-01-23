@@ -10,16 +10,25 @@
         "Programming Languages"
     ],
     "contributes": {
-        "languages": [{
-            "id": "quell",
-            "aliases": ["Quell", "quell"],
-            "extensions": [".qq"],
-            "configuration": "./language-configuration.json"
-        }],
-        "grammars": [{
-            "language": "quell",
-            "scopeName": "source.quell",
-            "path": "./syntaxes/quell.tmLanguage.json"
-        }]
+        "languages": [
+            {
+                "id": "quell",
+                "aliases": [
+                    "Quell",
+                    "quell"
+                ],
+                "extensions": [
+                    ".qq"
+                ],
+                "configuration": "./language-configuration.json"
+            }
+        ],
+        "grammars": [
+            {
+                "language": "quell",
+                "scopeName": "source.quell",
+                "path": "./syntaxes/quell.tmLanguage.json"
+            }
+        ]
     }
 }

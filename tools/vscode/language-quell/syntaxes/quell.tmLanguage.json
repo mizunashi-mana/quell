@@ -11,10 +11,20 @@
 	],
 	"repository": {
 		"keywords": {
-			"patterns": [{
-				"name": "keyword.control.quell",
-				"match": "\\b(if|while|for|return)\\b"
-			}]
+			"patterns": [
+                {
+                    "name": "keyword.control.quell",
+                    "match": "\\b(match|do|in|letrec|let|when|with)\\b"
+                },
+                {
+                    "name": "keyword.operator.quell",
+                    "match": "\\b(as|record|_|->)\\b"
+                },
+                {
+                    "name": "keyword.other.quell",
+                    "match": "\\b(alias|data|derive|export|family|foreign|impl|infix|module|newtype|none|pattern|record|rec|role|signature|static|trait|type|use|where|_|Default|Self)\\b"
+                }
+            ]
 		},
 		"strings": {
 			"name": "string.quoted.double.quell",
