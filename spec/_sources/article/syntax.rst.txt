@@ -27,11 +27,14 @@ Notational Conventions
   ``"..."``
     terminal by unicode properties
 
+  ``EOS``
+    end of source
+
 Lexical Syntax
 --------------
 
 .. productionlist::
-    lexical_program: (lexeme | whitespace)*
+    lexical_program: (lexeme | whitespace)* EOS?
     lexeme  : literal
             : special
             : semis
@@ -173,12 +176,14 @@ Lexical Syntax
                         : interp_string_cont
                         : interp_string_end
     interp_str_open: split_open "s" str_sep
+    interp_str_graphic  : bstr_graphic<"$" | str_sep | escape_open>
+                        : uni_escape
     interp_open: "$" ( "{#" | "⦃" )
     interp_close: "#}" | "⦄"
-    interp_string_without_interp: interp_str_open (bstr_graphic<"$"> | uni_escape)* str_sep
-    interp_string_start: interp_str_open (bstr_graphic<"$"> | uni_escape)* interp_open
-    interp_string_cont: interp_close (bstr_graphic<"$"> | uni_escape)* interp_open
-    interp_string_end: interp_close (bstr_graphic<"$"> | uni_escape)* str_sep
+    interp_string_without_interp: interp_str_open interp_str_graphic* str_sep
+    interp_string_start: interp_str_open interp_str_graphic* interp_open
+    interp_string_cont: interp_close interp_str_graphic* interp_open
+    interp_string_end: interp_close interp_str_graphic* str_sep
 
 .. productionlist::
     whitespace: whitestuff+
@@ -190,7 +195,7 @@ Lexical Syntax
             : doc_comment
             : pragma_comment
             : multiline_comment
-    line_comment: "--" "-"* (any<symbol | other> any*)? newline
+    line_comment: "--" "-"* (any<symbol | other> any*)? (newline | EOS)
     multiline_comment: comment_open (ANY<"!" | "#"> ANYs (nested_comment ANYs)*)? comment_close
     doc_comment: comment_open "!" (ANY*)<ANY* newline "|" comment_close ANY*> newline "|" comment_close
     pragma_comment: comment_open "#" ANYs (nested_comment ANYs)* "#" comment_close
@@ -698,25 +703,24 @@ Note:
 * ``if`` 式はいれない．以下の標準関数で代用::
 
     if : \/a. Bool -> { then: a, else: a } -> a
-    if = \case
-      True,  e -> e.then
-      False, e -> e.else
+    if = \with
+        True,  e -> e.then
+        False, e -> e.else
 
 * multi way if は lambda case で代替::
 
     func1 : \/a. Int -> a -> Maybe a
-    func1 = \case
-      0, x -> Just x
-      i, x when
-        i > 10 -> Just x
-        else   -> Nothing
-
-    func2 : Int -> a -> Maybe a
-    func2 = \i x -> \case
-        when
-            i == 0 -> Just x
+    func1 = \with
+        0, x -> Just x
+        i, x when
             i > 10 -> Just x
             else   -> Nothing
+
+    func2 : Int -> a -> Maybe a
+    func2 = \i x -> \when
+        i == 0 -> Just x
+        i > 10 -> Just x
+        else   -> Nothing
 
 TODO:
 

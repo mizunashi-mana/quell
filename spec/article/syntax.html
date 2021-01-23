@@ -57,12 +57,14 @@
 </dd>
 <dt id="term-..."><code class="docutils literal notranslate"><span class="pre">&quot;...&quot;</span></code></dt><dd><p>terminal by unicode properties</p>
 </dd>
+<dt id="term-EOS"><code class="docutils literal notranslate"><span class="pre">EOS</span></code></dt><dd><p>end of source</p>
+</dd>
 </dl>
 </div>
 <div class="section" id="lexical-syntax">
 <h2>Lexical Syntax<a class="headerlink" href="#lexical-syntax" title="Permalink to this headline">¶</a></h2>
 <pre>
-<strong id="grammar-token-lexical_program"><span id="grammar-token-lexical-program"></span>lexical_program</strong> ::=  (lexeme | whitespace)*
+<strong id="grammar-token-lexical_program"><span id="grammar-token-lexical-program"></span>lexical_program</strong> ::=  (lexeme | whitespace)* EOS?
 <strong id="grammar-token-lexeme">lexeme         </strong> ::=  literal
                      special
                      semis
@@ -204,12 +206,14 @@
                                   interp_string_cont
                                   interp_string_end
 <strong id="grammar-token-interp_str_open"><span id="grammar-token-interp-str-open"></span>interp_str_open             </strong> ::=  split_open &quot;s&quot; str_sep
+<strong id="grammar-token-interp_str_graphic"><span id="grammar-token-interp-str-graphic"></span>interp_str_graphic          </strong> ::=  bstr_graphic&lt;&quot;$&quot; | str_sep | escape_open&gt;
+                                  uni_escape
 <strong id="grammar-token-interp_open"><span id="grammar-token-interp-open"></span>interp_open                 </strong> ::=  &quot;$&quot; ( &quot;{#&quot; | &quot;⦃&quot; )
 <strong id="grammar-token-interp_close"><span id="grammar-token-interp-close"></span>interp_close                </strong> ::=  &quot;#}&quot; | &quot;⦄&quot;
-<strong id="grammar-token-interp_string_without_interp"><span id="grammar-token-interp-string-without-interp"></span>interp_string_without_interp</strong> ::=  interp_str_open (bstr_graphic&lt;&quot;$&quot;&gt; | uni_escape)* str_sep
-<strong id="grammar-token-interp_string_start"><span id="grammar-token-interp-string-start"></span>interp_string_start         </strong> ::=  interp_str_open (bstr_graphic&lt;&quot;$&quot;&gt; | uni_escape)* interp_open
-<strong id="grammar-token-interp_string_cont"><span id="grammar-token-interp-string-cont"></span>interp_string_cont          </strong> ::=  interp_close (bstr_graphic&lt;&quot;$&quot;&gt; | uni_escape)* interp_open
-<strong id="grammar-token-interp_string_end"><span id="grammar-token-interp-string-end"></span>interp_string_end           </strong> ::=  interp_close (bstr_graphic&lt;&quot;$&quot;&gt; | uni_escape)* str_sep
+<strong id="grammar-token-interp_string_without_interp"><span id="grammar-token-interp-string-without-interp"></span>interp_string_without_interp</strong> ::=  interp_str_open interp_str_graphic* str_sep
+<strong id="grammar-token-interp_string_start"><span id="grammar-token-interp-string-start"></span>interp_string_start         </strong> ::=  interp_str_open interp_str_graphic* interp_open
+<strong id="grammar-token-interp_string_cont"><span id="grammar-token-interp-string-cont"></span>interp_string_cont          </strong> ::=  interp_close interp_str_graphic* interp_open
+<strong id="grammar-token-interp_string_end"><span id="grammar-token-interp-string-end"></span>interp_string_end           </strong> ::=  interp_close interp_str_graphic* str_sep
 </pre>
 <pre>
 <strong id="grammar-token-whitespace">whitespace</strong> ::=  whitestuff+
@@ -221,7 +225,7 @@
                        doc_comment
                        pragma_comment
                        multiline_comment
-<strong id="grammar-token-line_comment"><span id="grammar-token-line-comment"></span>line_comment     </strong> ::=  &quot;--&quot; &quot;-&quot;* (any&lt;symbol | other&gt; any*)? newline
+<strong id="grammar-token-line_comment"><span id="grammar-token-line-comment"></span>line_comment     </strong> ::=  &quot;--&quot; &quot;-&quot;* (any&lt;symbol | other&gt; any*)? (newline | EOS)
 <strong id="grammar-token-multiline_comment"><span id="grammar-token-multiline-comment"></span>multiline_comment</strong> ::=  comment_open (ANY&lt;&quot;!&quot; | &quot;#&quot;&gt; ANYs (nested_comment ANYs)*)? comment_close
 <strong id="grammar-token-doc_comment"><span id="grammar-token-doc-comment"></span>doc_comment      </strong> ::=  comment_open &quot;!&quot; (ANY*)&lt;ANY* newline &quot;|&quot; comment_close ANY*&gt; newline &quot;|&quot; comment_close
 <strong id="grammar-token-pragma_comment"><span id="grammar-token-pragma-comment"></span>pragma_comment   </strong> ::=  comment_open &quot;#&quot; ANYs (nested_comment ANYs)* &quot;#&quot; comment_close
@@ -724,26 +728,25 @@
 <ul>
 <li><p><code class="docutils literal notranslate"><span class="pre">if</span></code> 式はいれない．以下の標準関数で代用:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="p">:</span> \<span class="o">/</span><span class="n">a</span><span class="o">.</span> <span class="n">Bool</span> <span class="o">-&gt;</span> <span class="p">{</span> <span class="n">then</span><span class="p">:</span> <span class="n">a</span><span class="p">,</span> <span class="k">else</span><span class="p">:</span> <span class="n">a</span> <span class="p">}</span> <span class="o">-&gt;</span> <span class="n">a</span>
-<span class="k">if</span> <span class="o">=</span> \<span class="n">case</span>
-  <span class="kc">True</span><span class="p">,</span>  <span class="n">e</span> <span class="o">-&gt;</span> <span class="n">e</span><span class="o">.</span><span class="n">then</span>
-  <span class="kc">False</span><span class="p">,</span> <span class="n">e</span> <span class="o">-&gt;</span> <span class="n">e</span><span class="o">.</span><span class="k">else</span>
+<span class="k">if</span> <span class="o">=</span> \<span class="k">with</span>
+    <span class="kc">True</span><span class="p">,</span>  <span class="n">e</span> <span class="o">-&gt;</span> <span class="n">e</span><span class="o">.</span><span class="n">then</span>
+    <span class="kc">False</span><span class="p">,</span> <span class="n">e</span> <span class="o">-&gt;</span> <span class="n">e</span><span class="o">.</span><span class="k">else</span>
 </pre></div>
 </div>
 </li>
 <li><p>multi way if は lambda case で代替:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">func1</span> <span class="p">:</span> \<span class="o">/</span><span class="n">a</span><span class="o">.</span> <span class="n">Int</span> <span class="o">-&gt;</span> <span class="n">a</span> <span class="o">-&gt;</span> <span class="n">Maybe</span> <span class="n">a</span>
-<span class="n">func1</span> <span class="o">=</span> \<span class="n">case</span>
-  <span class="mi">0</span><span class="p">,</span> <span class="n">x</span> <span class="o">-&gt;</span> <span class="n">Just</span> <span class="n">x</span>
-  <span class="n">i</span><span class="p">,</span> <span class="n">x</span> <span class="n">when</span>
-    <span class="n">i</span> <span class="o">&gt;</span> <span class="mi">10</span> <span class="o">-&gt;</span> <span class="n">Just</span> <span class="n">x</span>
-    <span class="k">else</span>   <span class="o">-&gt;</span> <span class="n">Nothing</span>
-
-<span class="n">func2</span> <span class="p">:</span> <span class="n">Int</span> <span class="o">-&gt;</span> <span class="n">a</span> <span class="o">-&gt;</span> <span class="n">Maybe</span> <span class="n">a</span>
-<span class="n">func2</span> <span class="o">=</span> \<span class="n">i</span> <span class="n">x</span> <span class="o">-&gt;</span> \<span class="n">case</span>
-    <span class="n">when</span>
-        <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span> <span class="o">-&gt;</span> <span class="n">Just</span> <span class="n">x</span>
+<span class="n">func1</span> <span class="o">=</span> \<span class="k">with</span>
+    <span class="mi">0</span><span class="p">,</span> <span class="n">x</span> <span class="o">-&gt;</span> <span class="n">Just</span> <span class="n">x</span>
+    <span class="n">i</span><span class="p">,</span> <span class="n">x</span> <span class="n">when</span>
         <span class="n">i</span> <span class="o">&gt;</span> <span class="mi">10</span> <span class="o">-&gt;</span> <span class="n">Just</span> <span class="n">x</span>
         <span class="k">else</span>   <span class="o">-&gt;</span> <span class="n">Nothing</span>
+
+<span class="n">func2</span> <span class="p">:</span> <span class="n">Int</span> <span class="o">-&gt;</span> <span class="n">a</span> <span class="o">-&gt;</span> <span class="n">Maybe</span> <span class="n">a</span>
+<span class="n">func2</span> <span class="o">=</span> \<span class="n">i</span> <span class="n">x</span> <span class="o">-&gt;</span> \<span class="n">when</span>
+    <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span> <span class="o">-&gt;</span> <span class="n">Just</span> <span class="n">x</span>
+    <span class="n">i</span> <span class="o">&gt;</span> <span class="mi">10</span> <span class="o">-&gt;</span> <span class="n">Just</span> <span class="n">x</span>
+    <span class="k">else</span>   <span class="o">-&gt;</span> <span class="n">Nothing</span>
 </pre></div>
 </div>
 </li>
