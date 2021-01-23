@@ -18,6 +18,7 @@ module Language.Quell.Parsing.Lexer.CodeUnit (
     pattern LcUSymBackslash,
     pattern LcUSymUnscore,
     pattern LcUSymBraceOpen,
+    pattern LcUSymVertBar,
     pattern LcUSymBraceClose,
     pattern LcUSymWhiteBraceOpen,
     pattern LcUNum0,
@@ -256,6 +257,9 @@ pattern LcUSymUnscore = LcU005F
 
 pattern LcUSymBraceOpen :: CodeUnit
 pattern LcUSymBraceOpen = LcU007B
+
+pattern LcUSymVertBar :: CodeUnit
+pattern LcUSymVertBar = LcU007C
 
 pattern LcUSymBraceClose :: CodeUnit
 pattern LcUSymBraceClose = LcU007D

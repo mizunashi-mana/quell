@@ -1681,7 +1681,7 @@ lexAndYieldCommentDoc = do
                         unSpanned = LexedToken do
                             Token.CommentDoc do buildText t0
                     }
-            r:rs -> goClose b sp0 r rs t0 rt0
+            r:rs -> goClose1 b sp0 r rs t0 rt0
 
         goClose1 b sp0 r rs t0 rt0 = consumeBufferItem @s @m >>= \case
             Nothing -> lexerYield do
