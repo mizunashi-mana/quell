@@ -5,14 +5,21 @@ module Language.Quell.Parsing.Lexer.CodeUnit (
     fromChar,
 
     pattern LcUSymHTab,
+    pattern LcUSymLF,
+    pattern LcUSymCR,
     pattern LcUSymSpace,
     pattern LcUSymDQuote,
+    pattern LcUSymHash,
+    pattern LcUSymDollar,
     pattern LcUSymQuote,
     pattern LcUSymPlus,
     pattern LcUSymHyphen,
     pattern LcUSymDot,
     pattern LcUSymBackslash,
     pattern LcUSymUnscore,
+    pattern LcUSymBraceOpen,
+    pattern LcUSymBraceClose,
+    pattern LcUSymWhiteBraceOpen,
     pattern LcUNum0,
     pattern LcUNum1,
     pattern LcUNum2,
@@ -211,11 +218,23 @@ data CodeUnit
 pattern LcUSymHTab :: CodeUnit
 pattern LcUSymHTab = LcU0009
 
+pattern LcUSymLF :: CodeUnit
+pattern LcUSymLF = LcU000A
+
+pattern LcUSymCR :: CodeUnit
+pattern LcUSymCR = LcU000D
+
 pattern LcUSymSpace :: CodeUnit
 pattern LcUSymSpace = LcU0020
 
 pattern LcUSymDQuote :: CodeUnit
 pattern LcUSymDQuote = LcU0022
+
+pattern LcUSymHash :: CodeUnit
+pattern LcUSymHash = LcU0023
+
+pattern LcUSymDollar :: CodeUnit
+pattern LcUSymDollar = LcU0024
 
 pattern LcUSymQuote :: CodeUnit
 pattern LcUSymQuote = LcU0027
@@ -234,6 +253,15 @@ pattern LcUSymBackslash = LcU005C
 
 pattern LcUSymUnscore :: CodeUnit
 pattern LcUSymUnscore = LcU005F
+
+pattern LcUSymBraceOpen :: CodeUnit
+pattern LcUSymBraceOpen = LcU007B
+
+pattern LcUSymBraceClose :: CodeUnit
+pattern LcUSymBraceClose = LcU007D
+
+pattern LcUSymWhiteBraceOpen :: CodeUnit
+pattern LcUSymWhiteBraceOpen = LcU2983
 
 pattern LcUNum0 :: CodeUnit
 pattern LcUNum0 = LcU0030

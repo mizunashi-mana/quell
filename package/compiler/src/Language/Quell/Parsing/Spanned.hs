@@ -51,8 +51,12 @@ data Span = Span
 instance Semigroup Span where
     sp1 <> sp2 = Span
         {
-            beginLoc = beginLoc sp1,
-            endLoc = endLoc sp2
+            beginLoc = max
+                do beginLoc sp1
+                do beginLoc sp2,
+            endLoc = max
+                do endLoc sp1
+                do endLoc sp2
         }
 
 data BytesSpan = BytesSpan
@@ -64,8 +68,8 @@ data BytesSpan = BytesSpan
 
 data Loc = Loc
     {
+        locBytesPos :: Int,
         locLine     :: Int,
-        locCol      :: Int,
-        locBytesPos :: Int
+        locCol      :: Int
     }
-    deriving (Eq, Show)
+    deriving (Eq, Ord, Show)

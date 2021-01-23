@@ -323,7 +323,7 @@ escapeOpenP = charSetP escapeOpenCs
 escapeOpenCs = charsCs ['\\']
 
 escapeRule :: Pattern -> TH.Q (TH.TExp CharEscLexerAction) -> CharEscScannerBuilder ()
-escapeRule p = TlexTH.thLexRule [Initial] do escapeOpenP <> p
+escapeRule p = TlexTH.thLexRule [Initial] p
 
 charEscRules :: CharEscScannerBuilder ()
 charEscRules = do

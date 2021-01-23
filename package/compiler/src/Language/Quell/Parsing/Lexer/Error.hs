@@ -23,8 +23,23 @@ data Error
     | NonGraphicInByteCharLiteral
     | UniEscapeInByteCharLiteral
     | GapInByteCharLiteral
-    | UnclosedCommentBlock CommentBlockKind
-    | UnclosedLayoutBlock LayoutBlockKind
+    | UnclosedStringLiteral
+    | NonGraphicInStringLiteral
+    | UnclosedCharLiteral
+    | NoContentCharLiteral
+    | TooManyContentsInCharLiteral
+    | NonGraphicInCharLiteral
+    | GapInCharLiteral
+    | UnclosedInterpStringLiteral
+    | NonGraphicInInterpStringLiteral
+    | InvalidInterpOpenInInterpStringLiteral
+    | NonGraphicInLineComment
+    | UnclosedMultilineComment
+    | NonGraphicInMultilineComment
+    | UnclosedDocComment
+    | NonGraphicInDocComment
+    | UnclosedPragmaComment
+    | NonGraphicInPragmaComment
     deriving (Eq, Show)
 
 data CommentBlockKind

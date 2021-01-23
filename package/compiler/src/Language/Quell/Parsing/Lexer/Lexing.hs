@@ -347,7 +347,7 @@ yieldIdToken (Rules.IdToken t) = do
                         Spanned.unSpanned sptxtB <> textBuilderFromChar c
                 }
     let u = sptxtB0 <&> \txtB0 ->
-            LexedToken do t do TextId.textId do buildStrictText txtB0
+            LexedToken do t do TextId.textId do buildText txtB0
     lexerYield u
 
 consumeBufferWithSpan :: forall s m. MonadST.T s m => Lexer s m Spanned.Span
@@ -387,45 +387,45 @@ lexAndYieldLitRationalWithDot = do
     where
         go0 c u = case lexMaySignUnit u of
             Just lexedSign ->
-                (lexedSign, LexItemState (0, 0, 0) do go1)
+                (lexedSign, LexItemState (0, 0, 0) do goDecimal1)
             Nothing ->
-                (LexedSignPositive, go1 (0, 0, 0) c u)
+                (LexedSignPositive, goDecimal1 (0, 0, 0) c u)
 
-        go1 i@(i0, n0, m0) c u = case u of
+        goDecimal1 i@(i0, n0, m0) c u = case u of
             CodeUnit.LcUSymDot ->
-                LexItemState i go2
+                LexItemState i goDecimal2
             _ -> do
                 let i1 = case lexDigitChar c of
                         Just n  -> i0 * 10 + toInteger n
                         Nothing -> i0 -- [_]
-                LexItemState (i1, n0, m0) go1
+                LexItemState (i1, n0, m0) goDecimal1
 
-        go2 i@(i0, n0, m0) c u = case u of
+        goDecimal2 i@(i0, n0, m0) c u = case u of
             CodeUnit.LcUSmallAlphaE ->
-                LexItemState i go3
+                LexItemState i goExponent
             CodeUnit.LcULargeAlphaE ->
-                LexItemState i go3
+                LexItemState i goExponent
             _ -> do
                 let i1 = case lexDigitChar c of
                         Just n  -> i0 * 10 + toInteger n
                         Nothing -> i0 -- [_]
                     n1 = n0 + 1
-                LexItemState (i1, n1, m0) go2
+                LexItemState (i1, n1, m0) goDecimal2
 
-        go3 i c u = case lexMaySignUnit u of
+        goExponent i c u = case lexMaySignUnit u of
             Just lexedSign ->
-                LexItemState i do go4 lexedSign
+                LexItemState i do goExpDecimal lexedSign
             Nothing ->
-                go4 LexedSignPositive i c u
+                goExpDecimal LexedSignPositive i c u
 
-        go4 lexedSign (i0, n0, m0) c _ = do
+        goExpDecimal lexedSign (i0, n0, m0) c _ = do
             let m1 = case lexDigitChar c of
                     Nothing ->
                         m0 -- [_]
                     Just n -> case lexedSign of
                         LexedSignPositive -> m0 * 10 + n
                         LexedSignNegative -> m0 * 10 - n
-            LexItemState (i0, n0, m1) do go4 lexedSign
+            LexItemState (i0, n0, m1) do goExpDecimal lexedSign
 
 lexAndYieldLitRationalWithoutDot :: MonadST.T s m => Lexer s m ()
 lexAndYieldLitRationalWithoutDot = do
@@ -450,35 +450,35 @@ lexAndYieldLitRationalWithoutDot = do
     where
         go0 c u = case lexMaySignUnit u of
             Just lexedSign ->
-                (lexedSign, LexItemState (0, 0) do go1)
+                (lexedSign, LexItemState (0, 0) do goDecimal)
             Nothing ->
-                (LexedSignPositive, go1 (0, 0) c u)
+                (LexedSignPositive, goDecimal (0, 0) c u)
 
-        go1 i@(i0, m0) c u = case u of
+        goDecimal i@(i0, m0) c u = case u of
             CodeUnit.LcUSmallAlphaE ->
-                LexItemState i go2
+                LexItemState i goExponent
             CodeUnit.LcULargeAlphaE ->
-                LexItemState i go2
+                LexItemState i goExponent
             _ -> do
                 let i1 = case lexDigitChar c of
                         Just n  -> i0 * 10 + toInteger n
                         Nothing -> i0 -- [_]
-                LexItemState (i1, m0) go1
+                LexItemState (i1, m0) goDecimal
 
-        go2 i c u = case lexMaySignUnit u of
+        goExponent i c u = case lexMaySignUnit u of
             Just lexedSign ->
-                LexItemState i do go3 lexedSign
+                LexItemState i do goExpDecimal lexedSign
             Nothing ->
-                go3 LexedSignPositive i c u
+                goExpDecimal LexedSignPositive i c u
 
-        go3 lexedSign (i0, m0) c _ = do
+        goExpDecimal lexedSign (i0, m0) c _ = do
             let m1 = case lexDigitChar c of
                     Nothing ->
                         m0 -- [_]
                     Just n -> case lexedSign of
                         LexedSignPositive -> m0 * 10 + n
                         LexedSignNegative -> m0 * 10 - n
-            LexItemState (i0, m1) do go3 lexedSign
+            LexItemState (i0, m1) do goExpDecimal lexedSign
 
 lexAndYieldLitBitInteger :: MonadST.T s m => Lexer s m ()
 lexAndYieldLitBitInteger = do
@@ -501,21 +501,21 @@ lexAndYieldLitBitInteger = do
         go0 u = case lexMaySignUnit u of
             -- rest 0[bB]
             Just lexedSign ->
-                (lexedSign, LexItemState 0 do go1 2)
+                (lexedSign, LexItemState 0 do goSkipPref 2)
             -- rest [bB]
             Nothing  ->
-                (LexedSignPositive, LexItemState 0 do go1 1)
+                (LexedSignPositive, LexItemState 0 do goSkipPref 1)
 
-        go1 (n :: Int) i0 _ _ = case n of
-            1 -> LexItemState i0 go2
-            _ -> LexItemState i0 do go1 do n - 1
+        goSkipPref (n :: Int) i0 _ _ = case n of
+            1 -> LexItemState i0 goBit_
+            _ -> LexItemState i0 do goSkipPref do n - 1
 
-        go2 (i0 :: Integer) _ u = do
+        goBit_ (i0 :: Integer) _ u = do
             let i1 = case u of
                     CodeUnit.LcUNum0 -> i0 * 0b10
                     CodeUnit.LcUNum1 -> i0 * 0b10 + 1
                     _                -> i0 -- [_]
-            LexItemState i1 go2
+            LexItemState i1 goBit_
 
 lexAndYieldLitOctitInteger :: MonadST.T s m => Lexer s m ()
 lexAndYieldLitOctitInteger = do
@@ -538,16 +538,16 @@ lexAndYieldLitOctitInteger = do
         go0 u = case lexMaySignUnit u of
             -- rest 0[oO]
             Just lexedSign ->
-                (lexedSign, LexItemState 0 do go1 2)
+                (lexedSign, LexItemState 0 do goSkipPref 2)
             -- rest [oO]
             Nothing  ->
-                (LexedSignPositive, LexItemState 0 do go1 1)
+                (LexedSignPositive, LexItemState 0 do goSkipPref 1)
 
-        go1 (n :: Int) i0 _ _ = case n of
-            1 -> LexItemState i0 go2
-            _ -> LexItemState i0 do go1 do n - 1
+        goSkipPref (n :: Int) i0 _ _ = case n of
+            1 -> LexItemState i0 goOctet_
+            _ -> LexItemState i0 do goSkipPref do n - 1
 
-        go2 (i0 :: Integer) _ u = do
+        goOctet_ (i0 :: Integer) _ u = do
             let i1 = case u of
                     CodeUnit.LcUNum0 -> i0 * 0b10
                     CodeUnit.LcUNum1 -> i0 * 0b10 + 1
@@ -558,7 +558,7 @@ lexAndYieldLitOctitInteger = do
                     CodeUnit.LcUNum6 -> i0 * 0o10 + 6
                     CodeUnit.LcUNum7 -> i0 * 0o10 + 7
                     _                -> i0 -- [_]
-            LexItemState i1 go2
+            LexItemState i1 goOctet_
 
 lexAndYieldLitHexitInteger :: MonadST.T s m => Lexer s m ()
 lexAndYieldLitHexitInteger = do
@@ -581,16 +581,16 @@ lexAndYieldLitHexitInteger = do
         go0 u = case lexMaySignUnit u of
             -- rest 0[xX]
             Just lexedSign ->
-                (lexedSign, LexItemState 0 do go1 2)
+                (lexedSign, LexItemState 0 do goSkipPref 2)
             -- rest [xX]
             Nothing  ->
-                (LexedSignPositive, LexItemState 0 do go1 1)
+                (LexedSignPositive, LexItemState 0 do goSkipPref 1)
 
-        go1 (n :: Int) i0 _ _ = case n of
-            1 -> LexItemState i0 go2
-            _ -> LexItemState i0 do go1 do n - 1
+        goSkipPref (n :: Int) i0 _ _ = case n of
+            1 -> LexItemState i0 goHexit_
+            _ -> LexItemState i0 do goSkipPref do n - 1
 
-        go2 i0 c u = do
+        goHexit_ i0 c u = do
             let i1 = case u of
                     CodeUnit.LcUSmallAlphaA -> i0 * 0x10 + 0xA
                     CodeUnit.LcUSmallAlphaB -> i0 * 0x10 + 0xB
@@ -607,7 +607,7 @@ lexAndYieldLitHexitInteger = do
                     _                       -> case lexDigitChar c of
                         Just n  -> i0 * 0x10 + toInteger n
                         Nothing -> i0 -- [_]
-            LexItemState i1 go2
+            LexItemState i1 goHexit_
 
 lexAndYieldLitDecimalInteger :: MonadST.T s m => Lexer s m ()
 lexAndYieldLitDecimalInteger = do
@@ -629,15 +629,15 @@ lexAndYieldLitDecimalInteger = do
     where
         go0 c u = case lexMaySignUnit u of
             Just lexedSign ->
-                (lexedSign, LexItemState 0 do go1)
+                (lexedSign, LexItemState 0 do goDecimal)
             Nothing  ->
-                (LexedSignPositive, go1 0 c u)
+                (LexedSignPositive, goDecimal 0 c u)
 
-        go1 i0 c _ = do
+        goDecimal i0 c _ = do
             let i1 = case lexDigitChar c of
                     Just n  -> i0 * 10 + toInteger n
                     Nothing -> i0 -- [_]
-            LexItemState i1 go1
+            LexItemState i1 goDecimal
 
 data LexedSign
     = LexedSignPositive
@@ -653,6 +653,7 @@ lexMaySignUnit = \case
 -- | decode digit
 --
 -- * https://www.compart.com/en/unicode/category/Nd
+{-# INLINE lexDigitChar #-}
 lexDigitChar :: Char -> Maybe Int
 lexDigitChar c = let i = fromEnum c in if
     | 0x00030 <= i && i <= 0x00039 -> Just do i - 0x00030
@@ -726,7 +727,7 @@ pattern LexEscapeOpen = CodeUnit.LcUSymBackslash
 lexCharEscByteesc :: MonadST.T s m => Lexer s m (Spanned.Spanned Word8)
 lexCharEscByteesc = do
     spgo <- consumeBuffer
-        do \item -> item <&> \_ -> LexItemState 0 do go0
+        do \item -> item <&> \_ -> LexItemState 0 do goHexit
         do \spgo item -> Spanned.Spanned
             {
                 getSpan = Spanned.getSpan spgo <> Spanned.getSpan item,
@@ -736,9 +737,7 @@ lexCharEscByteesc = do
             }
     pure do spgo <&> \(LexItemState w _) -> w
     where
-        go0 i0 _ _ = LexItemState i0 go1
-
-        go1 i0 c u = do
+        goHexit i0 c u = do
             let i1 = case u of
                     CodeUnit.LcUSmallAlphaA -> i0 * 0x10 + 0xA
                     CodeUnit.LcUSmallAlphaB -> i0 * 0x10 + 0xB
@@ -755,7 +754,41 @@ lexCharEscByteesc = do
                     _                       -> case lexDigitChar c of
                         Just n  -> i0 * 0x10 + fromIntegral n
                         Nothing -> error "unreachable: expect a hexit."
-            LexItemState i1 go1
+            LexItemState i1 goHexit
+
+lexCharEscUniEscape :: MonadST.T s m => Lexer s m (Spanned.Spanned Char)
+lexCharEscUniEscape = do
+    spgo <- consumeBuffer
+        do \item -> item <&> \_ -> LexItemState 0 do go0
+        do \spgo item -> Spanned.Spanned
+            {
+                getSpan = Spanned.getSpan spgo <> Spanned.getSpan item,
+                unSpanned = case Spanned.unSpanned item of
+                    (c, u) -> case Spanned.unSpanned spgo of
+                        LexItemState i0 go -> go i0 c u
+            }
+    pure do spgo <&> \(LexItemState i _) -> toEnum i
+    where
+        go0 i0 _ _ = LexItemState i0 goHexit
+
+        goHexit i0 c u = do
+            let i1 = case u of
+                    CodeUnit.LcUSmallAlphaA -> i0 * 0x10 + 0xA
+                    CodeUnit.LcUSmallAlphaB -> i0 * 0x10 + 0xB
+                    CodeUnit.LcUSmallAlphaC -> i0 * 0x10 + 0xC
+                    CodeUnit.LcUSmallAlphaD -> i0 * 0x10 + 0xD
+                    CodeUnit.LcUSmallAlphaE -> i0 * 0x10 + 0xE
+                    CodeUnit.LcUSmallAlphaF -> i0 * 0x10 + 0xF
+                    CodeUnit.LcULargeAlphaA -> i0 * 0x10 + 0xA
+                    CodeUnit.LcULargeAlphaB -> i0 * 0x10 + 0xB
+                    CodeUnit.LcULargeAlphaC -> i0 * 0x10 + 0xC
+                    CodeUnit.LcULargeAlphaD -> i0 * 0x10 + 0xD
+                    CodeUnit.LcULargeAlphaE -> i0 * 0x10 + 0xE
+                    CodeUnit.LcULargeAlphaF -> i0 * 0x10 + 0xF
+                    _                       -> case lexDigitChar c of
+                        Just n  -> i0 * 0x10 + fromIntegral n
+                        Nothing -> i0 -- [}]
+            LexItemState i1 goHexit
 
 graphicWhiteCharCs :: Rules.CharSet
 graphicWhiteCharCs = mconcat
@@ -767,9 +800,9 @@ graphicWhiteCharCs = mconcat
 lexAndYieldLitByteString :: forall s m. MonadST.T s m => Lexer s m ()
 lexAndYieldLitByteString = do
     sp0 <- consumeBufferWithSpan
-    go0 sp0 mempty
+    goByteChar sp0 mempty
     where
-        go0 sp0 b0 = consumeBufferItem @s @m >>= \case
+        goByteChar sp0 b0 = consumeBufferItem @s @m >>= \case
             Nothing -> lexerYield do
                 Spanned.Spanned
                     {
@@ -784,9 +817,8 @@ lexAndYieldLitByteString = do
                 case u of
                     CodeUnit.LcUSymDQuote ->
                         yieldBSBuilder sp1 b0
-                    LexEscapeOpen -> do
-                        restoreBufferItem item
-                        go1 sp1 b0
+                    LexEscapeOpen ->
+                        goEscape sp1 b0
                     _ | EnumSet.member u graphicWhiteCharCs -> do
                         let ci = fromEnum c
                         if
@@ -800,10 +832,10 @@ lexAndYieldLitByteString = do
                                                 Error.NonAsciiCharInByteStringLiteral
                                                 do text "Found a codepoint higher than 0x7F."
                                         }
-                                go0 sp1
+                                goByteChar sp1
                                     do b0 <> BSBuilder.word8 do fromIntegral ci'
                             | otherwise ->
-                                go0 sp1
+                                goByteChar sp1
                                     do b0 <> BSBuilder.word8 do fromIntegral ci
                     _ -> do
                         lexerYield do
@@ -814,9 +846,9 @@ lexAndYieldLitByteString = do
                                         Error.NonGraphicInByteStringLiteral
                                         do text "Found a non graphic char."
                                 }
-                        go0 sp1 b0
+                        goByteChar sp1 b0
 
-        go1 sp0 b0 = CharEscLex.tlexScan () >>= \case
+        goEscape sp0 b0 = CharEscLex.tlexScan () >>= \case
             Tlex.TlexEndOfInput -> lexerYield do
                 Spanned.Spanned
                     {
@@ -832,22 +864,22 @@ lexAndYieldLitByteString = do
                 case act of
                     Rules.WithGap -> do
                         sp1 <- consumeBufferWithSpan @s @m
-                        go0
+                        goByteChar
                             do sp0 <> sp1
                             do b0
                     Rules.WithCharesc w -> do
                         sp1 <- consumeBufferWithSpan
-                        go0
+                        goByteChar
                             do sp0 <> sp1
                             do b0 <> BSBuilder.word8 w
                     Rules.WithAsciiEsc w -> do
                         sp1 <- consumeBufferWithSpan
-                        go0
+                        goByteChar
                             do sp0 <> sp1
                             do b0 <> BSBuilder.word8 w
                     Rules.LexByteesc -> do
                         spw <- lexCharEscByteesc
-                        go0
+                        goByteChar
                             do sp0 <> Spanned.getSpan spw
                             do b0 <> BSBuilder.word8 do Spanned.unSpanned spw
                     Rules.LexUniEscape -> do
@@ -860,7 +892,7 @@ lexAndYieldLitByteString = do
                                         Error.UniEscapeInByteStringLiteral
                                         do text "Found an unicode escape in byte literal."
                                 }
-                        go0
+                        goByteChar
                             do sp0 <> sp1
                             do b0
 
@@ -877,9 +909,9 @@ lexAndYieldLitByteString = do
 lexAndYieldLitByteChar :: forall s m. MonadST.T s m => Lexer s m ()
 lexAndYieldLitByteChar = do
     sp0 <- consumeBufferWithSpan
-    go0 sp0
+    goByteChar sp0
     where
-        go0 sp0 = consumeBufferItem >>= \case
+        goByteChar sp0 = consumeBufferItem >>= \case
             Nothing -> lexerYield do
                 Spanned.Spanned
                     {
@@ -900,9 +932,8 @@ lexAndYieldLitByteChar = do
                                     Error.NoContentByteCharLiteral
                                     do text "Found an literal without contents."
                             }
-                    LexEscapeOpen -> do
-                        restoreBufferItem item
-                        go1 sp1
+                    LexEscapeOpen ->
+                        goEscape sp1
                     _ | u == CodeUnit.LcUSymSpace ||
                         EnumSet.member u Rules.graphicCs -> do
                         let ci = fromEnum c
@@ -917,9 +948,9 @@ lexAndYieldLitByteChar = do
                                                 Error.NonAsciiCharInByteCharLiteral
                                                 do text "Found a codepoint higher than 0x7F."
                                         }
-                                go3 sp1 do fromIntegral ci'
+                                goClose sp1 do fromIntegral ci'
                             | otherwise ->
-                                go2 sp1 do fromIntegral ci
+                                goClose sp1 do fromIntegral ci
                     _ -> do
                         lexerYield do
                             Spanned.Spanned
@@ -929,9 +960,9 @@ lexAndYieldLitByteChar = do
                                         Error.NonGraphicInByteCharLiteral
                                         do text "Found a non graphic char."
                                 }
-                        go3 sp1 0x0
+                        goTooMany sp1 0x0
 
-        go1 sp0 = CharEscLex.tlexScan () >>= \case
+        goEscape sp0 = CharEscLex.tlexScan () >>= \case
             Tlex.TlexEndOfInput -> lexerYield do
                 Spanned.Spanned
                     {
@@ -947,17 +978,17 @@ lexAndYieldLitByteChar = do
                 case act of
                     Rules.WithCharesc w -> do
                         sp1 <- consumeBufferWithSpan
-                        go2
+                        goClose
                             do sp0 <> sp1
                             w
                     Rules.WithAsciiEsc w -> do
                         sp1 <- consumeBufferWithSpan
-                        go2
+                        goClose
                             do sp0 <> sp1
                             w
                     Rules.LexByteesc -> do
                         spw <- lexCharEscByteesc
-                        go2
+                        goClose
                             do sp0 <> Spanned.getSpan spw
                             do Spanned.unSpanned spw
                     Rules.WithGap -> do
@@ -970,7 +1001,7 @@ lexAndYieldLitByteChar = do
                                         Error.GapInByteCharLiteral
                                         do text "Found an gap in byte char literal."
                                 }
-                        go3
+                        goTooMany
                             do sp0 <> sp1
                             0x0
                     Rules.LexUniEscape -> do
@@ -980,14 +1011,14 @@ lexAndYieldLitByteChar = do
                                 {
                                     getSpan = sp1,
                                     unSpanned = LexError
-                                        Error.UniEscapeInByteStringLiteral
+                                        Error.UniEscapeInByteCharLiteral
                                         do text "Found an unicode escape in byte literal."
                                 }
-                        go3
+                        goTooMany
                             do sp0 <> sp1
                             0x0
 
-        go2 sp0 w = consumeBufferItem @s @m >>= \case
+        goClose sp0 w = consumeBufferItem @s @m >>= \case
             Nothing -> lexerYield do
                 Spanned.Spanned
                     {
@@ -1016,9 +1047,9 @@ lexAndYieldLitByteChar = do
                                         Error.TooManyContentsInByteCharLiteral
                                         do text "Found an excess escape in byte char literal."
                                 }
-                        go3 sp1 w
+                        goTooMany sp1 w
 
-        go3 sp0 w = consumeBufferItem @s @m >>= \case
+        goTooMany sp0 w = consumeBufferItem @s @m >>= \case
             Nothing -> lexerYield do
                 Spanned.Spanned
                     {
@@ -1038,28 +1069,667 @@ lexAndYieldLitByteChar = do
                                 unSpanned = LexedToken do
                                     Token.LitByteChar w
                             }
-                    _ -> go3 sp1 w
+                    _ -> goTooMany sp1 w
 
-lexAndYieldLitString :: MonadST.T s m => Lexer s m ()
-lexAndYieldLitString = undefined
+lexAndYieldLitString :: forall s m. MonadST.T s m => Lexer s m ()
+lexAndYieldLitString = do
+    sp0 <- consumeBufferWithSpan
+    goChar sp0 mempty
+    where
+        goChar sp0 t0 = consumeBufferItem @s @m >>= \case
+            Nothing -> lexerYield do
+                Spanned.Spanned
+                    {
+                        getSpan = sp0,
+                        unSpanned = LexError
+                            Error.UnclosedStringLiteral
+                            do text "Found an unclosed literal."
+                    }
+            Just item -> do
+                let (c, u) = Spanned.unSpanned item
+                    sp1 = sp0 <> Spanned.getSpan item
+                case u of
+                    CodeUnit.LcUSymDQuote ->
+                        yieldTextBuilder sp1 t0
+                    LexEscapeOpen ->
+                        goEscape sp1 t0
+                    _ | EnumSet.member u graphicWhiteCharCs -> do
+                        goChar sp1
+                            do t0 <> textBuilderFromChar c
+                    _ -> do
+                        lexerYield do
+                            Spanned.Spanned
+                                {
+                                    getSpan = Spanned.getSpan item,
+                                    unSpanned = LexError
+                                        Error.NonGraphicInStringLiteral
+                                        do text "Found a non graphic char."
+                                }
+                        goChar sp1 t0
 
-lexAndYieldLitChar :: MonadST.T s m => Lexer s m ()
-lexAndYieldLitChar = undefined
+        goEscape sp0 t0 = CharEscLex.tlexScan () >>= \case
+            Tlex.TlexEndOfInput -> lexerYield do
+                Spanned.Spanned
+                    {
+                        getSpan = sp0,
+                        unSpanned = LexError
+                            Error.UnclosedStringLiteral
+                            do text "Found an unclosed literal."
+                    }
+            Tlex.TlexError -> do
+                yieldTlexError
+            Tlex.TlexAccepted pos act -> do
+                setPosition pos
+                case act of
+                    Rules.WithGap -> do
+                        sp1 <- consumeBufferWithSpan @s @m
+                        goChar
+                            do sp0 <> sp1
+                            do t0
+                    Rules.WithCharesc w -> do
+                        sp1 <- consumeBufferWithSpan
+                        goChar
+                            do sp0 <> sp1
+                            do t0 <> textBuilderFromWord8 w
+                    Rules.WithAsciiEsc w -> do
+                        sp1 <- consumeBufferWithSpan
+                        goChar
+                            do sp0 <> sp1
+                            do t0 <> textBuilderFromWord8 w
+                    Rules.LexByteesc -> do
+                        spw <- lexCharEscByteesc
+                        let w = Spanned.unSpanned spw
+                        goChar
+                            do sp0 <> Spanned.getSpan spw
+                            do t0 <> textBuilderFromWord8 w
+                    Rules.LexUniEscape -> do
+                        spc <- lexCharEscUniEscape
+                        let c = Spanned.unSpanned spc
+                        goChar
+                            do sp0 <> Spanned.getSpan spc
+                            do t0 <> textBuilderFromChar c
 
-lexAndYieldInterpStringStart :: MonadST.T s m => Lexer s m ()
-lexAndYieldInterpStringStart = undefined
+        yieldTextBuilder sp tb = lexerYield do
+            Spanned.Spanned
+                {
+                    getSpan = sp,
+                    unSpanned = LexedToken do
+                        Token.LitString do buildText tb
+                }
+
+        textBuilderFromWord8 w = textBuilderFromChar
+            do toEnum do fromIntegral w
+
+lexAndYieldLitChar :: forall s m. MonadST.T s m => Lexer s m ()
+lexAndYieldLitChar = do
+    sp0 <- consumeBufferWithSpan
+    goChar sp0
+    where
+        goChar sp0 = consumeBufferItem >>= \case
+            Nothing -> lexerYield do
+                Spanned.Spanned
+                    {
+                        getSpan = sp0,
+                        unSpanned = LexError
+                            Error.UnclosedCharLiteral
+                            do text "Found an unclosed literal."
+                    }
+            Just item -> do
+                let (c, u) = Spanned.unSpanned item
+                    sp1 = sp0 <> Spanned.getSpan item
+                case u of
+                    CodeUnit.LcUSymQuote -> lexerYield do
+                        Spanned.Spanned
+                            {
+                                getSpan = sp1,
+                                unSpanned = LexError
+                                    Error.NoContentCharLiteral
+                                    do text "Found an literal without contents."
+                            }
+                    LexEscapeOpen ->
+                        goEscape sp1
+                    _ | u == CodeUnit.LcUSymSpace ||
+                        EnumSet.member u Rules.graphicCs -> do
+                        goClose sp1 c
+                    _ -> do
+                        lexerYield do
+                            Spanned.Spanned
+                                {
+                                    getSpan = Spanned.getSpan item,
+                                    unSpanned = LexError
+                                        Error.NonGraphicInCharLiteral
+                                        do text "Found a non graphic char."
+                                }
+                        goTooMany sp1 '\NUL'
+
+        goEscape sp0 = CharEscLex.tlexScan () >>= \case
+            Tlex.TlexEndOfInput -> lexerYield do
+                Spanned.Spanned
+                    {
+                        getSpan = sp0,
+                        unSpanned = LexError
+                            Error.UnclosedCharLiteral
+                            do text "Found an unclosed literal."
+                    }
+            Tlex.TlexError -> do
+                yieldTlexError
+            Tlex.TlexAccepted pos act -> do
+                setPosition pos
+                case act of
+                    Rules.WithCharesc w -> do
+                        sp1 <- consumeBufferWithSpan
+                        let c = toEnum do fromIntegral w
+                        goClose
+                            do sp0 <> sp1
+                            c
+                    Rules.WithAsciiEsc w -> do
+                        sp1 <- consumeBufferWithSpan
+                        let c = toEnum do fromIntegral w
+                        goClose
+                            do sp0 <> sp1
+                            c
+                    Rules.LexByteesc -> do
+                        spw <- lexCharEscByteesc
+                        let c = toEnum
+                                do fromIntegral do Spanned.unSpanned spw
+                        goClose
+                            do sp0 <> Spanned.getSpan spw
+                            c
+                    Rules.WithGap -> do
+                        sp1 <- consumeBufferWithSpan
+                        lexerYield do
+                            Spanned.Spanned
+                                {
+                                    getSpan = sp1,
+                                    unSpanned = LexError
+                                        Error.GapInCharLiteral
+                                        do text "Found an gap in char literal."
+                                }
+                        goTooMany
+                            do sp0 <> sp1
+                            '\NUL'
+                    Rules.LexUniEscape -> do
+                        spc <- lexCharEscUniEscape
+                        goClose
+                            do sp0 <> Spanned.getSpan spc
+                            do Spanned.unSpanned spc
+
+        goClose sp0 c = consumeBufferItem @s @m >>= \case
+            Nothing -> lexerYield do
+                Spanned.Spanned
+                    {
+                        getSpan = sp0,
+                        unSpanned = LexError
+                            Error.UnclosedCharLiteral
+                            do text "Found an unclosed literal."
+                    }
+            Just item -> do
+                let (_, u) = Spanned.unSpanned item
+                    sp1 = sp0 <> Spanned.getSpan item
+                case u of
+                    CodeUnit.LcUSymQuote -> lexerYield do
+                        Spanned.Spanned
+                            {
+                                getSpan = sp1,
+                                unSpanned = LexedToken do
+                                    Token.LitChar c
+                            }
+                    _ -> do
+                        lexerYield do
+                            Spanned.Spanned
+                                {
+                                    getSpan = Spanned.getSpan item,
+                                    unSpanned = LexError
+                                        Error.TooManyContentsInCharLiteral
+                                        do text "Found an excess escape in char literal."
+                                }
+                        goTooMany sp1 c
+
+        goTooMany sp0 c = consumeBufferItem @s @m >>= \case
+            Nothing -> lexerYield do
+                Spanned.Spanned
+                    {
+                        getSpan = sp0,
+                        unSpanned = LexError
+                            Error.UnclosedCharLiteral
+                            do text "Found an unclosed literal."
+                    }
+            Just item -> do
+                let (_, u) = Spanned.unSpanned item
+                    sp1 = sp0 <> Spanned.getSpan item
+                case u of
+                    CodeUnit.LcUSymQuote -> lexerYield do
+                        Spanned.Spanned
+                            {
+                                getSpan = sp1,
+                                unSpanned = LexedToken do
+                                    Token.LitChar c
+                            }
+                    _ -> goTooMany sp1 c
+
+lexAndYieldInterpStringStart :: forall s m. MonadST.T s m => Lexer s m ()
+lexAndYieldInterpStringStart = do
+    sp0 <- consumeBufferWithSpan
+    lexAndYieldInterpString True sp0
 
 lexAndYieldInterpStringContinue :: MonadST.T s m => Lexer s m ()
-lexAndYieldInterpStringContinue = undefined
+lexAndYieldInterpStringContinue = do
+    sp0 <- consumeBufferWithSpan
+    lexAndYieldInterpString False sp0
 
-lexAndYieldCommentLineWithContent :: MonadST.T s m => Lexer s m ()
-lexAndYieldCommentLineWithContent = undefined
+lexAndYieldInterpString :: forall s m. MonadST.T s m
+    => Bool -> Spanned.Span -> Lexer s m ()
+lexAndYieldInterpString b = \sp0 -> goChar sp0 mempty
+    where
+        goChar sp0 t0 = consumeBufferItem @s @m >>= \case
+            Nothing -> lexerYield do
+                Spanned.Spanned
+                    {
+                        getSpan = sp0,
+                        unSpanned = LexError
+                            Error.UnclosedInterpStringLiteral
+                            do text "Found an unclosed literal."
+                    }
+            Just item -> do
+                let (c, u) = Spanned.unSpanned item
+                    sp1 = sp0 <> Spanned.getSpan item
+                case u of
+                    CodeUnit.LcUSymDQuote -> lexerYield do
+                        Spanned.Spanned
+                            {
+                                getSpan = sp1,
+                                unSpanned = LexedToken case b of
+                                    True ->
+                                        Token.LitInterpStringWithoutInterp
+                                            do buildText t0
+                                    False ->
+                                        Token.LitInterpStringEnd
+                                            do buildText t0
+                            }
+                    CodeUnit.LcUSymDollar ->
+                        goInterpOpen sp1 t0
+                            do Spanned.getSpan item
+                    LexEscapeOpen ->
+                        goEscape sp1 t0
+                    _ | EnumSet.member u graphicWhiteCharCs -> do
+                        goChar sp1
+                            do t0 <> textBuilderFromChar c
+                    _ -> do
+                        lexerYield do
+                            Spanned.Spanned
+                                {
+                                    getSpan = Spanned.getSpan item,
+                                    unSpanned = LexError
+                                        Error.NonGraphicInInterpStringLiteral
+                                        do text "Found a non graphic char."
+                                }
+                        goChar sp1 t0
 
-lexAndYieldCommentMultilineWithContent :: MonadST.T s m => Lexer s m ()
-lexAndYieldCommentMultilineWithContent = undefined
+        goEscape sp0 t0 = CharEscLex.tlexScan () >>= \case
+            Tlex.TlexEndOfInput -> lexerYield do
+                Spanned.Spanned
+                    {
+                        getSpan = sp0,
+                        unSpanned = LexError
+                            Error.UnclosedInterpStringLiteral
+                            do text "Found an unclosed literal."
+                    }
+            Tlex.TlexError -> do
+                yieldTlexError
+            Tlex.TlexAccepted pos act -> do
+                setPosition pos
+                case act of
+                    Rules.WithGap -> do
+                        sp1 <- consumeBufferWithSpan @s @m
+                        goChar
+                            do sp0 <> sp1
+                            do t0
+                    Rules.WithCharesc w -> do
+                        sp1 <- consumeBufferWithSpan
+                        goChar
+                            do sp0 <> sp1
+                            do t0 <> textBuilderFromWord8 w
+                    Rules.WithAsciiEsc w -> do
+                        sp1 <- consumeBufferWithSpan
+                        goChar
+                            do sp0 <> sp1
+                            do t0 <> textBuilderFromWord8 w
+                    Rules.LexByteesc -> do
+                        spw <- lexCharEscByteesc
+                        let w = Spanned.unSpanned spw
+                        goChar
+                            do sp0 <> Spanned.getSpan spw
+                            do t0 <> textBuilderFromWord8 w
+                    Rules.LexUniEscape -> do
+                        spc <- lexCharEscUniEscape
+                        let c = Spanned.unSpanned spc
+                        goChar
+                            do sp0 <> Spanned.getSpan spc
+                            do t0 <> textBuilderFromChar c
 
-lexAndYieldCommentDoc :: MonadST.T s m => Lexer s m ()
-lexAndYieldCommentDoc = undefined
+        goInterpOpen sp0 t0 isp0 = consumeBufferItem @s @m >>= \case
+            Nothing -> lexerYield do
+                Spanned.Spanned
+                    {
+                        getSpan = sp0,
+                        unSpanned = LexError
+                            Error.UnclosedInterpStringLiteral
+                            do text "Found an unclosed literal."
+                    }
+            Just item -> do
+                let (c, u) = Spanned.unSpanned item
+                    sp1 = sp0 <> Spanned.getSpan item
+                    isp1 = isp0 <> Spanned.getSpan item
+                case u of
+                    CodeUnit.LcUSymBraceOpen ->
+                        goInterpBraceOpen sp1 t0 isp1
+                    CodeUnit.LcUSymWhiteBraceOpen -> lexerYield do
+                        Spanned.Spanned
+                            {
+                                getSpan = sp1,
+                                unSpanned = LexedToken case b of
+                                    True ->
+                                        Token.LitInterpStringStart
+                                            do buildText t0
+                                    False ->
+                                        Token.LitInterpStringContinue
+                                            do buildText t0
+                            }
+                    _ -> lexerYield do
+                        Spanned.Spanned
+                            {
+                                getSpan = isp1,
+                                unSpanned = LexError
+                                    Error.InvalidInterpOpenInInterpStringLiteral
+                                    do text "Unexpected a interp opening."
+                            }
+
+        goInterpBraceOpen sp0 t0 isp0 = consumeBufferItem @s @m >>= \case
+            Nothing -> lexerYield do
+                Spanned.Spanned
+                    {
+                        getSpan = sp0,
+                        unSpanned = LexError
+                            Error.UnclosedInterpStringLiteral
+                            do text "Found an unclosed literal."
+                    }
+            Just item -> do
+                let (c, u) = Spanned.unSpanned item
+                    sp1 = sp0 <> Spanned.getSpan item
+                    isp1 = isp0 <> Spanned.getSpan item
+                case u of
+                    CodeUnit.LcUSymHash -> lexerYield do
+                        Spanned.Spanned
+                            {
+                                getSpan = sp1,
+                                unSpanned = LexedToken case b of
+                                    True ->
+                                        Token.LitInterpStringStart
+                                            do buildText t0
+                                    False ->
+                                        Token.LitInterpStringContinue
+                                            do buildText t0
+                            }
+                    _ -> lexerYield do
+                        Spanned.Spanned
+                            {
+                                getSpan = isp1,
+                                unSpanned = LexError
+                                    Error.InvalidInterpOpenInInterpStringLiteral
+                                    do text "Unexpected a interp opening."
+                            }
+
+        textBuilderFromWord8 w = textBuilderFromChar
+            do toEnum do fromIntegral w
+
+graphicSpaceCs :: Rules.CharSet
+graphicSpaceCs = mconcat
+    [
+        Rules.graphicCs,
+        Rules.spaceCs
+    ]
+
+lexAndYieldCommentLineWithContent :: forall s m. MonadST.T s m => Lexer s m ()
+lexAndYieldCommentLineWithContent = do
+    spc <- consumeBuffer
+        do \item -> item <&> \(c, _) -> c
+        do \spc item -> Spanned.Spanned
+            {
+                getSpan = Spanned.getSpan spc <> Spanned.getSpan item,
+                unSpanned = case Spanned.unSpanned item of
+                    (c, _) -> c
+            }
+    goChar
+        do Spanned.getSpan spc
+        do textBuilderFromChar do Spanned.unSpanned spc
+    where
+        goChar sp0 t0 = consumeBufferItem @s @m >>= \case
+            Nothing -> lexerYield do
+                Spanned.Spanned
+                    {
+                        getSpan = sp0,
+                        unSpanned = LexedToken do
+                            Token.CommentLine
+                                do buildText t0
+                    }
+            Just item -> do
+                let (c, u) = Spanned.unSpanned item
+                    sp1 = sp0 <> Spanned.getSpan item
+                case u of
+                    CodeUnit.LcUSymCR -> goLF sp1 t0
+                    _ | EnumSet.member u Rules.newlineCs -> lexerYield do
+                        Spanned.Spanned
+                            {
+                                getSpan = sp1,
+                                unSpanned = LexedToken do
+                                    Token.CommentLine
+                                        do buildText t0
+                            }
+                    _ | EnumSet.member u graphicSpaceCs -> do
+                        goChar sp1
+                            do t0 <> textBuilderFromChar c
+                    _ -> lexerYield do
+                        Spanned.Spanned
+                            {
+                                getSpan = Spanned.getSpan item,
+                                unSpanned = LexError
+                                    Error.NonGraphicInLineComment
+                                    do text "Non graphic char in line comment."
+                            }
+
+        goLF sp0 t0 = consumeBufferItem @s @m >>= \case
+            Nothing -> lexerYield do
+                Spanned.Spanned
+                    {
+                        getSpan = sp0,
+                        unSpanned = LexedToken do
+                            Token.CommentLine
+                                do buildText t0
+                    }
+            Just item -> do
+                let (c, u) = Spanned.unSpanned item
+                    sp1 = sp0 <> Spanned.getSpan item
+                case u of
+                    CodeUnit.LcUSymLF -> lexerYield do
+                        Spanned.Spanned
+                            {
+                                getSpan = sp1,
+                                unSpanned = LexedToken do
+                                    Token.CommentLine
+                                        do buildText t0
+                            }
+                    _ -> do
+                        restoreBufferItem item
+                        lexerYield do
+                            Spanned.Spanned
+                                {
+                                    getSpan = sp0,
+                                    unSpanned = LexedToken do
+                                        Token.CommentLine
+                                            do buildText t0
+                                }
+
+lexAndYieldCommentMultilineWithContent :: forall s m. MonadST.T s m => Lexer s m ()
+lexAndYieldCommentMultilineWithContent = do
+    spc <- consumeBuffer
+        do \item -> item <&> \(c, _) -> c
+        do \spc item -> Spanned.Spanned
+            {
+                getSpan = Spanned.getSpan spc <> Spanned.getSpan item,
+                unSpanned = case Spanned.unSpanned item of
+                    (c, _) -> c
+            }
+    goChar False 0
+        do Spanned.getSpan spc
+        do textBuilderFromChar do Spanned.unSpanned spc
+    where
+        goChar b i sp0 t0 = consumeBufferItem @s @m >>= \case
+            Nothing -> lexerYield do
+                Spanned.Spanned
+                    {
+                        getSpan = sp0,
+                        unSpanned = LexError
+                            Error.UnclosedMultilineComment
+                            do text "Unclosed comment."
+                    }
+            Just item -> do
+                let (c, u) = Spanned.unSpanned item
+                    sp1 = sp0 <> Spanned.getSpan item
+                    t1 = case b of
+                        True -> t0 <> textBuilderFromChar '-'
+                        False -> t0
+                case u of
+                    CodeUnit.LcUSymBraceOpen ->
+                        goChar False
+                            do i + 1
+                            sp1
+                            do t1 <> textBuilderFromChar c
+                    CodeUnit.LcUSymHyphen ->
+                        goChar True i sp1
+                            do t1 <> textBuilderFromChar c
+                    CodeUnit.LcUSymBraceClose | b -> if
+                        | i > 0 ->
+                            goChar False
+                                do i - 1
+                                sp1
+                                do t1 <> textBuilderFromChar c
+                        | otherwise -> lexerYield do
+                            Spanned.Spanned
+                                {
+                                    getSpan = sp1,
+                                    unSpanned = LexedToken do
+                                        Token.CommentMultiline
+                                            do buildText t0
+                                }
+                    _ | EnumSet.member u graphicWhiteCharCs -> do
+                        goChar False i sp1
+                            do t1 <> textBuilderFromChar c
+                    _ -> do
+                        lexerYield do
+                            Spanned.Spanned
+                                {
+                                    getSpan = Spanned.getSpan item,
+                                    unSpanned = LexError
+                                        Error.NonGraphicInMultilineComment
+                                        do text "Non graphic char in multi line comment."
+                                }
+                        goChar False i sp1 t1
+
+lexAndYieldCommentDoc :: forall s m. MonadST.T s m => Lexer s m ()
+lexAndYieldCommentDoc = do
+    sp0 <- consumeBufferWithSpan
+    goChar sp0 mempty
+    where
+        goChar sp0 t0 = consumeBufferItem @s @m >>= \case
+            Nothing -> lexerYield do
+                Spanned.Spanned
+                    {
+                        getSpan = sp0,
+                        unSpanned = LexError
+                            Error.UnclosedDocComment
+                            do text "Unclosed comment."
+                    }
+            Just item -> do
+                let (c, u) = Spanned.unSpanned item
+                    sp1 = sp0 <> Spanned.getSpan item
+                case u of
+                    CodeUnit.LcUSymCR ->
+                        goClose True sp1 initRestUnits t0
+                            do textBuilderFromChar c
+                    _ | EnumSet.member u Rules.newlineCs ->
+                        goClose False sp1 initRestUnits t0
+                            do textBuilderFromChar c
+                    _ | EnumSet.member u graphicWhiteCharCs -> do
+                        goChar sp1
+                            do t0 <> textBuilderFromChar c
+                    _ -> do
+                        lexerYield do
+                            Spanned.Spanned
+                                {
+                                    getSpan = Spanned.getSpan item,
+                                    unSpanned = LexError
+                                        Error.NonGraphicInDocComment
+                                        do text "Non graphic char in doc comment."
+                                }
+                        goChar sp1 t0
+
+        goClose b sp0 rs t0 rt0 = case rs of
+            [] -> lexerYield do
+                Spanned.Spanned
+                    {
+                        getSpan = sp0,
+                        unSpanned = LexedToken do
+                            Token.CommentDoc do buildText t0
+                    }
+            r:rs -> goClose b sp0 r rs t0 rt0
+
+        goClose1 b sp0 r rs t0 rt0 = consumeBufferItem @s @m >>= \case
+            Nothing -> lexerYield do
+                Spanned.Spanned
+                    {
+                        getSpan = sp0,
+                        unSpanned = LexError
+                            Error.UnclosedDocComment
+                            do text "Unclosed comment."
+                    }
+            Just item -> do
+                let (c, u) = Spanned.unSpanned item
+                    sp1 = sp0 <> Spanned.getSpan item
+                case u of
+                    _ | r == u ->
+                        goClose False sp1 rs t0
+                            do rt0 <> textBuilderFromChar c
+                    CodeUnit.LcUSymLF | b ->
+                        goClose False sp1 initRestUnits t0
+                            do rt0 <> textBuilderFromChar c
+                    CodeUnit.LcUSymCR ->
+                        goClose True sp1 initRestUnits
+                            do t0 <> rt0
+                            do textBuilderFromChar c
+                    _ | EnumSet.member u Rules.newlineCs ->
+                        goClose False sp1 initRestUnits
+                            do t0 <> rt0
+                            do textBuilderFromChar c
+                    _ | EnumSet.member u graphicWhiteCharCs -> do
+                        goChar sp1
+                            do t0 <> rt0 <> textBuilderFromChar c
+                    _ -> do
+                        lexerYield do
+                            Spanned.Spanned
+                                {
+                                    getSpan = Spanned.getSpan item,
+                                    unSpanned = LexError
+                                        Error.NonGraphicInDocComment
+                                        do text "Non graphic char in doc comment."
+                                }
+                        goChar sp1 do t0 <> rt0
+
+        initRestUnits =
+            [
+                CodeUnit.LcUSymVertBar,
+                CodeUnit.LcUSymHyphen,
+                CodeUnit.LcUSymBraceClose
+            ]
 
 lexAndYieldCommentPragma :: MonadST.T s m => Lexer s m ()
-lexAndYieldCommentPragma = undefined
+lexAndYieldCommentPragma = error "TODO"

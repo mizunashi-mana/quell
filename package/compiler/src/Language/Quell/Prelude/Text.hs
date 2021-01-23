@@ -2,7 +2,7 @@ module Language.Quell.Prelude.Text (
     putText,
     putTextLn,
     TextBuilder,
-    buildStrictText,
+    buildText,
     textBuilderFromChar,
     textBuilderFromText,
     textBuilderFromStringLit,
@@ -24,8 +24,8 @@ putTextLn txt = Text.putStrLn txt
 
 type TextBuilder = TextBuilder.Builder
 
-buildStrictText :: TextBuilder -> Text
-buildStrictText b = LazyText.toStrict do TextBuilder.toLazyText b
+buildText :: TextBuilder -> Text
+buildText b = LazyText.toStrict do TextBuilder.toLazyText b
 
 textBuilderFromChar :: Char -> TextBuilder
 textBuilderFromChar c = TextBuilder.singleton c

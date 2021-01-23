@@ -60,123 +60,32 @@ spec = do
             let (rs, ts) = lexFromList
                     [
                         byteString "[id\nx(0b0)aa00,1",
-                        byteString "01 +103-40.0a0,40e10o0]"
+                        byteString "01 +103-40.0a0,40e10o0]",
+                        byteString "(#r\"a\\x00\" '\\u{11}')"
                     ]
             rs `shouldBe` mempty
             ts `shouldBe`
                 [
-                    Spanned {
-                        getSpan = Span {
-                            beginLoc = Loc {locLine = 0, locCol = 0, locBytesPos = 0},
-                            endLoc = Loc {locLine = 0, locCol = 1, locBytesPos = 1}
-                        },
-                        unSpanned = SpBrackOpen
-                    },
-                    Spanned {
-                        getSpan = Span {
-                            beginLoc = Loc {locLine = 0, locCol = 1, locBytesPos = 1},
-                            endLoc = Loc {locLine = 0, locCol = 3, locBytesPos = 3}
-                        },
-                        unSpanned = IdVarId (TextId.stringLit "id")
-                    },
-                    Spanned {
-                        getSpan = Span {
-                            beginLoc = Loc {locLine = 1, locCol = 0, locBytesPos = 4},
-                            endLoc = Loc {locLine = 1, locCol = 1, locBytesPos = 5}
-                        },
-                        unSpanned = IdVarId (TextId.stringLit "x")
-                    },
-                    Spanned {
-                        getSpan = Span {
-                            beginLoc = Loc {locLine = 1, locCol = 1, locBytesPos = 5},
-                            endLoc = Loc {locLine = 1, locCol = 2, locBytesPos = 6}
-                        },
-                        unSpanned = SpParenOpen
-                    },
-                    Spanned {
-                        getSpan = Span {
-                            beginLoc = Loc {locLine = 1, locCol = 2, locBytesPos = 6},
-                            endLoc = Loc {locLine = 1, locCol = 5, locBytesPos = 9}
-                        },
-                        unSpanned = LitInteger 0
-                    },
-                    Spanned {
-                        getSpan = Span {
-                            beginLoc = Loc {locLine = 1, locCol = 5, locBytesPos = 9},
-                            endLoc = Loc {locLine = 1, locCol = 6, locBytesPos = 10}
-                        },
-                        unSpanned = SpParenClose
-                    },
-                    Spanned {
-                        getSpan = Span {
-                            beginLoc = Loc {locLine = 1, locCol = 6, locBytesPos = 10},
-                            endLoc = Loc {locLine = 1, locCol = 10, locBytesPos = 14}
-                        },
-                        unSpanned = IdVarId (TextId.stringLit "aa00")
-                    },
-                    Spanned {
-                        getSpan = Span {
-                            beginLoc = Loc {locLine = 1, locCol = 10, locBytesPos = 14},
-                            endLoc = Loc {locLine = 1, locCol = 11, locBytesPos = 15}
-                        },
-                        unSpanned = SpComma
-                    },
-                    Spanned {
-                        getSpan = Span {
-                            beginLoc = Loc {locLine = 1, locCol = 11, locBytesPos = 15},
-                            endLoc = Loc {locLine = 1, locCol = 14, locBytesPos = 18}
-                        },
-                        unSpanned = LitInteger 101
-                    },
-                    Spanned {
-                        getSpan = Span {
-                            beginLoc = Loc {locLine = 1, locCol = 15, locBytesPos = 19},
-                            endLoc = Loc {locLine = 1, locCol = 19, locBytesPos = 23}
-                        },
-                        unSpanned = LitInteger 103
-                    },
-                    Spanned {
-                        getSpan = Span {
-                            beginLoc = Loc {locLine = 1, locCol = 19, locBytesPos = 23},
-                            endLoc = Loc {locLine = 1, locCol = 24, locBytesPos = 28}
-                        },
-                        unSpanned = LitRational ((-40) % 1)
-                    },
-                    Spanned {
-                        getSpan = Span {
-                            beginLoc = Loc {locLine = 1, locCol = 24, locBytesPos = 28},
-                            endLoc = Loc {locLine = 1, locCol = 26, locBytesPos = 30}
-                        },
-                        unSpanned = IdVarId (TextId.stringLit "a0")
-                    },
-                    Spanned {
-                        getSpan = Span {
-                            beginLoc = Loc {locLine = 1, locCol = 26, locBytesPos = 30},
-                            endLoc = Loc {locLine = 1, locCol = 27, locBytesPos = 31}
-                        },
-                        unSpanned = SpComma
-                    },
-                    Spanned {
-                        getSpan = Span {
-                            beginLoc = Loc {locLine = 1, locCol = 27, locBytesPos = 31},
-                            endLoc = Loc {locLine = 1, locCol = 32, locBytesPos = 36}
-                        },
-                        unSpanned = LitRational (400000000000 % 1)
-                    },
-                    Spanned {
-                        getSpan = Span {
-                            beginLoc = Loc {locLine = 1, locCol = 32, locBytesPos = 36},
-                            endLoc = Loc {locLine = 1, locCol = 34, locBytesPos = 38}
-                        },
-                        unSpanned = IdVarId (TextId.stringLit "o0")
-                    },
-                    Spanned {
-                        getSpan = Span {
-                            beginLoc = Loc {locLine = 1, locCol = 34, locBytesPos = 38},
-                            endLoc = Loc {locLine = 1, locCol = 35, locBytesPos = 39}
-                        },
-                        unSpanned = SpBrackClose
-                    }
+                    Spanned {getSpan = Span {beginLoc = Loc {locBytesPos = 0, locLine = 0, locCol = 0}, endLoc = Loc {locBytesPos = 1, locLine = 0, locCol = 1}}, unSpanned = SpBrackOpen},
+                    Spanned {getSpan = Span {beginLoc = Loc {locBytesPos = 2, locLine = 0, locCol = 2}, endLoc = Loc {locBytesPos = 3, locLine = 0, locCol = 3}}, unSpanned = IdVarId (textId "id")},
+                    Spanned {getSpan = Span {beginLoc = Loc {locBytesPos = 4, locLine = 1, locCol = 0}, endLoc = Loc {locBytesPos = 5, locLine = 1, locCol = 1}}, unSpanned = IdVarId (textId "x")},
+                    Spanned {getSpan = Span {beginLoc = Loc {locBytesPos = 5, locLine = 1, locCol = 1}, endLoc = Loc {locBytesPos = 6, locLine = 1, locCol = 2}}, unSpanned = SpParenOpen},
+                    Spanned {getSpan = Span {beginLoc = Loc {locBytesPos = 8, locLine = 1, locCol = 4}, endLoc = Loc {locBytesPos = 9, locLine = 1, locCol = 5}}, unSpanned = LitInteger 0},
+                    Spanned {getSpan = Span {beginLoc = Loc {locBytesPos = 9, locLine = 1, locCol = 5}, endLoc = Loc {locBytesPos = 10, locLine = 1, locCol = 6}}, unSpanned = SpParenClose},
+                    Spanned {getSpan = Span {beginLoc = Loc {locBytesPos = 13, locLine = 1, locCol = 9}, endLoc = Loc {locBytesPos = 14, locLine = 1, locCol = 10}}, unSpanned = IdVarId (textId "aa00")},
+                    Spanned {getSpan = Span {beginLoc = Loc {locBytesPos = 14, locLine = 1, locCol = 10}, endLoc = Loc {locBytesPos = 15, locLine = 1, locCol = 11}}, unSpanned = SpComma},
+                    Spanned {getSpan = Span {beginLoc = Loc {locBytesPos = 17, locLine = 1, locCol = 13}, endLoc = Loc {locBytesPos = 18, locLine = 1, locCol = 14}}, unSpanned = LitInteger 101},
+                    Spanned {getSpan = Span {beginLoc = Loc {locBytesPos = 22, locLine = 1, locCol = 18}, endLoc = Loc {locBytesPos = 23, locLine = 1, locCol = 19}}, unSpanned = LitInteger 103},
+                    Spanned {getSpan = Span {beginLoc = Loc {locBytesPos = 27, locLine = 1, locCol = 23}, endLoc = Loc {locBytesPos = 28, locLine = 1, locCol = 24}}, unSpanned = LitRational ((-40) % 1)},
+                    Spanned {getSpan = Span {beginLoc = Loc {locBytesPos = 29, locLine = 1, locCol = 25}, endLoc = Loc {locBytesPos = 30, locLine = 1, locCol = 26}}, unSpanned = IdVarId (textId "a0")},
+                    Spanned {getSpan = Span {beginLoc = Loc {locBytesPos = 30, locLine = 1, locCol = 26}, endLoc = Loc {locBytesPos = 31, locLine = 1, locCol = 27}}, unSpanned = SpComma},
+                    Spanned {getSpan = Span {beginLoc = Loc {locBytesPos = 35, locLine = 1, locCol = 31}, endLoc = Loc {locBytesPos = 36, locLine = 1, locCol = 32}}, unSpanned = LitRational (400000000000 % 1)},
+                    Spanned {getSpan = Span {beginLoc = Loc {locBytesPos = 37, locLine = 1, locCol = 33}, endLoc = Loc {locBytesPos = 38, locLine = 1, locCol = 34}}, unSpanned = IdVarId (textId "o0")},
+                    Spanned {getSpan = Span {beginLoc = Loc {locBytesPos = 38, locLine = 1, locCol = 34}, endLoc = Loc {locBytesPos = 39, locLine = 1, locCol = 35}}, unSpanned = SpBrackClose},
+                    Spanned {getSpan = Span {beginLoc = Loc {locBytesPos = 39, locLine = 1, locCol = 35}, endLoc = Loc {locBytesPos = 40, locLine = 1, locCol = 36}}, unSpanned = SpParenOpen},
+                    Spanned {getSpan = Span {beginLoc = Loc {locBytesPos = 48, locLine = 1, locCol = 44}, endLoc = Loc {locBytesPos = 49, locLine = 1, locCol = 45}}, unSpanned = LitByteString do byteString "a\NUL"},
+                    Spanned {getSpan = Span {beginLoc = Loc {locBytesPos = 57, locLine = 1, locCol = 53}, endLoc = Loc {locBytesPos = 58, locLine = 1, locCol = 54}}, unSpanned = LitChar '\DC1'},
+                    Spanned {getSpan = Span {beginLoc = Loc {locBytesPos = 58, locLine = 1, locCol = 54}, endLoc = Loc {locBytesPos = 59, locLine = 1, locCol = 55}}, unSpanned = SpParenClose}
                 ]
 
 textId :: StringLit -> TextId.T
