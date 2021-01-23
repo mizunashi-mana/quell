@@ -27,7 +27,7 @@ jobs:
         -
             name: Upgrade npm
             run: |
-                npm install -g npm
+                npm install -g npm@7
         -
             name: Install dependencies
             run: |
@@ -40,7 +40,7 @@ jobs:
         -
             name: Build spec docs
             run: |
-                pipenv run make -C doc/spec make html
+                pipenv run make -C doc/spec html
                 mv doc/spec/build/html public/spec
         -
             name: Deploy
