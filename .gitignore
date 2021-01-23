@@ -11,3 +11,6 @@
 #
 
 /dist*/
+
+# for Node.js
+/node_modules/

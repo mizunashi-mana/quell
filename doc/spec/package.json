@@ -1,14 +1,15 @@
 {
-  "name": "quell-spec",
-  "version": "1.0.0",
-  "description": "",
-  "dependencies": {
-    "katex": "^0.11.1"
-  },
-  "devDependencies": {},
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "author": "",
-  "license": "MIT"
+    "private": true,
+    "name": "quell-spec",
+    "version": "1.0.0",
+    "description": "",
+    "dependencies": {
+        "katex": "^0.11.1"
+    },
+    "devDependencies": {},
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "author": "",
+    "license": "MIT"
 }
