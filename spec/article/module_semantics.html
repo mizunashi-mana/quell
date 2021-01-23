@@ -1,0 +1,207 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Module Semantics &#8212; quell-spec  documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/katex-math.css" />
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/contrib/auto-render.min.js"></script>
+    <script src="../_static/katex_autorenderer.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Typing Semantics" href="typing_semantics.html" />
+    <link rel="prev" title="Syntax" href="syntax.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="module-semantics">
+<h1>Module Semantics<a class="headerlink" href="#module-semantics" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="signatures">
+<h2>Signatures<a class="headerlink" href="#signatures" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">signature</span> <span class="n">EqDict</span> <span class="n">a</span> <span class="n">where</span>
+  <span class="p">(</span><span class="o">==</span><span class="p">):</span> <span class="n">a</span> <span class="o">-&gt;</span> <span class="n">a</span> <span class="o">-&gt;</span> <span class="n">Bool</span>
+
+<span class="n">signature</span> <span class="n">MonoListLike</span> <span class="n">where</span>
+  <span class="nb">type</span> <span class="n">Container</span><span class="p">:</span> <span class="n">Type</span>
+  <span class="nb">type</span> <span class="n">Element</span><span class="p">:</span> <span class="n">Type</span>
+
+  <span class="nb">map</span><span class="p">:</span> <span class="p">(</span><span class="n">Element</span> <span class="o">-&gt;</span> <span class="n">Element</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Container</span> <span class="o">-&gt;</span> <span class="n">Container</span>
+  <span class="n">length</span><span class="p">:</span> <span class="n">Container</span> <span class="o">-&gt;</span> <span class="n">Int</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="modules-and-functors">
+<h2>Modules and Functors<a class="headerlink" href="#modules-and-functors" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">BoolList</span><span class="p">:</span> <span class="n">MonoListLike</span>
+<span class="n">module</span> <span class="n">BoolList</span> <span class="n">where</span>
+  <span class="n">data</span> <span class="n">Container</span> <span class="n">where</span>
+    <span class="n">BoolNil</span><span class="p">:</span> <span class="n">Container</span>
+    <span class="n">BoolCons</span><span class="p">:</span> <span class="n">Bool</span> <span class="o">-&gt;</span> <span class="n">Container</span> <span class="o">-&gt;</span> <span class="n">Container</span>
+
+  <span class="nb">type</span> <span class="n">Element</span> <span class="o">=</span> <span class="n">Bool</span>
+
+  <span class="nb">map</span> <span class="n">f</span> <span class="n">xs0</span> <span class="o">=</span> <span class="n">go</span> <span class="n">xs0</span> <span class="n">where</span>
+    <span class="n">go</span> <span class="o">=</span> \
+      <span class="n">BoolNil</span>       <span class="o">-&gt;</span> <span class="n">BoolNil</span>
+      <span class="n">BoolCons</span> <span class="n">x</span> <span class="n">xs</span> <span class="o">-&gt;</span> <span class="n">BoolCons</span>
+        <span class="n">do</span> <span class="n">f</span> <span class="n">x</span>
+        <span class="n">do</span> <span class="n">go</span> <span class="n">xs</span>
+
+  <span class="n">length</span> <span class="o">=</span> \
+    <span class="n">BoolNil</span>       <span class="o">-&gt;</span> <span class="mi">0</span>
+    <span class="n">BoolCons</span> <span class="n">_</span> <span class="n">xs</span> <span class="o">-&gt;</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">length</span> <span class="n">xs</span>
+
+<span class="n">data</span> <span class="n">List</span> <span class="n">a</span> <span class="n">where</span>
+  <span class="n">Nil</span><span class="p">:</span> <span class="n">List</span> <span class="n">a</span>
+  <span class="n">Cons</span><span class="p">:</span> <span class="n">a</span> <span class="o">-&gt;</span> <span class="n">List</span> <span class="n">a</span> <span class="o">-&gt;</span> <span class="n">List</span> <span class="n">a</span>
+
+<span class="n">ListEqDict</span><span class="p">:</span> <span class="n">EqDict</span> <span class="n">a</span> <span class="o">-&gt;</span> <span class="n">EqDict</span> <span class="p">(</span><span class="n">List</span> <span class="n">a</span><span class="p">)</span>
+<span class="n">module</span> <span class="n">ListEqDict</span> <span class="n">eq</span> <span class="n">where</span>
+  <span class="n">xs0</span> <span class="o">==</span> <span class="n">ys0</span> <span class="o">=</span> <span class="n">go</span> <span class="n">xs0</span> <span class="n">ys0</span> <span class="n">where</span>
+    <span class="n">go</span> <span class="o">=</span> \
+      <span class="n">Nil</span><span class="p">,</span>         <span class="n">Nil</span>         <span class="o">-&gt;</span> <span class="kc">True</span>
+      <span class="n">Cons</span> <span class="n">x</span><span class="s1">&#39; xs&#39;</span><span class="p">,</span> <span class="n">Cons</span> <span class="n">y</span><span class="s1">&#39; ys&#39;</span> <span class="o">-&gt;</span> <span class="n">x</span><span class="s1">&#39; eq.== y&#39;</span> <span class="o">&amp;&amp;</span> <span class="n">go</span> <span class="n">xs</span><span class="s1">&#39; ys&#39;</span>
+      <span class="n">_</span><span class="p">,</span>           <span class="n">_</span>           <span class="o">-&gt;</span> <span class="kc">False</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="traits">
+<h2>Traits<a class="headerlink" href="#traits" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>{-!
+| ::
+|
+|   signature Eq a where
+|     (==): a -&gt; a -&gt; Bool
+|
+|-}
+trait Eq a where
+  (==): a -&gt; a -&gt; Bool
+
+impl default: Eq (List a) &lt;= Eq a where
+  xs == ys = case xs, ys of
+    Nil,         Nil         -&gt; True
+    Cons x&#39; xs&#39;, Cons y&#39; ys&#39; -&gt; x&#39; == y&#39; &amp;&amp; xs&#39; == ys&#39;
+    _,           _           -&gt; False
+</pre></div>
+</div>
+</div>
+<div class="section" id="automatic-derive">
+<h2>Automatic Derive<a class="headerlink" href="#automatic-derive" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">quell-spec</a></h1>
+
+
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=mizunashi-mana&repo=quell&type=watch&count=true&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="syntax.html">Syntax</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Module Semantics</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#signatures">Signatures</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#modules-and-functors">Modules and Functors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#traits">Traits</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#automatic-derive">Automatic Derive</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="typing_semantics.html">Typing Semantics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="evaluate_semantics.html">Evaluate Semantics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="knowledge.html">Knowledge</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="syntax.html" title="previous chapter">Syntax</a></li>
+      <li>Next: <a href="typing_semantics.html" title="next chapter">Typing Semantics</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, Mizunashi Mana.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.1.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/article/module_semantics.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+    <a href="https://github.com/mizunashi-mana/quell" class="github">
+        <img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"  class="github"/>
+    </a>
+    
+
+    
+  </body>
+</html>
