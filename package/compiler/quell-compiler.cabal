@@ -190,22 +190,22 @@ library
         Language.Quell.Prelude.MonoTraversableM
         Language.Quell.Prelude.Debug
 
-test-suite doctest
-    import:
-        general,
-    type:
-        exitcode-stdio-1.0
-    hs-source-dirs:
-        test/doctest
-    main-is:
-        Doctest.hs
-    build-depends:
-        doctest,
-        QuickCheck,
-    autogen-modules:
-        Build_doctests
-    other-modules:
-        Build_doctests
+--test-suite doctest
+--    import:
+--        general,
+--    type:
+--        exitcode-stdio-1.0
+--    hs-source-dirs:
+--        test/doctest
+--    main-is:
+--        Doctest.hs
+--    build-depends:
+--        doctest,
+--        QuickCheck,
+--    autogen-modules:
+--        Build_doctests
+--    other-modules:
+--        Build_doctests
 
 test-suite spec
     import:
