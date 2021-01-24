@@ -159,12 +159,272 @@ ctypefam_decl_items_semis :: { () }
     | {- empty -}                                           { () }
 
 ctypefam_decl_item :: { () }
-    : typefam_impl_decl
-    | type_decl_where_item
+    : typefam_impl_decl                 { () }
+    | type_decl_where_item              { () }
 
+cdatafam_decl_body :: { () }
+    : lopen cdatafam_decl_items lclose  { () }
+
+cdatafam_decl_items :: { () }
+    : cdatafam_decl_items_semis cdatafam_decl_item  { () }
+    | cdatafam_decl_items_semis                     { () }
+
+cdatafam_decl_items_semis :: { () }
+    : cdatafam_decl_items_semis cdatafam_decl_item lsemis   { () }
+    | {- empty -}
+
+cdatafam_decl_item :: { () }
+    : datafam_impl_decl                 { () }
+    | type_decl_where_item              { () }
+
+
+type_impl_decl :: { () }
+    : typefam_impl_decl     { () }
+    | datafam_impl_decl     { () }
+
+typefam_impl_decl :: { () }
+    : 'type' 'impl' impltype '=' type type_decl_where    { () }
+
+datafam_impl_decl :: { () }
+    : 'data' 'impl' impltype data_decl_where                 { () }
+    | 'newtype' 'impl' impltype '=' type type_decl_where     { () }
+
+
+data_decl :: { () }
+    : 'data' con may_type_sig data_decl_where           { () }
+    | 'newtype' simpletype '=' type type_decl_where     { () }
+
+data_decl_where :: { () }
+    : 'where' data_decl_body    { () }
+    | {- empty -}               { () }
+
+data_decl_body :: { () }
+    : lopen data_decl_items lclose  { () }
+
+data_decl_items :: { () }
+    : data_decl_items_semis data_decl_item  { () }
+    | data_decl_items_semis                 { () }
+
+data_decl_items_semis :: { () }
+    : data_decl_items_semis data_decl_item lsemis   { () }
+    | {- empty -}                                   { () }
+
+data_decl_item :: { () }
+    : consig_decl
+
+
+val_decl :: { () }
+    : simpleval '=' expr val_decl_where     { () }
+
+val_decl_where :: { () }
+    : 'where' val_decl_where_body   { () }
+    | {- empty -}
+
+val_decl_where_body :: { () }
+    : lopen val_decl_where_items lclose { () }
+
+val_decl_where_items :: { () }
+    : val_decl_where_items_semis val_decl_where_item    { () }
+    | val_decl_where_items_semis                        { () }
+
+val_decl_where_items_semis :: { () }
+    : val_decl_where_items_semis val_decl_where_item lsemis { () }
+    | {- empty -}                                           { () }
+
+val_decl_where_item :: { () }
+    : let_bind_item     { () }
+
+
+pattern_decl :: { () }
+    : 'pattern' '_' may_type_sig 'of' pattern_decl_body { () }
+    | 'pattern' simplecon '=' pat
+    | 'pattern' simplecon '<-' pat
+
+pattern_decl_body :: { () }
+    : lopen pattern_decl_items lclose   { () }
+
+pattern_decl_items :: { () }
+    : pattern_decl_items_semis pattern_decl_item    { () }
+    | pattern_decl_items_semis                      { () }
+
+pattern_decl_items_semis :: { () }
+    : pattern_decl_items_semis pattern_decl_item lsemis { () }
+    | {- empty -}                                       { () }
+
+pattern_decl_item :: { () }
+    : simplecon '=' pat         { () }
+    | simplecon '<-' pat        { () }
+
+
+trait_decl :: { () }
+    : 'trait' simpletype type_left_contexts trait_decl_where { () }
+
+type_left_contexts :: { () }
+    : type_left_contexts '<=' context   { () }
+    | {- empty -}                       { () }
+
+trait_decl_where :: { () }
+    : 'where' trait_decl_body       { () }
+
+trait_decl_body :: { () }
+    : lopen trait_decl_items lclose     { () }
+
+trait_decl_items :: { () }
+    : trait_decl_items_semis trait_decl_item        { () }
+    | trait_decl_items_semis                        { () }
+
+trait_decl_items_semis :: { () }
+    : trait_decl_items_semis trait_decl_item lsemis { () }
+    | {- empty -}                                   { () }
+
+trait_decl_item :: { () }
+    : sig_item          { () }
+    | fixity_decl       { () }
+
+
+impl_decl :: { () }
+    : 'impl' impltype type_left_contexts impl_decl_name impl_decl_where { () }
+
+impl_decl_name :: { () }
+    : 'of' con      { () }
+    | {- empty -}   { () }
+
+impl_decl_where :: { () }
+    : 'where' impl_decl_body    { () }
+    | {- empty -}               { () }
+
+impl_decl_body :: { () }
+    : lopen impl_decl_items lclose  { () }
+
+impl_decl_items :: { () }
+    : impl_decl_items_semis impl_decl_item  { () }
+    | impl_decl_items_semis                 { () }
+
+impl_decl_items_semis :: { () }
+    : impl_decl_items_semis impl_decl_item lsemis   { () }
+    | {- empty -}                                   { () }
+
+impl_decl_item :: { () }
+    : module_decl_item      { () }
+
+
+fixity_decl :: { () }
+    : 'infix' infix_assoc infix_prec infix_ops      { () }
+
+infix_assoc :: { () }
+    : '->'          { () }
+    | '<-'          { () }
+    | {- empty -}   { () }
+
+infix_prec :: { () }
+    : INTEGER       { () }
+
+infix_ops :: { () }
+    : infix_ops_commas op   { () }
+    | infix_ops_commas      { () }
+
+infix_ops_commas :: { () }
+    : infix_ops_commas op ','   { () }
+    | {- empty -}               { () }
+
+use_clause :: { () }
+    : 'use' use_package_name qualified_cons use_body
+
+use_body :: { () }
+    : '(' '..' ')'          { () }
+    | '(' use_items ')'     { () }
+    | use_item              { () }
+
+use_items :: { () }
+    : use_items_commas use_item     { () }
+    | use_items_commas              { () }
+
+use_items_commas :: { () }
+    : use_items_commas use_item ',' { () }
+    | {- empty -}                   { () }
+
+use_item :: { () }
+    : con 'as' con                  { () }
+    | conop 'as' conop              { () }
+    | var 'as' var                  { () }
+    | op 'as' op                    { () }
+    | con                           { () }
+    | conop                         { () }
+    | var                           { () }
+    | op                            { () }
+
+
+simpletype :: { () }
+    : con bind_vars                 { () }
+    | bind_var conop bind_var       { () }
+
+impltype :: { () }
+    : con type_apps_args                        { () }
+    | type_qualified conop type_qualified       { () }
 
 simplecon :: { () }
-    : {- TODO -}    { () }
+    : con bind_vars                 { () }
+    | bind_var conop bind_var       { () }
+
+simpleval :: { () }
+    : var bind_vars                 { () }
+    | bind_var op bind_var          { () }
+
+
+type :: { () }
+    : '\\/' bind_vars '=>' type     { () }
+    | context '=>' type             { () }
+    | type_expr                     { () }
+
+context :: { () }
+    : type_unit         { () }
+
+type_expr :: { () }
+    : type_unit '->' type       { () }
+    | type_unit                 { () }
+
+type_unit :: { () }
+    : type_infix                { () }
+
+type_infix :: { () }
+    : type_infix qual_conop type_apps   { () }
+    | type_apps                         { () }
+
+type_apps :: { () }
+    : type_qualified type_apps_args     { () }
+
+type_apps_args :: { () }
+    : type_apps_args type_app           { () }
+    | {- empty -}                       { () }
+
+type_app :: { () }
+    : '@' type_qualified        { () }
+    | type_qualified            { () }
+
+type_qualified :: { () }
+    : qualified_cons type_qualifieds type_atomic { () }
+
+type_qualifieds :: { () }
+    : type_qualifieds type_atomic '.'   { () }
+    | {- empty -}                       { () }
+
+type_atomic :: { () }
+    : '(' type may_type_sig ')'     { () }
+    | con                           { () }
+    | var                           { () }
+    | type_literal                  { () }
+
+type_literal :: { () }
+
+
+qualified_cons :: { () }
+    : qualified_cons con '.'    { () }
+    | {- empty -}               { () }
+
+may_type_sig :: { () }
+    : ':' type      { () }
+    | {- empty -}   { () }
+
 
 lopen :: { () }
     : VOBRACE may_lsemis    { () }
