@@ -6,29 +6,32 @@ Notational Conventions
 
 .. glossary::
 
-  ``pattern?``
-    optional
+    ``pattern?``
+        optional
 
-  ``pattern*``
-    zero or more repetitions
+    ``pattern*``
+        zero or more repetitions
 
-  ``pattern+``
-    zero or more repetitions
+    ``pattern+``
+        one or more repetitions
 
-  ``( pattern )``
-    grouping
+    ``( pattern )``
+        grouping
 
-  ``pattern | pattern``
-    choice
+    ``pattern | pattern``
+        choice
 
-  ``pattern<pattern>``
-    difference
+    ``pattern<pattern>``
+        difference
 
-  ``"..."``
-    terminal by unicode properties
+    ``"..."``
+        terminal by unicode properties
 
-  ``EOS``
-    end of source
+    ``'...'``
+        virtual layout terminal (See `Layout`_)
+
+    ``EOS``
+        end of source
 
 Lexical Syntax
 --------------
@@ -37,7 +40,6 @@ Lexical Syntax
     lexical_program: (lexeme | whitespace)* EOS?
     lexeme  : literal
             : special
-            : semis
             : brace
             : reserved_id
             : reserved_op
@@ -53,9 +55,8 @@ Lexical Syntax
     con_op: (":" (symbol | other)*)<reserved_op>
 
 .. productionlist::
-    reserved_id : "alias"
-                : "as"
-                : "match"
+    reserved_id : "as"
+                : "case"
                 : "data"
                 : "derive"
                 : "do"
@@ -64,15 +65,13 @@ Lexical Syntax
                 : "foreign"
                 : "impl"
                 : "infix"
-                : "in"
                 : "letrec"
                 : "let"
                 : "module"
                 : "newtype"
-                : "none"
+                : "of"
                 : "pattern"
                 : "record"
-                : "rec"
                 : "role"
                 : "signature"
                 : "static"
@@ -80,7 +79,6 @@ Lexical Syntax
                 : "type"
                 : "use"
                 : "when"
-                : "with"
                 : "where"
                 : "_"
                 : "Default"
@@ -292,119 +290,15 @@ Aliases
 -------
 
 .. productionlist::
-    "->": "->" | "→"
-    "..": ".." | "…"
-    "<-": "<-" | "←"
-    "<=": "<=" | "⇐"
-    "=>": "=>" | "⇒"
-    "\\/": "\\/" | "∀"
-    "\\": "\\" | "λ"
-    "{{": "{{" | "❴"
-    "}}": "}}" | "❵"
-
-Layout
-------
-
-.. code-block::
-
-    PosToken(t) = ...
-
-.. code-block::
-
-    IsWhitespace(t)         = t match whitespace
-    IncludeNewline(t)       = t match (ANY* newline ANY*)
-    IsBraceKeyword(t)       = t match ("do" | "record" | "signature"
-                                        | "when" | "where" | "with"
-                                        )
-    IsDBraceKeyword(t)      = t match "let"
-    IsDBraceCloseKeyword(t) = t match "in"
-
-.. code-block::
-
-    PostProcess ts                          = <{{>:PostProcess1 ts
-
-    PostProcess1 []                         = []
-    PostProcess1 (t:ts)
-        | IsWhitespace(t) & IncludeNewline(t) = <;>:PostProcess1 ts
-        | IsWhitespace(t)                     = PostProcess1 ts
-        | IsBraceKeyword(t)                   = t:<{>:PostProcess1 ts
-        | IsDBraceKeyword(t)                  = t:<{{>:PostProcess1 ts
-        | IsDBraceCloseKeyword(t)             = <}}>:t:PostProcess1 ts
-        | otherwise                           = t:PostProcess1 ts
-
-.. code-block::
-
-    Layout ts = Layout1 ts []
-
-    Layout1 (t:ts) ms
-        | t == "("              = t:Layout1 ts (<"(">:ms)
-        | t == "["              = t:Layout1 ts (<"[">:ms)
-        | t == "{"              = t:Layout1 ts (<"{">:ms) -- For simple record.
-        | t match interp_string_start
-                                = t:Layout1 ts (<"${#":ms>)
-    Layout1 (t:ts) (<"${#">:ms)
-        | t match interp_string_continue
-                                = t:Layout1 ts (<"${#":ms>)
-        | t match interp_string_end
-                                = t:Layout1 ts ms
-    Layout1 (t:ts) (<b>:ms)
-        | t == ")" & b == "("   = t:Layout1 ts ms
-        | t == "]" & b == "["   = t:Layout1 ts ms
-        | t == "}" & b == "{"   = t:Layout1 ts ms
-        | t == "`" & b == "`"   = t:Layout1 ts ms
-    Layout1 (t:ts) ms
-        | t == "`"              = t:Layout1 ts (<"`">:ms)
-    Layout1 (<{>:t:ts) ms
-        | t == "{"              = t:Layout1 ts (<"{",0>:ms)
-        | t == "{{"             = t:Layout2 "c" ts ms
-        | otherwise             = "{":Layout1 (t:ts) (<"{",PosToken(t)>:ms)
-    Layout1 (<{{>:t:ts) ms
-        | t == "{"              = t:Layout1 ts (<"{",0>:ms)
-        | t == "{{"             = t:Layout2 "vc" ts ms
-        | otherwise             = "{{":Layout2 "v" (t:ts) ms
-    Layout1 [t] ms
-        | t == <{>              = "{":Layout1 [] (<"{",1>:ms)
-        | t == <{{>             = "{{":Layout1 [] (<"{{","v",1>:ms)
-    Layout1 (<;>:t:ts) ms@(<"{",m>:rms)
-        | PosToken(t) == m      = ";":Layout1 (t:ts) ms
-        | PosToken(t) <  m      = "}":Layout1 (<;>:t:ts) rms
-        | otherwise             = Layout1 (t:ts) ms
-    Layout1 (<;>:t:ts) ms@(<"{{",_,m>:_)
-        | PosToken(t) == m      = ";":Layout1 (t:ts) ms
-        | PosToken(t) <  m      = ParseError -- Broken layout by a shallower token.
-        | otherwise             = Layout1 (t:ts) ms
-    Layout1 (<;>:ts) ms         = Layout1 ts ms
-    Layout1 ("}":ts)        (<"{",0>:rms)
-                                = "}":Layout1 ts rms
-    Layout1 ("}}":<}}>:ts)  (<"{{","vc",_>:rms)
-                                = "}}":Layout1 ts rms
-    Layout1 ("}}":ts)       (<"{{","c",_>:rms)
-                                = "}}":Layout1 ts rms
-    Layout1 (<}}>:ts)       (<"{{","v",_>:rms)
-                                = "}}":Layout1 ts rms
-    Layout1 (t:ts) _
-        | t match interp_string_continue
-                                = ParseError -- Not corresponding braces.
-        | t match interp_string_end
-                                = ParseError -- Not corresponding braces.
-        | t == "`"              = ParseError -- Not corresponding quotes.
-        | t == ")"              = ParseError -- Not corresponding brackets.
-        | t == "]"              = ParseError -- Not corresponding brackets.
-        | t == "}"              = ParseError -- Not corresponding braces.
-        | t == "}}"             = ParseError -- Not corresponding braces.
-        | t == <}}>             = ParseError -- Not corresponding braces.
-    Layout1 (t:ts) ms           = t:Layout1 ts ms
-    Layout1 [] (<"{",m>:rms)
-        | m == 0                = ParseError -- Braces are not enough.
-        | otherwise             = "}":Layout1 [] rms
-    Layout1 [] (<"{{",k,_>:rms)
-        | k == "c"              = ParseError -- Braces are not enough.
-        | k == "vc"             = ParseError -- Braces are not enough.
-        | k == "v"              = "}}":Layout1 [] rms
-    Layout1 [] []               = []
-
-    Layout2 k []      ms  = Layout1 [] (<"{{",k,0>:ms)
-    Layout2 k (t:ts)  ms  = Layout1 (t:ts) (<"{{",k,PosToken(t)>:ms)
+    "->"    : "->" | "→"
+    ".."    : ".." | "…"
+    "<-"    : "<-" | "←"
+    "<="    : "<=" | "⇐"
+    "=>"    : "=>" | "⇒"
+    "\\/"   : "\\/" | "∀"
+    "\\"    : "\\" | "λ"
+    "{{"    : "{{" | "❴"
+    "}}"    : "}}" | "❵"
 
 Grammar
 -------
@@ -413,10 +307,9 @@ Grammar
     program: module_decl_body
 
 .. productionlist::
-    module_decl: "module" simplecon "where" module_decl_body
-    module_decl_body: "{{" module_decl_items "}}"
-                    : "{" module_decl_items "}"
-    module_decl_items: (module_decl_item semis)* module_decl_item?
+    module_decl: "module" simplecon ("where" module_decl_body)?
+    module_decl_body: lopen module_decl_items lclose
+    module_decl_items: (module_decl_item lsemis)* module_decl_item?
     module_decl_item: sig_item
                     : type_decl
                     : type_family_decl
@@ -440,65 +333,60 @@ Grammar
     foreign_val_decl: "foreign" string var ":" type
 
 .. productionlist::
-    type_decl: "type" simpletype "=" type ("where" type_decl_where)?
-    type_decl_where : "{{" type_decl_where_items "}}"
-                    : "{" type_decl_where_items "}"
-    type_decl_where_items: (type_decl_where_item semis)* type_decl_where_item?
+    type_decl: "type" simpletype "=" type ("where" type_decl_where_body)?
+    type_decl_where_body : lopen type_decl_where_items lclose
+    type_decl_where_items: (type_decl_where_item lsemis)* type_decl_where_item?
     type_decl_where_item: type_decl
                         : use_clause
 
 .. productionlist::
     type_family_decl: "type" "family" con (":" type)? ("where" ctypefam_decl_body)?
                     : "data" "family" con (":" type)? ("where" cdatafam_decl_body)?
-    ctypefam_decl_body  : "{{" ctypefam_decl_items "}}"
-                        : "{" ctypefam_decl_items "}"
-    ctypefam_decl_items: (ctypefam_decl_item semis)* ctypefam_decl_item?
-    ctypefam_decl_item: typefam_impl_decl
-    cdatafam_decl_body  : "{{" cdatafam_decl_items "}}"
-                        : "{" cdatafam_decl_items "}"
-    cdatafam_decl_items: (cdatafam_decl_item semis)* cdatafam_decl_item?
-    cdatafam_decl_item: datafam_impl_decl
+    ctypefam_decl_body  : lopen ctypefam_decl_items lclose
+    ctypefam_decl_items: (ctypefam_decl_item lsemis)* ctypefam_decl_item?
+    ctypefam_decl_item  : typefam_impl_decl
+                        : type_decl_where_item
+    cdatafam_decl_body  : lopen cdatafam_decl_items lclose
+    cdatafam_decl_items: (cdatafam_decl_item lsemis)* cdatafam_decl_item?
+    cdatafam_decl_item  : datafam_impl_decl
+                        : type_decl_where_item
 
 .. productionlist::
     type_impl_decl  : typefam_impl_decl
                     : datafam_impl_decl
-    typefam_impl_decl: "type" "impl" type_impl_decl_type "=" type ("where" type_decl_where)?
+    typefam_impl_decl: "type" "impl" type_impl_decl_type "=" type ("where" type_decl_where_body)?
     datafam_impl_decl   : "data" "impl" type_impl_decl_type "where" data_decl_body
-                        : "newtype" "impl" type_impl_decl_type "=" type ("where" type_decl_where)?
+                        : "newtype" "impl" type_impl_decl_type "=" type ("where" type_decl_where_body)?
     type_impl_decl_type : con type_qualified*
                         : type_qualified conop type_qualified
 
 .. productionlist::
-    data_decl: "data" con (":" type)? "where" data_decl_body
-            : "newtype" simpletype "=" type ("where" type_decl_where)?
-    data_decl_body: "{{" data_decl_items "}}"
-                    : "{" data_decl_items "}"
-    data_decl_items: (data_decl_item semis)* data_decl_item?
+    data_decl   : "data" con (":" type)? "where" data_decl_body
+                : "newtype" simpletype "=" type ("where" type_decl_where_body)?
+    data_decl_body  : lopen data_decl_items lclose
+    data_decl_items: (data_decl_item lsemis)* data_decl_item?
     data_decl_item: consig_decl
 
 .. productionlist::
     val_decl: simpleval "=" expr ("where" val_decl_where)?
     val_bind: pat "=" expr ("where" val_decl_where)?
-    val_decl_where  : "{{" val_decl_where_items "}}"
-                    : "{" val_decl_where_items "}"
-    val_decl_where_items: (val_decl_where_item semis)* val_decl_where_item?
+    val_decl_where  : lopen val_decl_where_items lclose
+    val_decl_where_items: (val_decl_where_item lsemis)* val_decl_where_item?
     val_decl_where_item: let_bind_item
 
 .. productionlist::
     pattern_decl: "pattern" "_" (":" type)? "of" pattern_decl_body
                 : "pattern" simplecon "=" pat
                 : "pattern" simplecon "<-" pat
-    pattern_decl_body   : "{{" pattern_decl_items "}}"
-                        : "{" pattern_decl_items "}"
-    pattern_decl_items: (pattern_decl_item semis)* pattern_decl_item?
+    pattern_decl_body   : lopen pattern_decl_items lclose
+    pattern_decl_items: (pattern_decl_item lsemis)* pattern_decl_item?
     pattern_decl_item   : simplecon "=" pat
                         : simplecon "<-" pat
 
 .. productionlist::
     trait_decl: "trait" simpletype ("<=" context)* "where" trait_decl_body
-    trait_decl_body : "{{" trait_decl_items "}}"
-                    : "{" trait_decl_items "}"
-    trait_decl_items: (trait_decl_item semis)* trait_decl_item?
+    trait_decl_body : lopen trait_decl_items lclose
+    trait_decl_items: (trait_decl_item lsemis)* trait_decl_item?
     trait_decl_item : sig_item
                     : fixity_decl
 
@@ -506,14 +394,13 @@ Grammar
     impl_decl: "impl" impl_decl_type ("<=" context)* ("for" con)? "where" impl_decl_body
     impl_decl_type  : con type_qualified*
                     : type_qualified conop type_qualified
-    impl_decl_body  : "{{" impl_decl_items "}}"
-                    : "{" impl_decl_items "}"
-    impl_decl_items: (impl_decl_item semis)* impl_decl_item?
+    impl_decl_body  : lopen impl_decl_items lclose
+    impl_decl_items: (impl_decl_item lsemis)* impl_decl_item?
     impl_decl_item: module_decl_item
 
 .. productionlist::
-    fixity_decl: "infix" infix_assoc infix_prec (op ",")* op ","?
-    infix_assoc: "none" | "<-" | "->"
+    fixity_decl: "infix" infix_assoc? infix_prec (op ",")* op ","?
+    infix_assoc: "<-" | "->"
     infix_prec: integer
 
 .. productionlist::
@@ -561,13 +448,11 @@ Grammar
     type_array_items: (type ",")* type?
     type_simplrecord_items: (type_simplrecord_item ",")* type_simplrecord_item?
     type_simplrecord_item: var ":" type
-    type_record_body: "{{" type_record_items "}}"
-                    : "{" type_record_items "}"
-    type_record_items: (type_record_item semis)* type_record_item?
+    type_record_body: lopen type_record_items lclose
+    type_record_items: (type_record_item lsemis)* type_record_item?
     type_record_item: valsig_decl
-    sig_body: "{{" sig_items "}}"
-            : "{" sig_items "}"
-    sig_items: (sig_item semis)* sig_item?
+    sig_body: lopen sig_items lclose
+    sig_items: (sig_item lsemis)* sig_item?
     sig_item: typesig_decl
             : valsig_decl
             : consig_decl
@@ -582,14 +467,14 @@ Grammar
     expr_app: expr_qualified
             : "@" type_qualified
     expr_qualified: (con ".")* expr_block ("." expr_block)*
-    expr_block  : "\\" "with" match_body
+    expr_block  : "\\" "case" case_body
                 : "\\" "when" guarded_alt_body
                 : "\\" lambda_body
-                : "let" let_binds "in" expr
-                : "match" (expr ",")* expr? "with" case_body
+                : ("let" | "letrec") let_binds "in" expr
+                : "case" (expr ",")* expr? "of" case_body
                 : "do" do_body
                 : expr_atomic
-    expr_atomic: "(" expr ")"
+    expr_atomic : "(" expr ")"
                 : con
                 : var
                 : expr_literal
@@ -605,9 +490,8 @@ Grammar
     expr_array_items: (expr ",")* expr?
     expr_simplrecord_items: (expr_simplrecord_item ",")* expr_simplrecord_item?
     expr_simplrecord_item: var "=" expr
-    expr_record_body: "{{" expr_record_items "}}"
-                    : "{" expr_record_items "}"
-    expr_record_items: (expr_record_item semis)* expr_record_item?
+    expr_record_body: lopen expr_record_items lclose
+    expr_record_items: (expr_record_item lsemis)* expr_record_item?
     expr_record_item: valsig_decl
                     : val_decl
 
@@ -638,9 +522,8 @@ Grammar
     lambda_body : pat_atomic* "->" expr
 
 .. productionlist::
-    let_binds   : "{{" let_bind_items "}}"
-                : "{" let_bind_items "}"
-    let_bind_items: (let_bind_item semis)* let_bind_item?
+    let_binds   : lopen let_bind_items lclose
+    let_bind_items: (let_bind_item lsemis)* let_bind_item?
     let_bind_item   : sig_item
                     : type_decl
                     : type_family_decl
@@ -656,26 +539,23 @@ Grammar
                     : derive_clause
 
 .. productionlist::
-    match_body  : "{{" match_alt_items "}}"
-                : "{" match_alt_items "}"
-    match_alt_items: (match_alt_item semis)* match_alt_item?
-    match_alt_item: (pat ",")* pat? guarded_alt
+    case_body  : lopen case_alt_items lclose
+    case_alt_items: (case_alt_item lsemis)* case_alt_item?
+    case_alt_item: (pat ",")* pat? guarded_alt
     guarded_alt : "->" expr
                 : "when" guarded_alt_body
-    guarded_alt_body: "{{" guarded_alt_items "}}"
-                    : "{" guarded_alt_items "}"
-    guarded_alt_items: (guarded_alt_item semis)* guarded_alt_item?
+    guarded_alt_body: lopen guarded_alt_items lclose
+    guarded_alt_items: (guarded_alt_item lsemis)* guarded_alt_item?
     guarded_alt_item: guard_qual "->" expr
     guard_qual: expr
 
 .. productionlist::
-    do_body : "{{" do_stmt_items "}}"
-            : "{" do_stmt_items "}"
-    do_stmt_items   : (do_stmt_item semis)* expr semis?
+    do_body : lopen do_stmt_items lclose
+    do_stmt_items   : (do_stmt_item lsemis)* expr
     do_stmt_item    : expr
                     : pat "<-" expr
-                    : "let" let_binds
-                    : val_bind
+                    : pat "=" expr
+                    : ("let" | "letrec") let_binds
 
 .. productionlist::
     bind_var: simple_bind_var
@@ -684,19 +564,19 @@ Grammar
             : "@" "(" simple_bind_var ":" type ")"
     simple_bind_var : var_id
                     : "_"
-    con: con_id
-        : "(" ")"
+    con : con_id | "(" ")"
         : "(" ( "->" | con_sym ) ")"
-    conop: "->" | con_sym
-        : "`" con_id "`"
-    var: var_id
-        : "_"
+    conop   : "->" | con_sym
+            : "`" con_id "`"
+    var : var_id | "_"
         : "(" var_sym ")"
-    op: var_sym
+    op  : var_sym
         : "`" var_id "`"
     qual_conop: (con ".")* conop
     qual_op: (con ".")* op
-    semis: ";"*
+    vopen: '{' lsemis?
+    vclose: lsemis? '}'
+    lsemis: ';'+
 
 Note:
 
@@ -730,6 +610,132 @@ TODO:
 * モジュールの構文再定義 (ファイルシステムとのマッピング，可視性)
 * プラグマの名前をちゃんと取るように
 * ドキュメントコメントの lexical syntax 定義
+
+Layout
+------
+
+* パーサは layout context を持つ
+
+.. code-block:: haskell
+
+    withL p ts ms = case ts of
+        [] -> tryEnd p ms
+        t:ts
+            | isWhiteSpaceWithNewline t ->
+                startNewline p ts ms
+            | isWhiteSpace t ->
+                withL p ts ms
+            | otherwise -> p t \r -> case r of
+                ParseOk p
+                    | isOpen t  -> withL p ts (<>:ms)
+                    | isClose t -> case ms of
+                        <>:ms -> withL p ts ms
+                        _     -> tryClose p ts ms
+                    | t match interp_string_continue -> case ms of
+                        <>:ms -> withL p ts (<>:ms)
+                        _     -> ParseError
+                    | otherwise -> withL p ts ms
+                ParseError -> errorRecover p t ts ms
+
+    errorRecover p t ts ms = case ms of
+        [] -> errorRecover2 p t ts ms
+        m:ms -> p '}' \r -> case r of
+            ParseOk p -> case (t, m) of
+                ("}", <>)      -> withL p ts ms
+                ("}}", <{{,_>) -> withL p ts ms
+                (_, <{,_>)     -> withL p (t:ts) ms
+            ParseError -> errorRecover2 p t ts (m:ms)
+
+    errorRecover2 p t ts ms = p '{' \r -> case r of
+        ParseOk p -> case t of
+            "{"  -> withL p ts (<>:ms)
+            "{{" -> openDBrace p ts ms
+            _    -> openVBrace p (t:ts) ms
+        ParseError -> case t of
+            ";" -> p ';' \r -> case r of
+                ParseOk p -> withL p ts ms
+                ParseError -> ParseError
+            _   -> ParseError
+
+    tryClose p ts ms = case ms of
+        []       -> withL p ts ms
+        <{,_>:ms -> p '}' \r -> case r of
+            ParseOk p  -> tryClose p ts ms
+            ParseError -> ParseError
+        <>:ms    -> withL p ts ms
+        <{{,_>:_ -> ParseError
+
+    tryEnd p ms = case ms of
+        []       -> ParseOk p
+        <{,_>:ms -> p '}' \r -> case r of
+            ParseOk p  -> tryEnd p ms
+            ParseError -> ParseError
+        _        -> ParseError
+
+    startNewline p ts ms = case ts of
+        [] -> withL p ts ms
+        t:ts
+            | isWhiteSpace t ->
+                startNewline p ts ms
+            | otherwise ->
+                resolveL (PosToken t) p (t:ts) ms
+
+    resolveL n p ts ms = case ms of
+        []       -> withL p ts ms
+        <>:_     -> withL p ts ms
+        <{,m>:ms
+            | n < m -> p '}' \r -> case r of
+                ParseOk p  -> resolveL n p ts ms
+                ParseError -> ParseError
+            | otherwise -> p ';' \r -> case r of
+                ParseOk p  -> withL p ts (<{,m>:ms)
+                ParseError -> ParseError
+        <{{,m>:ms
+            | n < m -> ParseError
+            | otherwise -> p ';' \r -> case r of
+                ParseOk p  -> withL p ts (<{{,m>:ms)
+                ParseError -> ParseError
+
+    openDBrace p ts ms = case ts of
+        [] -> withL p ts (<{{,0>:ms)
+        t:ts
+            | isWhiteSpace t ->
+                openDBrace p ts ms
+            | otherwise ->
+                withL p (t:ts) (<{{,PosToken(t)>:ms)
+
+    openVBrace p ts ms = case ts of
+        [] -> withL p ts (<{,0>:ms)
+        t:ts
+            | isWhiteSpace t ->
+                openVBrace p ts ms
+            | otherwise ->
+                withL p (t:ts) (<{,PosToken(t)>:ms)
+
+    isWhiteSpace t =
+        t match whitespace
+
+    isWhiteSpaceWithNewline t =
+        isWhiteSpace t &&
+        t match ANY* newline ANY*
+
+    isOpen t = case t of
+        "("     -> True
+        "["     -> True
+        "{"     -> True
+        "{{"    -> True
+        _ | t match interp_string_start
+                -> True
+        _       -> False
+
+    isClose t = case t of
+        ")"     -> True
+        "]"     -> True
+        "}"     -> True
+        "}}"    -> True
+        _ | t match interp_string_end
+                -> True
+        _       -> False
 
 Fixity Resolution
 -----------------

@@ -47,7 +47,7 @@
 </dd>
 <dt id="term-0"><code class="docutils literal notranslate"><span class="pre">pattern*</span></code></dt><dd><p>zero or more repetitions</p>
 </dd>
-<dt id="term-1"><code class="docutils literal notranslate"><span class="pre">pattern+</span></code></dt><dd><p>zero or more repetitions</p>
+<dt id="term-1"><code class="docutils literal notranslate"><span class="pre">pattern+</span></code></dt><dd><p>one or more repetitions</p>
 </dd>
 <dt id="term-2"><code class="docutils literal notranslate"><span class="pre">(</span> <span class="pre">pattern</span> <span class="pre">)</span></code></dt><dd><p>grouping</p>
 </dd>
@@ -56,6 +56,8 @@
 <dt id="term-3"><code class="docutils literal notranslate"><span class="pre">pattern&lt;pattern&gt;</span></code></dt><dd><p>difference</p>
 </dd>
 <dt id="term-..."><code class="docutils literal notranslate"><span class="pre">&quot;...&quot;</span></code></dt><dd><p>terminal by unicode properties</p>
+</dd>
+<dt id="term-4"><code class="docutils literal notranslate"><span class="pre">'...'</span></code></dt><dd><p>virtual layout terminal (See <a class="reference internal" href="#layout">Layout</a>)</p>
 </dd>
 <dt id="term-EOS"><code class="docutils literal notranslate"><span class="pre">EOS</span></code></dt><dd><p>end of source</p>
 </dd>
@@ -67,7 +69,6 @@
 <strong id="grammar-token-lexical_program"><span id="grammar-token-lexical-program"></span>lexical_program</strong> ::=  (lexeme | whitespace)* EOS?
 <strong id="grammar-token-lexeme">lexeme         </strong> ::=  literal
                      special
-                     semis
                      brace
                      reserved_id
                      reserved_op
@@ -83,9 +84,8 @@
 <strong id="grammar-token-con_op"><span id="grammar-token-con-op"></span>con_op</strong> ::=  (&quot;:&quot; (symbol | other)*)&lt;reserved_op&gt;
 </pre>
 <pre>
-<strong id="grammar-token-reserved_id"><span id="grammar-token-reserved-id"></span>reserved_id</strong> ::=  &quot;alias&quot;
-                 &quot;as&quot;
-                 &quot;match&quot;
+<strong id="grammar-token-reserved_id"><span id="grammar-token-reserved-id"></span>reserved_id</strong> ::=  &quot;as&quot;
+                 &quot;case&quot;
                  &quot;data&quot;
                  &quot;derive&quot;
                  &quot;do&quot;
@@ -94,15 +94,13 @@
                  &quot;foreign&quot;
                  &quot;impl&quot;
                  &quot;infix&quot;
-                 &quot;in&quot;
                  &quot;letrec&quot;
                  &quot;let&quot;
                  &quot;module&quot;
                  &quot;newtype&quot;
-                 &quot;none&quot;
+                 &quot;of&quot;
                  &quot;pattern&quot;
                  &quot;record&quot;
-                 &quot;rec&quot;
                  &quot;role&quot;
                  &quot;signature&quot;
                  &quot;static&quot;
@@ -110,7 +108,6 @@
                  &quot;type&quot;
                  &quot;use&quot;
                  &quot;when&quot;
-                 &quot;with&quot;
                  &quot;where&quot;
                  &quot;_&quot;
                  &quot;Default&quot;
@@ -333,116 +330,15 @@
 <strong id="grammar-token--6">"}}" </strong> ::=  &quot;}}&quot; | &quot;❵&quot;
 </pre>
 </div>
-<div class="section" id="layout">
-<h2>Layout<a class="headerlink" href="#layout" title="Permalink to this headline">¶</a></h2>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PosToken</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="o">=</span> <span class="o">...</span>
-</pre></div>
-</div>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">IsWhitespace</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>         <span class="o">=</span> <span class="n">t</span> <span class="n">match</span> <span class="n">whitespace</span>
-<span class="n">IncludeNewline</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>       <span class="o">=</span> <span class="n">t</span> <span class="n">match</span> <span class="p">(</span><span class="n">ANY</span><span class="o">*</span> <span class="n">newline</span> <span class="n">ANY</span><span class="o">*</span><span class="p">)</span>
-<span class="n">IsBraceKeyword</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>       <span class="o">=</span> <span class="n">t</span> <span class="n">match</span> <span class="p">(</span><span class="s2">&quot;do&quot;</span> <span class="o">|</span> <span class="s2">&quot;record&quot;</span> <span class="o">|</span> <span class="s2">&quot;signature&quot;</span>
-                                    <span class="o">|</span> <span class="s2">&quot;when&quot;</span> <span class="o">|</span> <span class="s2">&quot;where&quot;</span> <span class="o">|</span> <span class="s2">&quot;with&quot;</span>
-                                    <span class="p">)</span>
-<span class="n">IsDBraceKeyword</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>      <span class="o">=</span> <span class="n">t</span> <span class="n">match</span> <span class="s2">&quot;let&quot;</span>
-<span class="n">IsDBraceCloseKeyword</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="o">=</span> <span class="n">t</span> <span class="n">match</span> <span class="s2">&quot;in&quot;</span>
-</pre></div>
-</div>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PostProcess</span> <span class="n">ts</span>                          <span class="o">=</span> <span class="o">&lt;</span><span class="p">{{</span><span class="o">&gt;</span><span class="p">:</span><span class="n">PostProcess1</span> <span class="n">ts</span>
-
-<span class="n">PostProcess1</span> <span class="p">[]</span>                         <span class="o">=</span> <span class="p">[]</span>
-<span class="n">PostProcess1</span> <span class="p">(</span><span class="n">t</span><span class="p">:</span><span class="n">ts</span><span class="p">)</span>
-    <span class="o">|</span> <span class="n">IsWhitespace</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">IncludeNewline</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="o">=</span> <span class="o">&lt;</span><span class="p">;</span><span class="o">&gt;</span><span class="p">:</span><span class="n">PostProcess1</span> <span class="n">ts</span>
-    <span class="o">|</span> <span class="n">IsWhitespace</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>                     <span class="o">=</span> <span class="n">PostProcess1</span> <span class="n">ts</span>
-    <span class="o">|</span> <span class="n">IsBraceKeyword</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>                   <span class="o">=</span> <span class="n">t</span><span class="p">:</span><span class="o">&lt;</span><span class="p">{</span><span class="o">&gt;</span><span class="p">:</span><span class="n">PostProcess1</span> <span class="n">ts</span>
-    <span class="o">|</span> <span class="n">IsDBraceKeyword</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>                  <span class="o">=</span> <span class="n">t</span><span class="p">:</span><span class="o">&lt;</span><span class="p">{{</span><span class="o">&gt;</span><span class="p">:</span><span class="n">PostProcess1</span> <span class="n">ts</span>
-    <span class="o">|</span> <span class="n">IsDBraceCloseKeyword</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>             <span class="o">=</span> <span class="o">&lt;</span><span class="p">}}</span><span class="o">&gt;</span><span class="p">:</span><span class="n">t</span><span class="p">:</span><span class="n">PostProcess1</span> <span class="n">ts</span>
-    <span class="o">|</span> <span class="n">otherwise</span>                           <span class="o">=</span> <span class="n">t</span><span class="p">:</span><span class="n">PostProcess1</span> <span class="n">ts</span>
-</pre></div>
-</div>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Layout</span> <span class="n">ts</span> <span class="o">=</span> <span class="n">Layout1</span> <span class="n">ts</span> <span class="p">[]</span>
-
-<span class="n">Layout1</span> <span class="p">(</span><span class="n">t</span><span class="p">:</span><span class="n">ts</span><span class="p">)</span> <span class="n">ms</span>
-    <span class="o">|</span> <span class="n">t</span> <span class="o">==</span> <span class="s2">&quot;(&quot;</span>              <span class="o">=</span> <span class="n">t</span><span class="p">:</span><span class="n">Layout1</span> <span class="n">ts</span> <span class="p">(</span><span class="o">&lt;</span><span class="s2">&quot;(&quot;</span><span class="o">&gt;</span><span class="p">:</span><span class="n">ms</span><span class="p">)</span>
-    <span class="o">|</span> <span class="n">t</span> <span class="o">==</span> <span class="s2">&quot;[&quot;</span>              <span class="o">=</span> <span class="n">t</span><span class="p">:</span><span class="n">Layout1</span> <span class="n">ts</span> <span class="p">(</span><span class="o">&lt;</span><span class="s2">&quot;[&quot;</span><span class="o">&gt;</span><span class="p">:</span><span class="n">ms</span><span class="p">)</span>
-    <span class="o">|</span> <span class="n">t</span> <span class="o">==</span> <span class="s2">&quot;{&quot;</span>              <span class="o">=</span> <span class="n">t</span><span class="p">:</span><span class="n">Layout1</span> <span class="n">ts</span> <span class="p">(</span><span class="o">&lt;</span><span class="s2">&quot;{&quot;</span><span class="o">&gt;</span><span class="p">:</span><span class="n">ms</span><span class="p">)</span> <span class="o">--</span> <span class="n">For</span> <span class="n">simple</span> <span class="n">record</span><span class="o">.</span>
-    <span class="o">|</span> <span class="n">t</span> <span class="n">match</span> <span class="n">interp_string_start</span>
-                            <span class="o">=</span> <span class="n">t</span><span class="p">:</span><span class="n">Layout1</span> <span class="n">ts</span> <span class="p">(</span><span class="o">&lt;</span><span class="s2">&quot;${#&quot;</span><span class="p">:</span><span class="n">ms</span><span class="o">&gt;</span><span class="p">)</span>
-<span class="n">Layout1</span> <span class="p">(</span><span class="n">t</span><span class="p">:</span><span class="n">ts</span><span class="p">)</span> <span class="p">(</span><span class="o">&lt;</span><span class="s2">&quot;${#&quot;</span><span class="o">&gt;</span><span class="p">:</span><span class="n">ms</span><span class="p">)</span>
-    <span class="o">|</span> <span class="n">t</span> <span class="n">match</span> <span class="n">interp_string_continue</span>
-                            <span class="o">=</span> <span class="n">t</span><span class="p">:</span><span class="n">Layout1</span> <span class="n">ts</span> <span class="p">(</span><span class="o">&lt;</span><span class="s2">&quot;${#&quot;</span><span class="p">:</span><span class="n">ms</span><span class="o">&gt;</span><span class="p">)</span>
-    <span class="o">|</span> <span class="n">t</span> <span class="n">match</span> <span class="n">interp_string_end</span>
-                            <span class="o">=</span> <span class="n">t</span><span class="p">:</span><span class="n">Layout1</span> <span class="n">ts</span> <span class="n">ms</span>
-<span class="n">Layout1</span> <span class="p">(</span><span class="n">t</span><span class="p">:</span><span class="n">ts</span><span class="p">)</span> <span class="p">(</span><span class="o">&lt;</span><span class="n">b</span><span class="o">&gt;</span><span class="p">:</span><span class="n">ms</span><span class="p">)</span>
-    <span class="o">|</span> <span class="n">t</span> <span class="o">==</span> <span class="s2">&quot;)&quot;</span> <span class="o">&amp;</span> <span class="n">b</span> <span class="o">==</span> <span class="s2">&quot;(&quot;</span>   <span class="o">=</span> <span class="n">t</span><span class="p">:</span><span class="n">Layout1</span> <span class="n">ts</span> <span class="n">ms</span>
-    <span class="o">|</span> <span class="n">t</span> <span class="o">==</span> <span class="s2">&quot;]&quot;</span> <span class="o">&amp;</span> <span class="n">b</span> <span class="o">==</span> <span class="s2">&quot;[&quot;</span>   <span class="o">=</span> <span class="n">t</span><span class="p">:</span><span class="n">Layout1</span> <span class="n">ts</span> <span class="n">ms</span>
-    <span class="o">|</span> <span class="n">t</span> <span class="o">==</span> <span class="s2">&quot;}&quot;</span> <span class="o">&amp;</span> <span class="n">b</span> <span class="o">==</span> <span class="s2">&quot;{&quot;</span>   <span class="o">=</span> <span class="n">t</span><span class="p">:</span><span class="n">Layout1</span> <span class="n">ts</span> <span class="n">ms</span>
-    <span class="o">|</span> <span class="n">t</span> <span class="o">==</span> <span class="s2">&quot;`&quot;</span> <span class="o">&amp;</span> <span class="n">b</span> <span class="o">==</span> <span class="s2">&quot;`&quot;</span>   <span class="o">=</span> <span class="n">t</span><span class="p">:</span><span class="n">Layout1</span> <span class="n">ts</span> <span class="n">ms</span>
-<span class="n">Layout1</span> <span class="p">(</span><span class="n">t</span><span class="p">:</span><span class="n">ts</span><span class="p">)</span> <span class="n">ms</span>
-    <span class="o">|</span> <span class="n">t</span> <span class="o">==</span> <span class="s2">&quot;`&quot;</span>              <span class="o">=</span> <span class="n">t</span><span class="p">:</span><span class="n">Layout1</span> <span class="n">ts</span> <span class="p">(</span><span class="o">&lt;</span><span class="s2">&quot;`&quot;</span><span class="o">&gt;</span><span class="p">:</span><span class="n">ms</span><span class="p">)</span>
-<span class="n">Layout1</span> <span class="p">(</span><span class="o">&lt;</span><span class="p">{</span><span class="o">&gt;</span><span class="p">:</span><span class="n">t</span><span class="p">:</span><span class="n">ts</span><span class="p">)</span> <span class="n">ms</span>
-    <span class="o">|</span> <span class="n">t</span> <span class="o">==</span> <span class="s2">&quot;{&quot;</span>              <span class="o">=</span> <span class="n">t</span><span class="p">:</span><span class="n">Layout1</span> <span class="n">ts</span> <span class="p">(</span><span class="o">&lt;</span><span class="s2">&quot;{&quot;</span><span class="p">,</span><span class="mi">0</span><span class="o">&gt;</span><span class="p">:</span><span class="n">ms</span><span class="p">)</span>
-    <span class="o">|</span> <span class="n">t</span> <span class="o">==</span> <span class="s2">&quot;{{&quot;</span>             <span class="o">=</span> <span class="n">t</span><span class="p">:</span><span class="n">Layout2</span> <span class="s2">&quot;c&quot;</span> <span class="n">ts</span> <span class="n">ms</span>
-    <span class="o">|</span> <span class="n">otherwise</span>             <span class="o">=</span> <span class="s2">&quot;{&quot;</span><span class="p">:</span><span class="n">Layout1</span> <span class="p">(</span><span class="n">t</span><span class="p">:</span><span class="n">ts</span><span class="p">)</span> <span class="p">(</span><span class="o">&lt;</span><span class="s2">&quot;{&quot;</span><span class="p">,</span><span class="n">PosToken</span><span class="p">(</span><span class="n">t</span><span class="p">)</span><span class="o">&gt;</span><span class="p">:</span><span class="n">ms</span><span class="p">)</span>
-<span class="n">Layout1</span> <span class="p">(</span><span class="o">&lt;</span><span class="p">{{</span><span class="o">&gt;</span><span class="p">:</span><span class="n">t</span><span class="p">:</span><span class="n">ts</span><span class="p">)</span> <span class="n">ms</span>
-    <span class="o">|</span> <span class="n">t</span> <span class="o">==</span> <span class="s2">&quot;{&quot;</span>              <span class="o">=</span> <span class="n">t</span><span class="p">:</span><span class="n">Layout1</span> <span class="n">ts</span> <span class="p">(</span><span class="o">&lt;</span><span class="s2">&quot;{&quot;</span><span class="p">,</span><span class="mi">0</span><span class="o">&gt;</span><span class="p">:</span><span class="n">ms</span><span class="p">)</span>
-    <span class="o">|</span> <span class="n">t</span> <span class="o">==</span> <span class="s2">&quot;{{&quot;</span>             <span class="o">=</span> <span class="n">t</span><span class="p">:</span><span class="n">Layout2</span> <span class="s2">&quot;vc&quot;</span> <span class="n">ts</span> <span class="n">ms</span>
-    <span class="o">|</span> <span class="n">otherwise</span>             <span class="o">=</span> <span class="s2">&quot;{{&quot;</span><span class="p">:</span><span class="n">Layout2</span> <span class="s2">&quot;v&quot;</span> <span class="p">(</span><span class="n">t</span><span class="p">:</span><span class="n">ts</span><span class="p">)</span> <span class="n">ms</span>
-<span class="n">Layout1</span> <span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="n">ms</span>
-    <span class="o">|</span> <span class="n">t</span> <span class="o">==</span> <span class="o">&lt;</span><span class="p">{</span><span class="o">&gt;</span>              <span class="o">=</span> <span class="s2">&quot;{&quot;</span><span class="p">:</span><span class="n">Layout1</span> <span class="p">[]</span> <span class="p">(</span><span class="o">&lt;</span><span class="s2">&quot;{&quot;</span><span class="p">,</span><span class="mi">1</span><span class="o">&gt;</span><span class="p">:</span><span class="n">ms</span><span class="p">)</span>
-    <span class="o">|</span> <span class="n">t</span> <span class="o">==</span> <span class="o">&lt;</span><span class="p">{{</span><span class="o">&gt;</span>             <span class="o">=</span> <span class="s2">&quot;{{&quot;</span><span class="p">:</span><span class="n">Layout1</span> <span class="p">[]</span> <span class="p">(</span><span class="o">&lt;</span><span class="s2">&quot;{{&quot;</span><span class="p">,</span><span class="s2">&quot;v&quot;</span><span class="p">,</span><span class="mi">1</span><span class="o">&gt;</span><span class="p">:</span><span class="n">ms</span><span class="p">)</span>
-<span class="n">Layout1</span> <span class="p">(</span><span class="o">&lt;</span><span class="p">;</span><span class="o">&gt;</span><span class="p">:</span><span class="n">t</span><span class="p">:</span><span class="n">ts</span><span class="p">)</span> <span class="n">ms</span><span class="o">@</span><span class="p">(</span><span class="o">&lt;</span><span class="s2">&quot;{&quot;</span><span class="p">,</span><span class="n">m</span><span class="o">&gt;</span><span class="p">:</span><span class="n">rms</span><span class="p">)</span>
-    <span class="o">|</span> <span class="n">PosToken</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="o">==</span> <span class="n">m</span>      <span class="o">=</span> <span class="s2">&quot;;&quot;</span><span class="p">:</span><span class="n">Layout1</span> <span class="p">(</span><span class="n">t</span><span class="p">:</span><span class="n">ts</span><span class="p">)</span> <span class="n">ms</span>
-    <span class="o">|</span> <span class="n">PosToken</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="o">&lt;</span>  <span class="n">m</span>      <span class="o">=</span> <span class="s2">&quot;}&quot;</span><span class="p">:</span><span class="n">Layout1</span> <span class="p">(</span><span class="o">&lt;</span><span class="p">;</span><span class="o">&gt;</span><span class="p">:</span><span class="n">t</span><span class="p">:</span><span class="n">ts</span><span class="p">)</span> <span class="n">rms</span>
-    <span class="o">|</span> <span class="n">otherwise</span>             <span class="o">=</span> <span class="n">Layout1</span> <span class="p">(</span><span class="n">t</span><span class="p">:</span><span class="n">ts</span><span class="p">)</span> <span class="n">ms</span>
-<span class="n">Layout1</span> <span class="p">(</span><span class="o">&lt;</span><span class="p">;</span><span class="o">&gt;</span><span class="p">:</span><span class="n">t</span><span class="p">:</span><span class="n">ts</span><span class="p">)</span> <span class="n">ms</span><span class="o">@</span><span class="p">(</span><span class="o">&lt;</span><span class="s2">&quot;{{&quot;</span><span class="p">,</span><span class="n">_</span><span class="p">,</span><span class="n">m</span><span class="o">&gt;</span><span class="p">:</span><span class="n">_</span><span class="p">)</span>
-    <span class="o">|</span> <span class="n">PosToken</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="o">==</span> <span class="n">m</span>      <span class="o">=</span> <span class="s2">&quot;;&quot;</span><span class="p">:</span><span class="n">Layout1</span> <span class="p">(</span><span class="n">t</span><span class="p">:</span><span class="n">ts</span><span class="p">)</span> <span class="n">ms</span>
-    <span class="o">|</span> <span class="n">PosToken</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="o">&lt;</span>  <span class="n">m</span>      <span class="o">=</span> <span class="n">ParseError</span> <span class="o">--</span> <span class="n">Broken</span> <span class="n">layout</span> <span class="n">by</span> <span class="n">a</span> <span class="n">shallower</span> <span class="n">token</span><span class="o">.</span>
-    <span class="o">|</span> <span class="n">otherwise</span>             <span class="o">=</span> <span class="n">Layout1</span> <span class="p">(</span><span class="n">t</span><span class="p">:</span><span class="n">ts</span><span class="p">)</span> <span class="n">ms</span>
-<span class="n">Layout1</span> <span class="p">(</span><span class="o">&lt;</span><span class="p">;</span><span class="o">&gt;</span><span class="p">:</span><span class="n">ts</span><span class="p">)</span> <span class="n">ms</span>         <span class="o">=</span> <span class="n">Layout1</span> <span class="n">ts</span> <span class="n">ms</span>
-<span class="n">Layout1</span> <span class="p">(</span><span class="s2">&quot;}&quot;</span><span class="p">:</span><span class="n">ts</span><span class="p">)</span>        <span class="p">(</span><span class="o">&lt;</span><span class="s2">&quot;{&quot;</span><span class="p">,</span><span class="mi">0</span><span class="o">&gt;</span><span class="p">:</span><span class="n">rms</span><span class="p">)</span>
-                            <span class="o">=</span> <span class="s2">&quot;}&quot;</span><span class="p">:</span><span class="n">Layout1</span> <span class="n">ts</span> <span class="n">rms</span>
-<span class="n">Layout1</span> <span class="p">(</span><span class="s2">&quot;}}&quot;</span><span class="p">:</span><span class="o">&lt;</span><span class="p">}}</span><span class="o">&gt;</span><span class="p">:</span><span class="n">ts</span><span class="p">)</span>  <span class="p">(</span><span class="o">&lt;</span><span class="s2">&quot;{{&quot;</span><span class="p">,</span><span class="s2">&quot;vc&quot;</span><span class="p">,</span><span class="n">_</span><span class="o">&gt;</span><span class="p">:</span><span class="n">rms</span><span class="p">)</span>
-                            <span class="o">=</span> <span class="s2">&quot;}}&quot;</span><span class="p">:</span><span class="n">Layout1</span> <span class="n">ts</span> <span class="n">rms</span>
-<span class="n">Layout1</span> <span class="p">(</span><span class="s2">&quot;}}&quot;</span><span class="p">:</span><span class="n">ts</span><span class="p">)</span>       <span class="p">(</span><span class="o">&lt;</span><span class="s2">&quot;{{&quot;</span><span class="p">,</span><span class="s2">&quot;c&quot;</span><span class="p">,</span><span class="n">_</span><span class="o">&gt;</span><span class="p">:</span><span class="n">rms</span><span class="p">)</span>
-                            <span class="o">=</span> <span class="s2">&quot;}}&quot;</span><span class="p">:</span><span class="n">Layout1</span> <span class="n">ts</span> <span class="n">rms</span>
-<span class="n">Layout1</span> <span class="p">(</span><span class="o">&lt;</span><span class="p">}}</span><span class="o">&gt;</span><span class="p">:</span><span class="n">ts</span><span class="p">)</span>       <span class="p">(</span><span class="o">&lt;</span><span class="s2">&quot;{{&quot;</span><span class="p">,</span><span class="s2">&quot;v&quot;</span><span class="p">,</span><span class="n">_</span><span class="o">&gt;</span><span class="p">:</span><span class="n">rms</span><span class="p">)</span>
-                            <span class="o">=</span> <span class="s2">&quot;}}&quot;</span><span class="p">:</span><span class="n">Layout1</span> <span class="n">ts</span> <span class="n">rms</span>
-<span class="n">Layout1</span> <span class="p">(</span><span class="n">t</span><span class="p">:</span><span class="n">ts</span><span class="p">)</span> <span class="n">_</span>
-    <span class="o">|</span> <span class="n">t</span> <span class="n">match</span> <span class="n">interp_string_continue</span>
-                            <span class="o">=</span> <span class="n">ParseError</span> <span class="o">--</span> <span class="n">Not</span> <span class="n">corresponding</span> <span class="n">braces</span><span class="o">.</span>
-    <span class="o">|</span> <span class="n">t</span> <span class="n">match</span> <span class="n">interp_string_end</span>
-                            <span class="o">=</span> <span class="n">ParseError</span> <span class="o">--</span> <span class="n">Not</span> <span class="n">corresponding</span> <span class="n">braces</span><span class="o">.</span>
-    <span class="o">|</span> <span class="n">t</span> <span class="o">==</span> <span class="s2">&quot;`&quot;</span>              <span class="o">=</span> <span class="n">ParseError</span> <span class="o">--</span> <span class="n">Not</span> <span class="n">corresponding</span> <span class="n">quotes</span><span class="o">.</span>
-    <span class="o">|</span> <span class="n">t</span> <span class="o">==</span> <span class="s2">&quot;)&quot;</span>              <span class="o">=</span> <span class="n">ParseError</span> <span class="o">--</span> <span class="n">Not</span> <span class="n">corresponding</span> <span class="n">brackets</span><span class="o">.</span>
-    <span class="o">|</span> <span class="n">t</span> <span class="o">==</span> <span class="s2">&quot;]&quot;</span>              <span class="o">=</span> <span class="n">ParseError</span> <span class="o">--</span> <span class="n">Not</span> <span class="n">corresponding</span> <span class="n">brackets</span><span class="o">.</span>
-    <span class="o">|</span> <span class="n">t</span> <span class="o">==</span> <span class="s2">&quot;}&quot;</span>              <span class="o">=</span> <span class="n">ParseError</span> <span class="o">--</span> <span class="n">Not</span> <span class="n">corresponding</span> <span class="n">braces</span><span class="o">.</span>
-    <span class="o">|</span> <span class="n">t</span> <span class="o">==</span> <span class="s2">&quot;}}&quot;</span>             <span class="o">=</span> <span class="n">ParseError</span> <span class="o">--</span> <span class="n">Not</span> <span class="n">corresponding</span> <span class="n">braces</span><span class="o">.</span>
-    <span class="o">|</span> <span class="n">t</span> <span class="o">==</span> <span class="o">&lt;</span><span class="p">}}</span><span class="o">&gt;</span>             <span class="o">=</span> <span class="n">ParseError</span> <span class="o">--</span> <span class="n">Not</span> <span class="n">corresponding</span> <span class="n">braces</span><span class="o">.</span>
-<span class="n">Layout1</span> <span class="p">(</span><span class="n">t</span><span class="p">:</span><span class="n">ts</span><span class="p">)</span> <span class="n">ms</span>           <span class="o">=</span> <span class="n">t</span><span class="p">:</span><span class="n">Layout1</span> <span class="n">ts</span> <span class="n">ms</span>
-<span class="n">Layout1</span> <span class="p">[]</span> <span class="p">(</span><span class="o">&lt;</span><span class="s2">&quot;{&quot;</span><span class="p">,</span><span class="n">m</span><span class="o">&gt;</span><span class="p">:</span><span class="n">rms</span><span class="p">)</span>
-    <span class="o">|</span> <span class="n">m</span> <span class="o">==</span> <span class="mi">0</span>                <span class="o">=</span> <span class="n">ParseError</span> <span class="o">--</span> <span class="n">Braces</span> <span class="n">are</span> <span class="ow">not</span> <span class="n">enough</span><span class="o">.</span>
-    <span class="o">|</span> <span class="n">otherwise</span>             <span class="o">=</span> <span class="s2">&quot;}&quot;</span><span class="p">:</span><span class="n">Layout1</span> <span class="p">[]</span> <span class="n">rms</span>
-<span class="n">Layout1</span> <span class="p">[]</span> <span class="p">(</span><span class="o">&lt;</span><span class="s2">&quot;{{&quot;</span><span class="p">,</span><span class="n">k</span><span class="p">,</span><span class="n">_</span><span class="o">&gt;</span><span class="p">:</span><span class="n">rms</span><span class="p">)</span>
-    <span class="o">|</span> <span class="n">k</span> <span class="o">==</span> <span class="s2">&quot;c&quot;</span>              <span class="o">=</span> <span class="n">ParseError</span> <span class="o">--</span> <span class="n">Braces</span> <span class="n">are</span> <span class="ow">not</span> <span class="n">enough</span><span class="o">.</span>
-    <span class="o">|</span> <span class="n">k</span> <span class="o">==</span> <span class="s2">&quot;vc&quot;</span>             <span class="o">=</span> <span class="n">ParseError</span> <span class="o">--</span> <span class="n">Braces</span> <span class="n">are</span> <span class="ow">not</span> <span class="n">enough</span><span class="o">.</span>
-    <span class="o">|</span> <span class="n">k</span> <span class="o">==</span> <span class="s2">&quot;v&quot;</span>              <span class="o">=</span> <span class="s2">&quot;}}&quot;</span><span class="p">:</span><span class="n">Layout1</span> <span class="p">[]</span> <span class="n">rms</span>
-<span class="n">Layout1</span> <span class="p">[]</span> <span class="p">[]</span>               <span class="o">=</span> <span class="p">[]</span>
-
-<span class="n">Layout2</span> <span class="n">k</span> <span class="p">[]</span>      <span class="n">ms</span>  <span class="o">=</span> <span class="n">Layout1</span> <span class="p">[]</span> <span class="p">(</span><span class="o">&lt;</span><span class="s2">&quot;{{&quot;</span><span class="p">,</span><span class="n">k</span><span class="p">,</span><span class="mi">0</span><span class="o">&gt;</span><span class="p">:</span><span class="n">ms</span><span class="p">)</span>
-<span class="n">Layout2</span> <span class="n">k</span> <span class="p">(</span><span class="n">t</span><span class="p">:</span><span class="n">ts</span><span class="p">)</span>  <span class="n">ms</span>  <span class="o">=</span> <span class="n">Layout1</span> <span class="p">(</span><span class="n">t</span><span class="p">:</span><span class="n">ts</span><span class="p">)</span> <span class="p">(</span><span class="o">&lt;</span><span class="s2">&quot;{{&quot;</span><span class="p">,</span><span class="n">k</span><span class="p">,</span><span class="n">PosToken</span><span class="p">(</span><span class="n">t</span><span class="p">)</span><span class="o">&gt;</span><span class="p">:</span><span class="n">ms</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
 <div class="section" id="grammar">
 <h2>Grammar<a class="headerlink" href="#grammar" title="Permalink to this headline">¶</a></h2>
 <pre>
 <strong id="grammar-token-program">program</strong> ::=  module_decl_body
 </pre>
 <pre>
-<strong id="grammar-token-module_decl"><span id="grammar-token-module-decl"></span>module_decl      </strong> ::=  &quot;module&quot; simplecon &quot;where&quot; module_decl_body
-<strong id="grammar-token-module_decl_body"><span id="grammar-token-module-decl-body"></span>module_decl_body </strong> ::=  &quot;{{&quot; module_decl_items &quot;}}&quot;
-                       &quot;{&quot; module_decl_items &quot;}&quot;
-<strong id="grammar-token-module_decl_items"><span id="grammar-token-module-decl-items"></span>module_decl_items</strong> ::=  (module_decl_item semis)* module_decl_item?
+<strong id="grammar-token-module_decl"><span id="grammar-token-module-decl"></span>module_decl      </strong> ::=  &quot;module&quot; simplecon (&quot;where&quot; module_decl_body)?
+<strong id="grammar-token-module_decl_body"><span id="grammar-token-module-decl-body"></span>module_decl_body </strong> ::=  lopen module_decl_items lclose
+<strong id="grammar-token-module_decl_items"><span id="grammar-token-module-decl-items"></span>module_decl_items</strong> ::=  (module_decl_item lsemis)* module_decl_item?
 <strong id="grammar-token-module_decl_item"><span id="grammar-token-module-decl-item"></span>module_decl_item </strong> ::=  sig_item
                        type_decl
                        type_family_decl
@@ -466,65 +362,60 @@
 <strong id="grammar-token-foreign_val_decl"><span id="grammar-token-foreign-val-decl"></span>foreign_val_decl</strong> ::=  &quot;foreign&quot; string var &quot;:&quot; type
 </pre>
 <pre>
-<strong id="grammar-token-type_decl"><span id="grammar-token-type-decl"></span>type_decl            </strong> ::=  &quot;type&quot; simpletype &quot;=&quot; type (&quot;where&quot; type_decl_where)?
-<strong id="grammar-token-type_decl_where"><span id="grammar-token-type-decl-where"></span>type_decl_where      </strong> ::=  &quot;{{&quot; type_decl_where_items &quot;}}&quot;
-                           &quot;{&quot; type_decl_where_items &quot;}&quot;
-<strong id="grammar-token-type_decl_where_items"><span id="grammar-token-type-decl-where-items"></span>type_decl_where_items</strong> ::=  (type_decl_where_item semis)* type_decl_where_item?
+<strong id="grammar-token-type_decl"><span id="grammar-token-type-decl"></span>type_decl            </strong> ::=  &quot;type&quot; simpletype &quot;=&quot; type (&quot;where&quot; type_decl_where_body)?
+<strong id="grammar-token-type_decl_where_body"><span id="grammar-token-type-decl-where-body"></span>type_decl_where_body </strong> ::=  lopen type_decl_where_items lclose
+<strong id="grammar-token-type_decl_where_items"><span id="grammar-token-type-decl-where-items"></span>type_decl_where_items</strong> ::=  (type_decl_where_item lsemis)* type_decl_where_item?
 <strong id="grammar-token-type_decl_where_item"><span id="grammar-token-type-decl-where-item"></span>type_decl_where_item </strong> ::=  type_decl
                            use_clause
 </pre>
 <pre>
 <strong id="grammar-token-type_family_decl"><span id="grammar-token-type-family-decl"></span>type_family_decl   </strong> ::=  &quot;type&quot; &quot;family&quot; con (&quot;:&quot; type)? (&quot;where&quot; ctypefam_decl_body)?
                          &quot;data&quot; &quot;family&quot; con (&quot;:&quot; type)? (&quot;where&quot; cdatafam_decl_body)?
-<strong id="grammar-token-ctypefam_decl_body"><span id="grammar-token-ctypefam-decl-body"></span>ctypefam_decl_body </strong> ::=  &quot;{{&quot; ctypefam_decl_items &quot;}}&quot;
-                         &quot;{&quot; ctypefam_decl_items &quot;}&quot;
-<strong id="grammar-token-ctypefam_decl_items"><span id="grammar-token-ctypefam-decl-items"></span>ctypefam_decl_items</strong> ::=  (ctypefam_decl_item semis)* ctypefam_decl_item?
+<strong id="grammar-token-ctypefam_decl_body"><span id="grammar-token-ctypefam-decl-body"></span>ctypefam_decl_body </strong> ::=  lopen ctypefam_decl_items lclose
+<strong id="grammar-token-ctypefam_decl_items"><span id="grammar-token-ctypefam-decl-items"></span>ctypefam_decl_items</strong> ::=  (ctypefam_decl_item lsemis)* ctypefam_decl_item?
 <strong id="grammar-token-ctypefam_decl_item"><span id="grammar-token-ctypefam-decl-item"></span>ctypefam_decl_item </strong> ::=  typefam_impl_decl
-<strong id="grammar-token-cdatafam_decl_body"><span id="grammar-token-cdatafam-decl-body"></span>cdatafam_decl_body </strong> ::=  &quot;{{&quot; cdatafam_decl_items &quot;}}&quot;
-                         &quot;{&quot; cdatafam_decl_items &quot;}&quot;
-<strong id="grammar-token-cdatafam_decl_items"><span id="grammar-token-cdatafam-decl-items"></span>cdatafam_decl_items</strong> ::=  (cdatafam_decl_item semis)* cdatafam_decl_item?
+                         type_decl_where_item
+<strong id="grammar-token-cdatafam_decl_body"><span id="grammar-token-cdatafam-decl-body"></span>cdatafam_decl_body </strong> ::=  lopen cdatafam_decl_items lclose
+<strong id="grammar-token-cdatafam_decl_items"><span id="grammar-token-cdatafam-decl-items"></span>cdatafam_decl_items</strong> ::=  (cdatafam_decl_item lsemis)* cdatafam_decl_item?
 <strong id="grammar-token-cdatafam_decl_item"><span id="grammar-token-cdatafam-decl-item"></span>cdatafam_decl_item </strong> ::=  datafam_impl_decl
+                         type_decl_where_item
 </pre>
 <pre>
 <strong id="grammar-token-type_impl_decl"><span id="grammar-token-type-impl-decl"></span>type_impl_decl     </strong> ::=  typefam_impl_decl
                          datafam_impl_decl
-<strong id="grammar-token-typefam_impl_decl"><span id="grammar-token-typefam-impl-decl"></span>typefam_impl_decl  </strong> ::=  &quot;type&quot; &quot;impl&quot; type_impl_decl_type &quot;=&quot; type (&quot;where&quot; type_decl_where)?
+<strong id="grammar-token-typefam_impl_decl"><span id="grammar-token-typefam-impl-decl"></span>typefam_impl_decl  </strong> ::=  &quot;type&quot; &quot;impl&quot; type_impl_decl_type &quot;=&quot; type (&quot;where&quot; type_decl_where_body)?
 <strong id="grammar-token-datafam_impl_decl"><span id="grammar-token-datafam-impl-decl"></span>datafam_impl_decl  </strong> ::=  &quot;data&quot; &quot;impl&quot; type_impl_decl_type &quot;where&quot; data_decl_body
-                         &quot;newtype&quot; &quot;impl&quot; type_impl_decl_type &quot;=&quot; type (&quot;where&quot; type_decl_where)?
+                         &quot;newtype&quot; &quot;impl&quot; type_impl_decl_type &quot;=&quot; type (&quot;where&quot; type_decl_where_body)?
 <strong id="grammar-token-type_impl_decl_type"><span id="grammar-token-type-impl-decl-type"></span>type_impl_decl_type</strong> ::=  con type_qualified*
                          type_qualified conop type_qualified
 </pre>
 <pre>
 <strong id="grammar-token-data_decl"><span id="grammar-token-data-decl"></span>data_decl      </strong> ::=  &quot;data&quot; con (&quot;:&quot; type)? &quot;where&quot; data_decl_body
-                     &quot;newtype&quot; simpletype &quot;=&quot; type (&quot;where&quot; type_decl_where)?
-<strong id="grammar-token-data_decl_body"><span id="grammar-token-data-decl-body"></span>data_decl_body </strong> ::=  &quot;{{&quot; data_decl_items &quot;}}&quot;
-                     &quot;{&quot; data_decl_items &quot;}&quot;
-<strong id="grammar-token-data_decl_items"><span id="grammar-token-data-decl-items"></span>data_decl_items</strong> ::=  (data_decl_item semis)* data_decl_item?
+                     &quot;newtype&quot; simpletype &quot;=&quot; type (&quot;where&quot; type_decl_where_body)?
+<strong id="grammar-token-data_decl_body"><span id="grammar-token-data-decl-body"></span>data_decl_body </strong> ::=  lopen data_decl_items lclose
+<strong id="grammar-token-data_decl_items"><span id="grammar-token-data-decl-items"></span>data_decl_items</strong> ::=  (data_decl_item lsemis)* data_decl_item?
 <strong id="grammar-token-data_decl_item"><span id="grammar-token-data-decl-item"></span>data_decl_item </strong> ::=  consig_decl
 </pre>
 <pre>
 <strong id="grammar-token-val_decl"><span id="grammar-token-val-decl"></span>val_decl            </strong> ::=  simpleval &quot;=&quot; expr (&quot;where&quot; val_decl_where)?
 <strong id="grammar-token-val_bind"><span id="grammar-token-val-bind"></span>val_bind            </strong> ::=  pat &quot;=&quot; expr (&quot;where&quot; val_decl_where)?
-<strong id="grammar-token-val_decl_where"><span id="grammar-token-val-decl-where"></span>val_decl_where      </strong> ::=  &quot;{{&quot; val_decl_where_items &quot;}}&quot;
-                          &quot;{&quot; val_decl_where_items &quot;}&quot;
-<strong id="grammar-token-val_decl_where_items"><span id="grammar-token-val-decl-where-items"></span>val_decl_where_items</strong> ::=  (val_decl_where_item semis)* val_decl_where_item?
+<strong id="grammar-token-val_decl_where"><span id="grammar-token-val-decl-where"></span>val_decl_where      </strong> ::=  lopen val_decl_where_items lclose
+<strong id="grammar-token-val_decl_where_items"><span id="grammar-token-val-decl-where-items"></span>val_decl_where_items</strong> ::=  (val_decl_where_item lsemis)* val_decl_where_item?
 <strong id="grammar-token-val_decl_where_item"><span id="grammar-token-val-decl-where-item"></span>val_decl_where_item </strong> ::=  let_bind_item
 </pre>
 <pre>
 <strong id="grammar-token-pattern_decl"><span id="grammar-token-pattern-decl"></span>pattern_decl      </strong> ::=  &quot;pattern&quot; &quot;_&quot; (&quot;:&quot; type)? &quot;of&quot; pattern_decl_body
                         &quot;pattern&quot; simplecon &quot;=&quot; pat
                         &quot;pattern&quot; simplecon &quot;&lt;-&quot; pat
-<strong id="grammar-token-pattern_decl_body"><span id="grammar-token-pattern-decl-body"></span>pattern_decl_body </strong> ::=  &quot;{{&quot; pattern_decl_items &quot;}}&quot;
-                        &quot;{&quot; pattern_decl_items &quot;}&quot;
-<strong id="grammar-token-pattern_decl_items"><span id="grammar-token-pattern-decl-items"></span>pattern_decl_items</strong> ::=  (pattern_decl_item semis)* pattern_decl_item?
+<strong id="grammar-token-pattern_decl_body"><span id="grammar-token-pattern-decl-body"></span>pattern_decl_body </strong> ::=  lopen pattern_decl_items lclose
+<strong id="grammar-token-pattern_decl_items"><span id="grammar-token-pattern-decl-items"></span>pattern_decl_items</strong> ::=  (pattern_decl_item lsemis)* pattern_decl_item?
 <strong id="grammar-token-pattern_decl_item"><span id="grammar-token-pattern-decl-item"></span>pattern_decl_item </strong> ::=  simplecon &quot;=&quot; pat
                         simplecon &quot;&lt;-&quot; pat
 </pre>
 <pre>
 <strong id="grammar-token-trait_decl"><span id="grammar-token-trait-decl"></span>trait_decl      </strong> ::=  &quot;trait&quot; simpletype (&quot;&lt;=&quot; context)* &quot;where&quot; trait_decl_body
-<strong id="grammar-token-trait_decl_body"><span id="grammar-token-trait-decl-body"></span>trait_decl_body </strong> ::=  &quot;{{&quot; trait_decl_items &quot;}}&quot;
-                      &quot;{&quot; trait_decl_items &quot;}&quot;
-<strong id="grammar-token-trait_decl_items"><span id="grammar-token-trait-decl-items"></span>trait_decl_items</strong> ::=  (trait_decl_item semis)* trait_decl_item?
+<strong id="grammar-token-trait_decl_body"><span id="grammar-token-trait-decl-body"></span>trait_decl_body </strong> ::=  lopen trait_decl_items lclose
+<strong id="grammar-token-trait_decl_items"><span id="grammar-token-trait-decl-items"></span>trait_decl_items</strong> ::=  (trait_decl_item lsemis)* trait_decl_item?
 <strong id="grammar-token-trait_decl_item"><span id="grammar-token-trait-decl-item"></span>trait_decl_item </strong> ::=  sig_item
                       fixity_decl
 </pre>
@@ -532,14 +423,13 @@
 <strong id="grammar-token-impl_decl"><span id="grammar-token-impl-decl"></span>impl_decl      </strong> ::=  &quot;impl&quot; impl_decl_type (&quot;&lt;=&quot; context)* (&quot;for&quot; con)? &quot;where&quot; impl_decl_body
 <strong id="grammar-token-impl_decl_type"><span id="grammar-token-impl-decl-type"></span>impl_decl_type </strong> ::=  con type_qualified*
                      type_qualified conop type_qualified
-<strong id="grammar-token-impl_decl_body"><span id="grammar-token-impl-decl-body"></span>impl_decl_body </strong> ::=  &quot;{{&quot; impl_decl_items &quot;}}&quot;
-                     &quot;{&quot; impl_decl_items &quot;}&quot;
-<strong id="grammar-token-impl_decl_items"><span id="grammar-token-impl-decl-items"></span>impl_decl_items</strong> ::=  (impl_decl_item semis)* impl_decl_item?
+<strong id="grammar-token-impl_decl_body"><span id="grammar-token-impl-decl-body"></span>impl_decl_body </strong> ::=  lopen impl_decl_items lclose
+<strong id="grammar-token-impl_decl_items"><span id="grammar-token-impl-decl-items"></span>impl_decl_items</strong> ::=  (impl_decl_item lsemis)* impl_decl_item?
 <strong id="grammar-token-impl_decl_item"><span id="grammar-token-impl-decl-item"></span>impl_decl_item </strong> ::=  module_decl_item
 </pre>
 <pre>
-<strong id="grammar-token-fixity_decl"><span id="grammar-token-fixity-decl"></span>fixity_decl</strong> ::=  &quot;infix&quot; infix_assoc infix_prec (op &quot;,&quot;)* op &quot;,&quot;?
-<strong id="grammar-token-infix_assoc"><span id="grammar-token-infix-assoc"></span>infix_assoc</strong> ::=  &quot;none&quot; | &quot;&lt;-&quot; | &quot;-&gt;&quot;
+<strong id="grammar-token-fixity_decl"><span id="grammar-token-fixity-decl"></span>fixity_decl</strong> ::=  &quot;infix&quot; infix_assoc? infix_prec (op &quot;,&quot;)* op &quot;,&quot;?
+<strong id="grammar-token-infix_assoc"><span id="grammar-token-infix-assoc"></span>infix_assoc</strong> ::=  &quot;&lt;-&quot; | &quot;-&gt;&quot;
 <strong id="grammar-token-infix_prec"><span id="grammar-token-infix-prec"></span>infix_prec </strong> ::=  integer
 </pre>
 <pre>
@@ -587,13 +477,11 @@
 <strong id="grammar-token-type_array_items"><span id="grammar-token-type-array-items"></span>type_array_items      </strong> ::=  (type &quot;,&quot;)* type?
 <strong id="grammar-token-type_simplrecord_items"><span id="grammar-token-type-simplrecord-items"></span>type_simplrecord_items</strong> ::=  (type_simplrecord_item &quot;,&quot;)* type_simplrecord_item?
 <strong id="grammar-token-type_simplrecord_item"><span id="grammar-token-type-simplrecord-item"></span>type_simplrecord_item </strong> ::=  var &quot;:&quot; type
-<strong id="grammar-token-type_record_body"><span id="grammar-token-type-record-body"></span>type_record_body      </strong> ::=  &quot;{{&quot; type_record_items &quot;}}&quot;
-                            &quot;{&quot; type_record_items &quot;}&quot;
-<strong id="grammar-token-type_record_items"><span id="grammar-token-type-record-items"></span>type_record_items     </strong> ::=  (type_record_item semis)* type_record_item?
+<strong id="grammar-token-type_record_body"><span id="grammar-token-type-record-body"></span>type_record_body      </strong> ::=  lopen type_record_items lclose
+<strong id="grammar-token-type_record_items"><span id="grammar-token-type-record-items"></span>type_record_items     </strong> ::=  (type_record_item lsemis)* type_record_item?
 <strong id="grammar-token-type_record_item"><span id="grammar-token-type-record-item"></span>type_record_item      </strong> ::=  valsig_decl
-<strong id="grammar-token-sig_body"><span id="grammar-token-sig-body"></span>sig_body              </strong> ::=  &quot;{{&quot; sig_items &quot;}}&quot;
-                            &quot;{&quot; sig_items &quot;}&quot;
-<strong id="grammar-token-sig_items"><span id="grammar-token-sig-items"></span>sig_items             </strong> ::=  (sig_item semis)* sig_item?
+<strong id="grammar-token-sig_body"><span id="grammar-token-sig-body"></span>sig_body              </strong> ::=  lopen sig_items lclose
+<strong id="grammar-token-sig_items"><span id="grammar-token-sig-items"></span>sig_items             </strong> ::=  (sig_item lsemis)* sig_item?
 <strong id="grammar-token-sig_item"><span id="grammar-token-sig-item"></span>sig_item              </strong> ::=  typesig_decl
                             valsig_decl
                             consig_decl
@@ -608,11 +496,11 @@
 <strong id="grammar-token-expr_app"><span id="grammar-token-expr-app"></span>expr_app              </strong> ::=  expr_qualified
                             &quot;&#64;&quot; type_qualified
 <strong id="grammar-token-expr_qualified"><span id="grammar-token-expr-qualified"></span>expr_qualified        </strong> ::=  (con &quot;.&quot;)* expr_block (&quot;.&quot; expr_block)*
-<strong id="grammar-token-expr_block"><span id="grammar-token-expr-block"></span>expr_block            </strong> ::=  &quot;\\&quot; &quot;with&quot; match_body
+<strong id="grammar-token-expr_block"><span id="grammar-token-expr-block"></span>expr_block            </strong> ::=  &quot;\\&quot; &quot;case&quot; case_body
                             &quot;\\&quot; &quot;when&quot; guarded_alt_body
                             &quot;\\&quot; lambda_body
-                            &quot;let&quot; let_binds &quot;in&quot; expr
-                            &quot;match&quot; (expr &quot;,&quot;)* expr? &quot;with&quot; case_body
+                            (&quot;let&quot; | &quot;letrec&quot;) let_binds &quot;in&quot; expr
+                            &quot;case&quot; (expr &quot;,&quot;)* expr? &quot;of&quot; case_body
                             &quot;do&quot; do_body
                             expr_atomic
 <strong id="grammar-token-expr_atomic"><span id="grammar-token-expr-atomic"></span>expr_atomic           </strong> ::=  &quot;(&quot; expr &quot;)&quot;
@@ -631,9 +519,8 @@
 <strong id="grammar-token-expr_array_items"><span id="grammar-token-expr-array-items"></span>expr_array_items      </strong> ::=  (expr &quot;,&quot;)* expr?
 <strong id="grammar-token-expr_simplrecord_items"><span id="grammar-token-expr-simplrecord-items"></span>expr_simplrecord_items</strong> ::=  (expr_simplrecord_item &quot;,&quot;)* expr_simplrecord_item?
 <strong id="grammar-token-expr_simplrecord_item"><span id="grammar-token-expr-simplrecord-item"></span>expr_simplrecord_item </strong> ::=  var &quot;=&quot; expr
-<strong id="grammar-token-expr_record_body"><span id="grammar-token-expr-record-body"></span>expr_record_body      </strong> ::=  &quot;{{&quot; expr_record_items &quot;}}&quot;
-                            &quot;{&quot; expr_record_items &quot;}&quot;
-<strong id="grammar-token-expr_record_items"><span id="grammar-token-expr-record-items"></span>expr_record_items     </strong> ::=  (expr_record_item semis)* expr_record_item?
+<strong id="grammar-token-expr_record_body"><span id="grammar-token-expr-record-body"></span>expr_record_body      </strong> ::=  lopen expr_record_items lclose
+<strong id="grammar-token-expr_record_items"><span id="grammar-token-expr-record-items"></span>expr_record_items     </strong> ::=  (expr_record_item lsemis)* expr_record_item?
 <strong id="grammar-token-expr_record_item"><span id="grammar-token-expr-record-item"></span>expr_record_item      </strong> ::=  valsig_decl
                             val_decl
 </pre>
@@ -664,9 +551,8 @@
 <strong id="grammar-token-lambda_body"><span id="grammar-token-lambda-body"></span>lambda_body</strong> ::=  pat_atomic* &quot;-&gt;&quot; expr
 </pre>
 <pre>
-<strong id="grammar-token-let_binds"><span id="grammar-token-let-binds"></span>let_binds     </strong> ::=  &quot;{{&quot; let_bind_items &quot;}}&quot;
-                    &quot;{&quot; let_bind_items &quot;}&quot;
-<strong id="grammar-token-let_bind_items"><span id="grammar-token-let-bind-items"></span>let_bind_items</strong> ::=  (let_bind_item semis)* let_bind_item?
+<strong id="grammar-token-let_binds"><span id="grammar-token-let-binds"></span>let_binds     </strong> ::=  lopen let_bind_items lclose
+<strong id="grammar-token-let_bind_items"><span id="grammar-token-let-bind-items"></span>let_bind_items</strong> ::=  (let_bind_item lsemis)* let_bind_item?
 <strong id="grammar-token-let_bind_item"><span id="grammar-token-let-bind-item"></span>let_bind_item </strong> ::=  sig_item
                     type_decl
                     type_family_decl
@@ -682,26 +568,23 @@
                     derive_clause
 </pre>
 <pre>
-<strong id="grammar-token-match_body"><span id="grammar-token-match-body"></span>match_body       </strong> ::=  &quot;{{&quot; match_alt_items &quot;}}&quot;
-                       &quot;{&quot; match_alt_items &quot;}&quot;
-<strong id="grammar-token-match_alt_items"><span id="grammar-token-match-alt-items"></span>match_alt_items  </strong> ::=  (match_alt_item semis)* match_alt_item?
-<strong id="grammar-token-match_alt_item"><span id="grammar-token-match-alt-item"></span>match_alt_item   </strong> ::=  (pat &quot;,&quot;)* pat? guarded_alt
+<strong id="grammar-token-case_body"><span id="grammar-token-case-body"></span>case_body        </strong> ::=  lopen case_alt_items lclose
+<strong id="grammar-token-case_alt_items"><span id="grammar-token-case-alt-items"></span>case_alt_items   </strong> ::=  (case_alt_item lsemis)* case_alt_item?
+<strong id="grammar-token-case_alt_item"><span id="grammar-token-case-alt-item"></span>case_alt_item    </strong> ::=  (pat &quot;,&quot;)* pat? guarded_alt
 <strong id="grammar-token-guarded_alt"><span id="grammar-token-guarded-alt"></span>guarded_alt      </strong> ::=  &quot;-&gt;&quot; expr
                        &quot;when&quot; guarded_alt_body
-<strong id="grammar-token-guarded_alt_body"><span id="grammar-token-guarded-alt-body"></span>guarded_alt_body </strong> ::=  &quot;{{&quot; guarded_alt_items &quot;}}&quot;
-                       &quot;{&quot; guarded_alt_items &quot;}&quot;
-<strong id="grammar-token-guarded_alt_items"><span id="grammar-token-guarded-alt-items"></span>guarded_alt_items</strong> ::=  (guarded_alt_item semis)* guarded_alt_item?
+<strong id="grammar-token-guarded_alt_body"><span id="grammar-token-guarded-alt-body"></span>guarded_alt_body </strong> ::=  lopen guarded_alt_items lclose
+<strong id="grammar-token-guarded_alt_items"><span id="grammar-token-guarded-alt-items"></span>guarded_alt_items</strong> ::=  (guarded_alt_item lsemis)* guarded_alt_item?
 <strong id="grammar-token-guarded_alt_item"><span id="grammar-token-guarded-alt-item"></span>guarded_alt_item </strong> ::=  guard_qual &quot;-&gt;&quot; expr
 <strong id="grammar-token-guard_qual"><span id="grammar-token-guard-qual"></span>guard_qual       </strong> ::=  expr
 </pre>
 <pre>
-<strong id="grammar-token-do_body"><span id="grammar-token-do-body"></span>do_body      </strong> ::=  &quot;{{&quot; do_stmt_items &quot;}}&quot;
-                   &quot;{&quot; do_stmt_items &quot;}&quot;
-<strong id="grammar-token-do_stmt_items"><span id="grammar-token-do-stmt-items"></span>do_stmt_items</strong> ::=  (do_stmt_item semis)* expr semis?
+<strong id="grammar-token-do_body"><span id="grammar-token-do-body"></span>do_body      </strong> ::=  lopen do_stmt_items lclose
+<strong id="grammar-token-do_stmt_items"><span id="grammar-token-do-stmt-items"></span>do_stmt_items</strong> ::=  (do_stmt_item lsemis)* expr
 <strong id="grammar-token-do_stmt_item"><span id="grammar-token-do-stmt-item"></span>do_stmt_item </strong> ::=  expr
                    pat &quot;&lt;-&quot; expr
-                   &quot;let&quot; let_binds
-                   val_bind
+                   pat &quot;=&quot; expr
+                   (&quot;let&quot; | &quot;letrec&quot;) let_binds
 </pre>
 <pre>
 <strong id="grammar-token-bind_var"><span id="grammar-token-bind-var"></span>bind_var       </strong> ::=  simple_bind_var
@@ -710,19 +593,19 @@
                      &quot;&#64;&quot; &quot;(&quot; simple_bind_var &quot;:&quot; type &quot;)&quot;
 <strong id="grammar-token-simple_bind_var"><span id="grammar-token-simple-bind-var"></span>simple_bind_var</strong> ::=  var_id
                      &quot;_&quot;
-<strong id="grammar-token-con">con            </strong> ::=  con_id
-                     &quot;(&quot; &quot;)&quot;
+<strong id="grammar-token-con">con            </strong> ::=  con_id | &quot;(&quot; &quot;)&quot;
                      &quot;(&quot; ( &quot;-&gt;&quot; | con_sym ) &quot;)&quot;
 <strong id="grammar-token-conop">conop          </strong> ::=  &quot;-&gt;&quot; | con_sym
                      &quot;`&quot; con_id &quot;`&quot;
-<strong id="grammar-token-var">var            </strong> ::=  var_id
-                     &quot;_&quot;
+<strong id="grammar-token-var">var            </strong> ::=  var_id | &quot;_&quot;
                      &quot;(&quot; var_sym &quot;)&quot;
 <strong id="grammar-token-op">op             </strong> ::=  var_sym
                      &quot;`&quot; var_id &quot;`&quot;
 <strong id="grammar-token-qual_conop"><span id="grammar-token-qual-conop"></span>qual_conop     </strong> ::=  (con &quot;.&quot;)* conop
 <strong id="grammar-token-qual_op"><span id="grammar-token-qual-op"></span>qual_op        </strong> ::=  (con &quot;.&quot;)* op
-<strong id="grammar-token-semis">semis          </strong> ::=  &quot;;&quot;*
+<strong id="grammar-token-vopen">vopen          </strong> ::=  '{' lsemis?
+<strong id="grammar-token-vclose">vclose         </strong> ::=  lsemis? '}'
+<strong id="grammar-token-lsemis">lsemis         </strong> ::=  ';'+
 </pre>
 <p>Note:</p>
 <ul>
@@ -760,6 +643,132 @@
 <li><p>プラグマの名前をちゃんと取るように</p></li>
 <li><p>ドキュメントコメントの lexical syntax 定義</p></li>
 </ul>
+</div>
+<div class="section" id="layout">
+<h2>Layout<a class="headerlink" href="#layout" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p>パーサは layout context を持つ</p></li>
+</ul>
+<div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="nf">withL</span> <span class="n">p</span> <span class="n">ts</span> <span class="n">ms</span> <span class="ow">=</span> <span class="kr">case</span> <span class="n">ts</span> <span class="kr">of</span>
+    <span class="kt">[]</span> <span class="ow">-&gt;</span> <span class="n">tryEnd</span> <span class="n">p</span> <span class="n">ms</span>
+    <span class="n">t</span><span class="kt">:</span><span class="n">ts</span>
+        <span class="o">|</span> <span class="n">isWhiteSpaceWithNewline</span> <span class="n">t</span> <span class="ow">-&gt;</span>
+            <span class="n">startNewline</span> <span class="n">p</span> <span class="n">ts</span> <span class="n">ms</span>
+        <span class="o">|</span> <span class="n">isWhiteSpace</span> <span class="n">t</span> <span class="ow">-&gt;</span>
+            <span class="n">withL</span> <span class="n">p</span> <span class="n">ts</span> <span class="n">ms</span>
+        <span class="o">|</span> <span class="n">otherwise</span> <span class="ow">-&gt;</span> <span class="n">p</span> <span class="n">t</span> <span class="nf">\</span><span class="n">r</span> <span class="ow">-&gt;</span> <span class="kr">case</span> <span class="n">r</span> <span class="kr">of</span>
+            <span class="kt">ParseOk</span> <span class="n">p</span>
+                <span class="o">|</span> <span class="n">isOpen</span> <span class="n">t</span>  <span class="ow">-&gt;</span> <span class="n">withL</span> <span class="n">p</span> <span class="n">ts</span> <span class="p">(</span><span class="o">&lt;&gt;:</span><span class="n">ms</span><span class="p">)</span>
+                <span class="o">|</span> <span class="n">isClose</span> <span class="n">t</span> <span class="ow">-&gt;</span> <span class="kr">case</span> <span class="n">ms</span> <span class="kr">of</span>
+                    <span class="o">&lt;&gt;:</span><span class="n">ms</span> <span class="ow">-&gt;</span> <span class="n">withL</span> <span class="n">p</span> <span class="n">ts</span> <span class="n">ms</span>
+                    <span class="kr">_</span>     <span class="ow">-&gt;</span> <span class="n">tryClose</span> <span class="n">p</span> <span class="n">ts</span> <span class="n">ms</span>
+                <span class="o">|</span> <span class="n">t</span> <span class="n">match</span> <span class="n">interp_string_continue</span> <span class="ow">-&gt;</span> <span class="kr">case</span> <span class="n">ms</span> <span class="kr">of</span>
+                    <span class="o">&lt;&gt;:</span><span class="n">ms</span> <span class="ow">-&gt;</span> <span class="n">withL</span> <span class="n">p</span> <span class="n">ts</span> <span class="p">(</span><span class="o">&lt;&gt;:</span><span class="n">ms</span><span class="p">)</span>
+                    <span class="kr">_</span>     <span class="ow">-&gt;</span> <span class="kt">ParseError</span>
+                <span class="o">|</span> <span class="n">otherwise</span> <span class="ow">-&gt;</span> <span class="n">withL</span> <span class="n">p</span> <span class="n">ts</span> <span class="n">ms</span>
+            <span class="kt">ParseError</span> <span class="ow">-&gt;</span> <span class="n">errorRecover</span> <span class="n">p</span> <span class="n">t</span> <span class="n">ts</span> <span class="n">ms</span>
+
+<span class="nf">errorRecover</span> <span class="n">p</span> <span class="n">t</span> <span class="n">ts</span> <span class="n">ms</span> <span class="ow">=</span> <span class="kr">case</span> <span class="n">ms</span> <span class="kr">of</span>
+    <span class="kt">[]</span> <span class="ow">-&gt;</span> <span class="n">errorRecover2</span> <span class="n">p</span> <span class="n">t</span> <span class="n">ts</span> <span class="n">ms</span>
+    <span class="n">m</span><span class="kt">:</span><span class="n">ms</span> <span class="ow">-&gt;</span> <span class="n">p</span> <span class="sc">&#39;}&#39;</span> <span class="nf">\</span><span class="n">r</span> <span class="ow">-&gt;</span> <span class="kr">case</span> <span class="n">r</span> <span class="kr">of</span>
+        <span class="kt">ParseOk</span> <span class="n">p</span> <span class="ow">-&gt;</span> <span class="kr">case</span> <span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">m</span><span class="p">)</span> <span class="kr">of</span>
+            <span class="p">(</span><span class="s">&quot;}&quot;</span><span class="p">,</span> <span class="o">&lt;&gt;</span><span class="p">)</span>      <span class="ow">-&gt;</span> <span class="n">withL</span> <span class="n">p</span> <span class="n">ts</span> <span class="n">ms</span>
+            <span class="p">(</span><span class="s">&quot;}}&quot;</span><span class="p">,</span> <span class="o">&lt;</span><span class="p">{{,</span><span class="kr">_</span><span class="o">&gt;</span><span class="p">)</span> <span class="ow">-&gt;</span> <span class="n">withL</span> <span class="n">p</span> <span class="n">ts</span> <span class="n">ms</span>
+            <span class="p">(</span><span class="kr">_</span><span class="p">,</span> <span class="o">&lt;</span><span class="p">{,</span><span class="kr">_</span><span class="o">&gt;</span><span class="p">)</span>     <span class="ow">-&gt;</span> <span class="n">withL</span> <span class="n">p</span> <span class="p">(</span><span class="n">t</span><span class="kt">:</span><span class="n">ts</span><span class="p">)</span> <span class="n">ms</span>
+        <span class="kt">ParseError</span> <span class="ow">-&gt;</span> <span class="n">errorRecover2</span> <span class="n">p</span> <span class="n">t</span> <span class="n">ts</span> <span class="p">(</span><span class="n">m</span><span class="kt">:</span><span class="n">ms</span><span class="p">)</span>
+
+<span class="nf">errorRecover2</span> <span class="n">p</span> <span class="n">t</span> <span class="n">ts</span> <span class="n">ms</span> <span class="ow">=</span> <span class="n">p</span> <span class="sc">&#39;{&#39;</span> <span class="nf">\</span><span class="n">r</span> <span class="ow">-&gt;</span> <span class="kr">case</span> <span class="n">r</span> <span class="kr">of</span>
+    <span class="kt">ParseOk</span> <span class="n">p</span> <span class="ow">-&gt;</span> <span class="kr">case</span> <span class="n">t</span> <span class="kr">of</span>
+        <span class="s">&quot;{&quot;</span>  <span class="ow">-&gt;</span> <span class="n">withL</span> <span class="n">p</span> <span class="n">ts</span> <span class="p">(</span><span class="o">&lt;&gt;:</span><span class="n">ms</span><span class="p">)</span>
+        <span class="s">&quot;{{&quot;</span> <span class="ow">-&gt;</span> <span class="n">openDBrace</span> <span class="n">p</span> <span class="n">ts</span> <span class="n">ms</span>
+        <span class="kr">_</span>    <span class="ow">-&gt;</span> <span class="n">openVBrace</span> <span class="n">p</span> <span class="p">(</span><span class="n">t</span><span class="kt">:</span><span class="n">ts</span><span class="p">)</span> <span class="n">ms</span>
+    <span class="kt">ParseError</span> <span class="ow">-&gt;</span> <span class="kr">case</span> <span class="n">t</span> <span class="kr">of</span>
+        <span class="s">&quot;;&quot;</span> <span class="ow">-&gt;</span> <span class="n">p</span> <span class="sc">&#39;;&#39;</span> <span class="nf">\</span><span class="n">r</span> <span class="ow">-&gt;</span> <span class="kr">case</span> <span class="n">r</span> <span class="kr">of</span>
+            <span class="kt">ParseOk</span> <span class="n">p</span> <span class="ow">-&gt;</span> <span class="n">withL</span> <span class="n">p</span> <span class="n">ts</span> <span class="n">ms</span>
+            <span class="kt">ParseError</span> <span class="ow">-&gt;</span> <span class="kt">ParseError</span>
+        <span class="kr">_</span>   <span class="ow">-&gt;</span> <span class="kt">ParseError</span>
+
+<span class="nf">tryClose</span> <span class="n">p</span> <span class="n">ts</span> <span class="n">ms</span> <span class="ow">=</span> <span class="kr">case</span> <span class="n">ms</span> <span class="kr">of</span>
+    <span class="kt">[]</span>       <span class="ow">-&gt;</span> <span class="n">withL</span> <span class="n">p</span> <span class="n">ts</span> <span class="n">ms</span>
+    <span class="o">&lt;</span><span class="p">{,</span><span class="kr">_</span><span class="o">&gt;:</span><span class="n">ms</span> <span class="ow">-&gt;</span> <span class="n">p</span> <span class="sc">&#39;}&#39;</span> <span class="nf">\</span><span class="n">r</span> <span class="ow">-&gt;</span> <span class="kr">case</span> <span class="n">r</span> <span class="kr">of</span>
+        <span class="kt">ParseOk</span> <span class="n">p</span>  <span class="ow">-&gt;</span> <span class="n">tryClose</span> <span class="n">p</span> <span class="n">ts</span> <span class="n">ms</span>
+        <span class="kt">ParseError</span> <span class="ow">-&gt;</span> <span class="kt">ParseError</span>
+    <span class="o">&lt;&gt;:</span><span class="n">ms</span>    <span class="ow">-&gt;</span> <span class="n">withL</span> <span class="n">p</span> <span class="n">ts</span> <span class="n">ms</span>
+    <span class="o">&lt;</span><span class="p">{{,</span><span class="kr">_</span><span class="o">&gt;:</span><span class="kr">_</span> <span class="ow">-&gt;</span> <span class="kt">ParseError</span>
+
+<span class="nf">tryEnd</span> <span class="n">p</span> <span class="n">ms</span> <span class="ow">=</span> <span class="kr">case</span> <span class="n">ms</span> <span class="kr">of</span>
+    <span class="kt">[]</span>       <span class="ow">-&gt;</span> <span class="kt">ParseOk</span> <span class="n">p</span>
+    <span class="o">&lt;</span><span class="p">{,</span><span class="kr">_</span><span class="o">&gt;:</span><span class="n">ms</span> <span class="ow">-&gt;</span> <span class="n">p</span> <span class="sc">&#39;}&#39;</span> <span class="nf">\</span><span class="n">r</span> <span class="ow">-&gt;</span> <span class="kr">case</span> <span class="n">r</span> <span class="kr">of</span>
+        <span class="kt">ParseOk</span> <span class="n">p</span>  <span class="ow">-&gt;</span> <span class="n">tryEnd</span> <span class="n">p</span> <span class="n">ms</span>
+        <span class="kt">ParseError</span> <span class="ow">-&gt;</span> <span class="kt">ParseError</span>
+    <span class="kr">_</span>        <span class="ow">-&gt;</span> <span class="kt">ParseError</span>
+
+<span class="nf">startNewline</span> <span class="n">p</span> <span class="n">ts</span> <span class="n">ms</span> <span class="ow">=</span> <span class="kr">case</span> <span class="n">ts</span> <span class="kr">of</span>
+    <span class="kt">[]</span> <span class="ow">-&gt;</span> <span class="n">withL</span> <span class="n">p</span> <span class="n">ts</span> <span class="n">ms</span>
+    <span class="n">t</span><span class="kt">:</span><span class="n">ts</span>
+        <span class="o">|</span> <span class="n">isWhiteSpace</span> <span class="n">t</span> <span class="ow">-&gt;</span>
+            <span class="n">startNewline</span> <span class="n">p</span> <span class="n">ts</span> <span class="n">ms</span>
+        <span class="o">|</span> <span class="n">otherwise</span> <span class="ow">-&gt;</span>
+            <span class="n">resolveL</span> <span class="p">(</span><span class="kt">PosToken</span> <span class="n">t</span><span class="p">)</span> <span class="n">p</span> <span class="p">(</span><span class="n">t</span><span class="kt">:</span><span class="n">ts</span><span class="p">)</span> <span class="n">ms</span>
+
+<span class="nf">resolveL</span> <span class="n">n</span> <span class="n">p</span> <span class="n">ts</span> <span class="n">ms</span> <span class="ow">=</span> <span class="kr">case</span> <span class="n">ms</span> <span class="kr">of</span>
+    <span class="kt">[]</span>       <span class="ow">-&gt;</span> <span class="n">withL</span> <span class="n">p</span> <span class="n">ts</span> <span class="n">ms</span>
+    <span class="o">&lt;&gt;:</span><span class="kr">_</span>     <span class="ow">-&gt;</span> <span class="n">withL</span> <span class="n">p</span> <span class="n">ts</span> <span class="n">ms</span>
+    <span class="o">&lt;</span><span class="p">{,</span><span class="n">m</span><span class="o">&gt;:</span><span class="n">ms</span>
+        <span class="o">|</span> <span class="n">n</span> <span class="o">&lt;</span> <span class="n">m</span> <span class="ow">-&gt;</span> <span class="n">p</span> <span class="sc">&#39;}&#39;</span> <span class="nf">\</span><span class="n">r</span> <span class="ow">-&gt;</span> <span class="kr">case</span> <span class="n">r</span> <span class="kr">of</span>
+            <span class="kt">ParseOk</span> <span class="n">p</span>  <span class="ow">-&gt;</span> <span class="n">resolveL</span> <span class="n">n</span> <span class="n">p</span> <span class="n">ts</span> <span class="n">ms</span>
+            <span class="kt">ParseError</span> <span class="ow">-&gt;</span> <span class="kt">ParseError</span>
+        <span class="o">|</span> <span class="n">otherwise</span> <span class="ow">-&gt;</span> <span class="n">p</span> <span class="sc">&#39;;&#39;</span> <span class="nf">\</span><span class="n">r</span> <span class="ow">-&gt;</span> <span class="kr">case</span> <span class="n">r</span> <span class="kr">of</span>
+            <span class="kt">ParseOk</span> <span class="n">p</span>  <span class="ow">-&gt;</span> <span class="n">withL</span> <span class="n">p</span> <span class="n">ts</span> <span class="p">(</span><span class="o">&lt;</span><span class="p">{,</span><span class="n">m</span><span class="o">&gt;:</span><span class="n">ms</span><span class="p">)</span>
+            <span class="kt">ParseError</span> <span class="ow">-&gt;</span> <span class="kt">ParseError</span>
+    <span class="o">&lt;</span><span class="p">{{,</span><span class="n">m</span><span class="o">&gt;:</span><span class="n">ms</span>
+        <span class="o">|</span> <span class="n">n</span> <span class="o">&lt;</span> <span class="n">m</span> <span class="ow">-&gt;</span> <span class="kt">ParseError</span>
+        <span class="o">|</span> <span class="n">otherwise</span> <span class="ow">-&gt;</span> <span class="n">p</span> <span class="sc">&#39;;&#39;</span> <span class="nf">\</span><span class="n">r</span> <span class="ow">-&gt;</span> <span class="kr">case</span> <span class="n">r</span> <span class="kr">of</span>
+            <span class="kt">ParseOk</span> <span class="n">p</span>  <span class="ow">-&gt;</span> <span class="n">withL</span> <span class="n">p</span> <span class="n">ts</span> <span class="p">(</span><span class="o">&lt;</span><span class="p">{{,</span><span class="n">m</span><span class="o">&gt;:</span><span class="n">ms</span><span class="p">)</span>
+            <span class="kt">ParseError</span> <span class="ow">-&gt;</span> <span class="kt">ParseError</span>
+
+<span class="nf">openDBrace</span> <span class="n">p</span> <span class="n">ts</span> <span class="n">ms</span> <span class="ow">=</span> <span class="kr">case</span> <span class="n">ts</span> <span class="kr">of</span>
+    <span class="kt">[]</span> <span class="ow">-&gt;</span> <span class="n">withL</span> <span class="n">p</span> <span class="n">ts</span> <span class="p">(</span><span class="o">&lt;</span><span class="p">{{,</span><span class="mi">0</span><span class="o">&gt;:</span><span class="n">ms</span><span class="p">)</span>
+    <span class="n">t</span><span class="kt">:</span><span class="n">ts</span>
+        <span class="o">|</span> <span class="n">isWhiteSpace</span> <span class="n">t</span> <span class="ow">-&gt;</span>
+            <span class="n">openDBrace</span> <span class="n">p</span> <span class="n">ts</span> <span class="n">ms</span>
+        <span class="o">|</span> <span class="n">otherwise</span> <span class="ow">-&gt;</span>
+            <span class="n">withL</span> <span class="n">p</span> <span class="p">(</span><span class="n">t</span><span class="kt">:</span><span class="n">ts</span><span class="p">)</span> <span class="p">(</span><span class="o">&lt;</span><span class="p">{{,</span><span class="kt">PosToken</span><span class="p">(</span><span class="n">t</span><span class="p">)</span><span class="o">&gt;:</span><span class="n">ms</span><span class="p">)</span>
+
+<span class="nf">openVBrace</span> <span class="n">p</span> <span class="n">ts</span> <span class="n">ms</span> <span class="ow">=</span> <span class="kr">case</span> <span class="n">ts</span> <span class="kr">of</span>
+    <span class="kt">[]</span> <span class="ow">-&gt;</span> <span class="n">withL</span> <span class="n">p</span> <span class="n">ts</span> <span class="p">(</span><span class="o">&lt;</span><span class="p">{,</span><span class="mi">0</span><span class="o">&gt;:</span><span class="n">ms</span><span class="p">)</span>
+    <span class="n">t</span><span class="kt">:</span><span class="n">ts</span>
+        <span class="o">|</span> <span class="n">isWhiteSpace</span> <span class="n">t</span> <span class="ow">-&gt;</span>
+            <span class="n">openVBrace</span> <span class="n">p</span> <span class="n">ts</span> <span class="n">ms</span>
+        <span class="o">|</span> <span class="n">otherwise</span> <span class="ow">-&gt;</span>
+            <span class="n">withL</span> <span class="n">p</span> <span class="p">(</span><span class="n">t</span><span class="kt">:</span><span class="n">ts</span><span class="p">)</span> <span class="p">(</span><span class="o">&lt;</span><span class="p">{,</span><span class="kt">PosToken</span><span class="p">(</span><span class="n">t</span><span class="p">)</span><span class="o">&gt;:</span><span class="n">ms</span><span class="p">)</span>
+
+<span class="nf">isWhiteSpace</span> <span class="n">t</span> <span class="ow">=</span>
+    <span class="n">t</span> <span class="n">match</span> <span class="n">whitespace</span>
+
+<span class="nf">isWhiteSpaceWithNewline</span> <span class="n">t</span> <span class="ow">=</span>
+    <span class="n">isWhiteSpace</span> <span class="n">t</span> <span class="o">&amp;&amp;</span>
+    <span class="n">t</span> <span class="n">match</span> <span class="kt">ANY</span><span class="o">*</span> <span class="n">newline</span> <span class="kt">ANY</span><span class="o">*</span>
+
+<span class="nf">isOpen</span> <span class="n">t</span> <span class="ow">=</span> <span class="kr">case</span> <span class="n">t</span> <span class="kr">of</span>
+    <span class="s">&quot;(&quot;</span>     <span class="ow">-&gt;</span> <span class="kt">True</span>
+    <span class="s">&quot;[&quot;</span>     <span class="ow">-&gt;</span> <span class="kt">True</span>
+    <span class="s">&quot;{&quot;</span>     <span class="ow">-&gt;</span> <span class="kt">True</span>
+    <span class="s">&quot;{{&quot;</span>    <span class="ow">-&gt;</span> <span class="kt">True</span>
+    <span class="kr">_</span> <span class="o">|</span> <span class="n">t</span> <span class="n">match</span> <span class="n">interp_string_start</span>
+            <span class="ow">-&gt;</span> <span class="kt">True</span>
+    <span class="kr">_</span>       <span class="ow">-&gt;</span> <span class="kt">False</span>
+
+<span class="nf">isClose</span> <span class="n">t</span> <span class="ow">=</span> <span class="kr">case</span> <span class="n">t</span> <span class="kr">of</span>
+    <span class="s">&quot;)&quot;</span>     <span class="ow">-&gt;</span> <span class="kt">True</span>
+    <span class="s">&quot;]&quot;</span>     <span class="ow">-&gt;</span> <span class="kt">True</span>
+    <span class="s">&quot;}&quot;</span>     <span class="ow">-&gt;</span> <span class="kt">True</span>
+    <span class="s">&quot;}}&quot;</span>    <span class="ow">-&gt;</span> <span class="kt">True</span>
+    <span class="kr">_</span> <span class="o">|</span> <span class="n">t</span> <span class="n">match</span> <span class="n">interp_string_end</span>
+            <span class="ow">-&gt;</span> <span class="kt">True</span>
+    <span class="kr">_</span>       <span class="ow">-&gt;</span> <span class="kt">False</span>
+</pre></div>
+</div>
 </div>
 <div class="section" id="fixity-resolution">
 <h2>Fixity Resolution<a class="headerlink" href="#fixity-resolution" title="Permalink to this headline">¶</a></h2>
@@ -803,8 +812,8 @@
 <li class="toctree-l2"><a class="reference internal" href="#notational-conventions">Notational Conventions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#lexical-syntax">Lexical Syntax</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#aliases">Aliases</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#layout">Layout</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#grammar">Grammar</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#layout">Layout</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#fixity-resolution">Fixity Resolution</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#reference">Reference</a></li>
 </ul>
