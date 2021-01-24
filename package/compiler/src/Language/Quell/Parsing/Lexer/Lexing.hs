@@ -1417,7 +1417,7 @@ lexAndYieldInterpString b = \sp0 -> goChar sp0 mempty
                             do text "Found an unclosed literal."
                     }
             Just item -> do
-                let (c, u) = Spanned.unSpanned item
+                let (_, u) = Spanned.unSpanned item
                     sp1 = sp0 <> Spanned.getSpan item
                     isp1 = isp0 <> Spanned.getSpan item
                 case u of
@@ -1454,7 +1454,7 @@ lexAndYieldInterpString b = \sp0 -> goChar sp0 mempty
                             do text "Found an unclosed literal."
                     }
             Just item -> do
-                let (c, u) = Spanned.unSpanned item
+                let (_, u) = Spanned.unSpanned item
                     sp1 = sp0 <> Spanned.getSpan item
                     isp1 = isp0 <> Spanned.getSpan item
                 case u of
@@ -1547,7 +1547,7 @@ lexAndYieldCommentLineWithContent = do
                                 do buildText t0
                     }
             Just item -> do
-                let (c, u) = Spanned.unSpanned item
+                let (_, u) = Spanned.unSpanned item
                     sp1 = sp0 <> Spanned.getSpan item
                 case u of
                     CodeUnit.LcUSymLF -> lexerYield do
@@ -1583,7 +1583,7 @@ lexAndYieldCommentMultilineWithContent = do
         do Spanned.getSpan spc
         do textBuilderFromChar do Spanned.unSpanned spc
     where
-        goChar b i sp0 t0 = consumeBufferItem @s @m >>= \case
+        goChar b (i :: Int) sp0 t0 = consumeBufferItem @s @m >>= \case
             Nothing -> lexerYield do
                 Spanned.Spanned
                     {
@@ -1673,7 +1673,7 @@ lexAndYieldCommentDoc = do
                                 }
                         goChar sp1 t0
 
-        goClose b sp0 rs t0 rt0 = case rs of
+        goClose b sp0 rs0 t0 rt0 = case rs0 of
             [] -> lexerYield do
                 Spanned.Spanned
                     {
@@ -1681,7 +1681,7 @@ lexAndYieldCommentDoc = do
                         unSpanned = LexedToken do
                             Token.CommentDoc do buildText t0
                     }
-            r:rs -> goClose1 b sp0 r rs t0 rt0
+            r:rs1 -> goClose1 b sp0 r rs1 t0 rt0
 
         goClose1 b sp0 r rs t0 rt0 = consumeBufferItem @s @m >>= \case
             Nothing -> lexerYield do

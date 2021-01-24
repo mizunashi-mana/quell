@@ -1,280 +1,199 @@
 {
-module Language.Quell.Parsing.Parser (
-
-) where
+module Language.Quell.Parsing.Parser where
 
 import Language.Quell.Prelude
 
-import           Language.Quell.Type.Token (Token (..))
+import qualified Prelude
 import qualified Language.Quell.Type.Token as Token
-import           Language.Quell.Parsing.Spanned (Spanned (..))
 import qualified Language.Quell.Parsing.Spanned as Spanned
-import           Language.Quell.Parsing.Runner (Runner (..))
-import qualified Language.Quell.Parsing.Runner as Runner
 }
 
 %token
-  'as'       { S TokKwAs }
-  'case'     { S TokKwCase }
-  'class'    { S TokKwClass }
-  'data'     { S TokKwData }
-  'default'  { S TokKwDefault }
-  'deriving' { S TokKwDeriving }
-  'do'       { S TokKwDo }
-  'else'     { S TokKwElse }
-  'forall'   { S TokKwForall }
-  'hiding'   { S TokKwHiding }
-  'if'       { S TokKwIf }
-  'import'   { S TokKwImport }
-  'in'       { S TokKwIn }
-  'infix'    { S TokKwInfix }
-  'none'     { S TokKwNone }
-  'assocL'   { S TokKwAssocLeft }
-  'assocR'   { S TokKwAssocRight }
-  'instance' { S TokKwInstance }
-  'let'      { S TokKwLet }
-  'module'   { S TokKwModule }
-  'newtype'  { S TokKwNewtype }
-  'of'       { S TokKwOf }
-  'sig'      { S TokKwSignature }
-  'then'     { S TokKwThen }
-  'type'     { S TokKwType }
-  'where'    { S TokKwWhere }
+    'as'            { S Token.KwAs }
+    'case'          { S Token.KwCase }
+    'data'          { S Token.KwData }
+    'default'       { S Token.KwDefault }
+    'derive'        { S Token.KwDerive }
+    'do'            { S Token.KwDo }
+    'in'            { S Token.KwIn }
+    'infix'         { S Token.KwInfix }
+    'let'           { S Token.KwLet }
+    'module'        { S Token.KwModule }
+    'newtype'       { S Token.KwNewtype }
+    'of'            { S Token.KwOf }
+    'signature'     { S Token.KwSignature }
+    'type'          { S Token.KwType }
+    'where'         { S Token.KwWhere }
+    '_'             { S Token.KwUnderscore }
 
-  '->'       { S TokSymArrow }
-  '@'        { S TokSymAt }
-  ':'        { S TokSymColon }
-  '=>'       { S TokSymDArrow }
-  '.'        { S TokSymDot }
-  '='        { S TokSymEqual }
-  '\\'       { S TokSymLamPref }
-  '?'        { S TokSymQuestion }
-  '_'        { S TokSymUnderscore }
+    '->'       { S Token.SymArrow }
+    '@'        { S Token.SymAt }
+    ':'        { S Token.SymColon }
+    '=>'       { S Token.SymDArrow }
+    '.'        { S Token.SymDot }
+    '='        { S Token.SymEqual }
+    '\\'       { S Token.SymLambda }
+    '?'        { S Token.SymUnknown }
 
-  '{'        { S TokSpOpenCurly }
-  '}'        { S TokSpCloseCurly }
-  VOCURLY    { S TokSpOpenVCurly }
-  VCCURLY    { S TokSpCloseVCurly }
-  '['        { S TokSpOpenBrack }
-  ']'        { S TokSpCloseBrack }
-  '('        { S TokSpOpenParen }
-  ')'        { S TokSpCloseParen }
-  '`'        { S TokSpBackquote }
-  ','        { S TokSpComma }
-  ';'        { S TokSpSemi }
+    '{'        { S Token.SpBraceOpen }
+    '}'        { S Token.SpBraceClose }
+    VOBRACE    { S Token.SpVBraceOpen }
+    VCBRACE    { S Token.SpVBraceClose }
+    '['        { S Token.SpBrackOpen }
+    ']'        { S Token.SpBrackClose }
+    '('        { S Token.SpParenOpen }
+    ')'        { S Token.SpParenClose }
+    '`'        { S Token.SpBackquote }
+    ','        { S Token.SpComma }
+    VSEMI      { S Token.SpSemi }
 
-  CONID      { S (TokIdConId _) }
-  CONSYM     { S (TokIdConSym _) }
-  VARID      { S (TokIdVarId _) }
-  VARSYM     { S (TokIdVarSym _) }
-  QCONID     { S (TokIdQualConId _) }
-  QCONSYM    { S (TokIdQualConSym _) }
-  QVARID     { S (TokIdQualVarId _) }
-  QVARSYM    { S (TokIdQualVarSym _) }
+    CONID      { S (Token.IdConId _) }
+    CONSYM     { S (Token.IdConOp _) }
+    VARID      { S (Token.IdVarId _) }
+    VARSYM     { S (Token.IdVarOp _) }
 
-  CHAR       { S (TokLitChar _) }
-  STRING     { S (TokLitString _) }
-  INTEGER    { S (TokLitInteger _) }
-  RATIONAL   { S (TokLitRational _) }
+    CHAR       { S (Token.LitChar _) }
+    STRING     { S (Token.LitString _) }
+    INTEGER    { S (Token.LitInteger _) }
+    RATIONAL   { S (Token.LitRational _) }
 
-%monad { Runner }{ >>= }{ return }
-%lexer { undefined }{ S TokEndOfSource }
-%tokentype { Spanned Token }
+%monad { ParserWithL }{ >>= }{ return }
+%lexer { lexer }{ S Token.EndOfSource }
+%tokentype { Spanned.T Token.T }
 
 %name parseProgram program
 %%
 
 program :: { () }
-  : module_body   { $1 }
-
+    : module_decl_body   { $1 }
 
 module_decl :: { () }
-  : 'module' modid 'where' module_body
+    : 'module' simplecon module_decl_where { () }
 
-module_body :: { () }
-  : '{' semis_top '}'       { () }
-  | VOCURLY semis_top close { () }
+module_decl_where :: { () }
+    : 'where' module_decl_body  { () }
+    : {- empty -}               { () }
 
+module_decl_body :: { () }
+    : lopen module_decl_items lclose { () }
 
-semis_top :: { () }
-  : semis top { () }
+module_decl_items :: { () }
+    : module_decl_items_semis module_decl_item  { () }
+    | module_decl_items_semis                   { () }
 
-top :: { () }
-  : import_decls_semis top_decls_semis  { () }
-  | import_decls_semis top_decls        { () }
-  | import_decls1                       { () }
+module_decl_items_semis :: { () }
+    : module_decl_items_semis module_decl_item lsemis   { () }
+    : {- empty -}                                       { () }
 
-
-import_decls_semis :: { () }
-  : import_decls_semis import_decl semis1 { () }
-  | {- empty -}                           { () }
-
-import_decls1 :: { () }
-  : import_decls_semis import_decl    { () }
-
-import_decl :: { () }
-  : 'import' modid maybe_import_spec  { () }
-
-maybe_import_spec :: { () }
-  : import_spec     { () }
-  | {- empty -}     { () }
-
-import_spec :: { () }
-  : '(' export_list ')'           { () }
-  | 'hiding' '(' export_list ')'  { () }
-
-export_list :: { () }
-  : export ',' export_list  { () }
-  | export                  { () }
-  | {- empty -}             { () }
+module_decl_item :: { () }
+    : sig_item
+    | type_decl
+    | type_family_decl
+    | type_impl_decl
+    | data_decl
+    | val_decl
+    | module_decl
+    | pattern_decl
+    | trait_decl
+    | impl_decl
+    | fixity_decl
+    | foreign_val_decl
+    | export_clause
+    | derive_clause
 
 
-top_decls :: { () }
-  : top_decls_semis top_decl  { () }
+typesig_decl :: { () }
+    : 'type' con ':' type
 
-top_decls_semis :: { () }
-  : top_decls_semis top_decl semis1 { () }
-  | {- empty -}                     { () }
+valsig_decl :: { () }
+    : var ':' type
 
-top_decl :: { () }
-  : fixity_decl
-  | val_sig_decl
-  | val_decl
-  | type_sig_decl
-  | type_decl
-  | class_decl
-  | module_decl
-  | instance_decl
+consig_decl :: { () }
+    : con ':' type
+
+patternsig_decl :: { () }
+    : 'pattern' con ':' type
+
+foreign_val_decl :: { () }
+    : 'foreign' STRING var ':' type
 
 
-fixity_decl :: { () }
-  : 'fixity' fixity_assoc fixity_prec fixity_ops
+type_decl :: { () }
+    : 'type' simpletype '=' type type_decl_where    { () }
 
-fixity_assoc :: { () }
-  : 'none'    { () }
-  | 'assocL'  { () }
-  | 'assocR'  { () }
+type_decl_where :: { () }
+    : 'where' type_decl_where_body  { () }
+    | {- empty -}
 
-fixity_prec :: { () }
-  : INTEGER { () }
+type_decl_where_body :: { () }
+    : lopen type_decl_where_items lclose    { () }
 
-fixity_ops :: { () }
-  : fixity_ops ',' fixity_op { () }
-  | fixity_op                { () }
+type_decl_where_items :: { () }
+    : type_decl_where_items_semis type_decl_where_item  { () }
+    | type_decl_where_items_semis                       { () }
 
-fixity_op :: { () }
-  : op    { () }
-  | qop   { () }
+type_decl_where_items_semis :: { () }
+    : type_decl_where_items_semis type_decl_where_item lsemis   { () }
+    | {- empty -}                                               { () }
 
-
-val_sig_decl :: { () }
-  : var ':' qtype
-
-
-class_decl :: { () }
-  : 'class' class_header where_class_body
-
-class_header :: { () }
-  : context '=>' type { () }
-  | type              { () }
-
-where_class_body :: { () }
-  : 'where' class_body  { () }
-  | {- empty -}         { () }
-
-class_body :: { () }
-  : '{' class_decls '}'         { () }
-  | VOCURLY class_decls close   { () }
-
-class_decls :: { () }
-  : class_decls semis1 class_decl   { () }
-  | class_decls semis1              { () }
-  | class_decl                      { () }
-  | {- empty -}                     { () }
-
-class_decl :: { () }
-  : fixity_decl
-  | sig_decl
-  | type_sig_decl
+type_decl_where_item :: { () }
+    : type_decl     { () }
+    | use_clause    { () }
 
 
-qtype :: { () }
-  : 'forall' type_bind_vars '.' qtype
-  | 'forall' type_bind_vars '->' qtype
-  | context '=>' qtype
-  | type
+type_family_decl :: { () }
+    : 'type' 'family' con may_type_sig 'where' ctypefam_decl_body   { () }
+    | 'type' 'family' con may_type_sig                              { () }
+    | 'data' 'family' con may_type_sig 'where' cdatafam_decl_body   { () }
+    | 'data' 'family' con may_type_sig
 
-type_bind_vars :: { () }
-  : type_bind_var type_bind_vars  { () }
-  | {- empty -}                   { () }
+ctypefam_decl_body :: { () }
+    : lopen ctypefam_decl_items lclose  { () }
 
-type_bind_var :: { () }
-  : type_var                  { () }
-  | '(' type_var ':' kind ')' { () }
+ctypefam_decl_items :: { () }
+    : ctypefam_decl_items_semis ctypefam_decl_item      { () }
+    | ctypefam_decl_items_semis                         { () }
 
-type_var :: { () }
-  : VARID   { () }
+ctypefam_decl_items_semis :: { () }
+    : ctypefam_decl_items_semis ctypefam_decl_item lsemis   { () }
+    | {- empty -}                                           { () }
 
-context :: { () }
-  : btype   { () }
-
-type :: { () }
-  : btype             { () }
-  | btype '->' qtype  { () }
-
-btype :: { () }
-  : type_apps    { () }
-
-type_apps :: { () }
-  : type_app            { () }
-  | type_apps type_app  { () }
-
-type_app :: { () }
-  : atype         { () }
-  |
+ctypefam_decl_item :: { () }
+    : typefam_impl_decl
+    | type_decl_where_item
 
 
-modid :: { () }
-  : CONID   { () }
-  | QCONID  { () }
+simplecon :: { () }
+    : {- TODO -}    { () }
 
-var :: { () }
-  : VARID           { () }
-  | '(' VARSYM ')'  { () }
+lopen :: { () }
+    : VOBRACE may_lsemis    { () }
 
-op :: { () }
-  : varop   { () }
-  | conop   { () }
-  | '->'    { () }
+lclose :: { () }
+    : may_lsemis vclose     { () }
 
-qop :: { () }
-  : qvarop  { () }
-  | qconop  { () }
+vclose :: { () }
+    : VCBRACE   { () }
+    | error     { () }
 
-varop :: { () }
-  : VARSYM          { () }
-  | '`' VARID '`'   { () }
+lsemis :: { () }
+    : lsemis VSEMI  { () }
+    | VSEMI         { () }
 
-conop :: { () }
-  : CONSYM          { () }
-  | '`' CONID '`'   { () }
-
-qvarop :: { () }
-  : QVARSYM         { () }
-  | '`' QVARID '`'  { () }
-
-qconop :: { () }
-  : QCONSYM         { () }
-  | '`' QCONID '`'  { () }
-
-
-semis :: { () }
-  : semis ';'   { $1 }
-  | {- empty -} { () }
-
-semis1 :: { () }
-  : semis1 ';'  { $1 }
-  | ';'         { () }
+may_lsemis :: { () }
+    : may_lsemis VSEMI  { () }
+    | {- empty -}       { () }
 {
-pattern S t = Spanned _ t
+pattern S :: Token.T -> Spanned.T Token.T
+pattern S t <- Spanned.Spanned
+    {
+        getSpan = _,
+        unSpanned = t
+    }
+
+type ParserWithL = Identity
+
+lexer = undefined
+
+happyError = undefined
 }
