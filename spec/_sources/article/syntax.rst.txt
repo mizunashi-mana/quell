@@ -354,23 +354,21 @@ Grammar
 .. productionlist::
     type_impl_decl  : typefam_impl_decl
                     : datafam_impl_decl
-    typefam_impl_decl: "type" "impl" type_impl_decl_type "=" type ("where" type_decl_where_body)?
-    datafam_impl_decl   : "data" "impl" type_impl_decl_type "where" data_decl_body
-                        : "newtype" "impl" type_impl_decl_type "=" type ("where" type_decl_where_body)?
-    type_impl_decl_type : con type_qualified*
-                        : type_qualified conop type_qualified
+    typefam_impl_decl: "type" "impl" impltype "=" type ("where" type_decl_where_body)?
+    datafam_impl_decl   : "data" "impl" impltype ("where" data_decl_body)?
+                        : "newtype" "impl" impltype "=" type ("where" type_decl_where_body)?
 
 .. productionlist::
-    data_decl   : "data" con (":" type)? "where" data_decl_body
+    data_decl   : "data" con (":" type)? ("where" data_decl_body)?
                 : "newtype" simpletype "=" type ("where" type_decl_where_body)?
     data_decl_body  : lopen data_decl_items lclose
     data_decl_items: (data_decl_item lsemis)* data_decl_item?
     data_decl_item: consig_decl
 
 .. productionlist::
-    val_decl: simpleval "=" expr ("where" val_decl_where)?
-    val_bind: pat "=" expr ("where" val_decl_where)?
-    val_decl_where  : lopen val_decl_where_items lclose
+    val_decl: simpleval "=" expr ("where" val_decl_where_body)?
+    val_bind: pat "=" expr ("where" val_decl_where_body)?
+    val_decl_where_body : lopen val_decl_where_items lclose
     val_decl_where_items: (val_decl_where_item lsemis)* val_decl_where_item?
     val_decl_where_item: let_bind_item
 
@@ -384,16 +382,14 @@ Grammar
                         : simplecon "<-" pat
 
 .. productionlist::
-    trait_decl: "trait" simpletype ("<=" context)* "where" trait_decl_body
+    trait_decl: "trait" simpletype ("<=" context)* ("where" trait_decl_body)?
     trait_decl_body : lopen trait_decl_items lclose
     trait_decl_items: (trait_decl_item lsemis)* trait_decl_item?
     trait_decl_item : sig_item
                     : fixity_decl
 
 .. productionlist::
-    impl_decl: "impl" impl_decl_type ("<=" context)* ("for" con)? "where" impl_decl_body
-    impl_decl_type  : con type_qualified*
-                    : type_qualified conop type_qualified
+    impl_decl: "impl" impltype ("<=" context)* ("of" con)? ("where" impl_decl_body)?
     impl_decl_body  : lopen impl_decl_items lclose
     impl_decl_items: (impl_decl_item lsemis)* impl_decl_item?
     impl_decl_item: module_decl_item
@@ -405,9 +401,9 @@ Grammar
 
 .. productionlist::
     use_clause: "use" (string ":")?  (con ".")* use_body
-    use_items   : use_item
+    use_body    : "(" ".." ")"
                 : "(" (use_item ",")* use_item? ")"
-                : "(" ".." ")"
+                : use_item
     use_item: con ("as" con)?
             : conop ("as" conop)?
             : var ("as" var)?
@@ -416,13 +412,15 @@ Grammar
 .. productionlist::
     simpletype  : con bind_var*
                 : bind_var conop bind_var
+    impltype    : con type_qualified*
+                : type_qualified conop type_qualified
     simplecon   : con bind_var*
                 : bind_var conop bind_var
     simpleval   : var bind_var*
                 : bind_var op bind_var
 
 .. productionlist::
-    type: "\\/" bind_var* "." type
+    type: "\\/" bind_var* "=>" type
         : context "=>" type
         : type_expr
     context: type_unit
@@ -431,8 +429,8 @@ Grammar
     type_unit: type_infix
     type_infix: type_apps (qual_conop type_apps)*
     type_apps: type_qualified type_app*
-    type_app: type_qualified
-            : "@" type_qualified
+    type_app: "@" type_qualified
+            : type_qualified
     type_qualified: (con ".")* type_atomic ("." type_atomic)*
     type_atomic : "(" type (":" type)? ")"
                 : con

@@ -381,25 +381,23 @@
                          type_decl_where_item
 </pre>
 <pre>
-<strong id="grammar-token-type_impl_decl"><span id="grammar-token-type-impl-decl"></span>type_impl_decl     </strong> ::=  typefam_impl_decl
-                         datafam_impl_decl
-<strong id="grammar-token-typefam_impl_decl"><span id="grammar-token-typefam-impl-decl"></span>typefam_impl_decl  </strong> ::=  &quot;type&quot; &quot;impl&quot; type_impl_decl_type &quot;=&quot; type (&quot;where&quot; type_decl_where_body)?
-<strong id="grammar-token-datafam_impl_decl"><span id="grammar-token-datafam-impl-decl"></span>datafam_impl_decl  </strong> ::=  &quot;data&quot; &quot;impl&quot; type_impl_decl_type &quot;where&quot; data_decl_body
-                         &quot;newtype&quot; &quot;impl&quot; type_impl_decl_type &quot;=&quot; type (&quot;where&quot; type_decl_where_body)?
-<strong id="grammar-token-type_impl_decl_type"><span id="grammar-token-type-impl-decl-type"></span>type_impl_decl_type</strong> ::=  con type_qualified*
-                         type_qualified conop type_qualified
+<strong id="grammar-token-type_impl_decl"><span id="grammar-token-type-impl-decl"></span>type_impl_decl   </strong> ::=  typefam_impl_decl
+                       datafam_impl_decl
+<strong id="grammar-token-typefam_impl_decl"><span id="grammar-token-typefam-impl-decl"></span>typefam_impl_decl</strong> ::=  &quot;type&quot; &quot;impl&quot; impltype &quot;=&quot; type (&quot;where&quot; type_decl_where_body)?
+<strong id="grammar-token-datafam_impl_decl"><span id="grammar-token-datafam-impl-decl"></span>datafam_impl_decl</strong> ::=  &quot;data&quot; &quot;impl&quot; impltype (&quot;where&quot; data_decl_body)?
+                       &quot;newtype&quot; &quot;impl&quot; impltype &quot;=&quot; type (&quot;where&quot; type_decl_where_body)?
 </pre>
 <pre>
-<strong id="grammar-token-data_decl"><span id="grammar-token-data-decl"></span>data_decl      </strong> ::=  &quot;data&quot; con (&quot;:&quot; type)? &quot;where&quot; data_decl_body
+<strong id="grammar-token-data_decl"><span id="grammar-token-data-decl"></span>data_decl      </strong> ::=  &quot;data&quot; con (&quot;:&quot; type)? (&quot;where&quot; data_decl_body)?
                      &quot;newtype&quot; simpletype &quot;=&quot; type (&quot;where&quot; type_decl_where_body)?
 <strong id="grammar-token-data_decl_body"><span id="grammar-token-data-decl-body"></span>data_decl_body </strong> ::=  lopen data_decl_items lclose
 <strong id="grammar-token-data_decl_items"><span id="grammar-token-data-decl-items"></span>data_decl_items</strong> ::=  (data_decl_item lsemis)* data_decl_item?
 <strong id="grammar-token-data_decl_item"><span id="grammar-token-data-decl-item"></span>data_decl_item </strong> ::=  consig_decl
 </pre>
 <pre>
-<strong id="grammar-token-val_decl"><span id="grammar-token-val-decl"></span>val_decl            </strong> ::=  simpleval &quot;=&quot; expr (&quot;where&quot; val_decl_where)?
-<strong id="grammar-token-val_bind"><span id="grammar-token-val-bind"></span>val_bind            </strong> ::=  pat &quot;=&quot; expr (&quot;where&quot; val_decl_where)?
-<strong id="grammar-token-val_decl_where"><span id="grammar-token-val-decl-where"></span>val_decl_where      </strong> ::=  lopen val_decl_where_items lclose
+<strong id="grammar-token-val_decl"><span id="grammar-token-val-decl"></span>val_decl            </strong> ::=  simpleval &quot;=&quot; expr (&quot;where&quot; val_decl_where_body)?
+<strong id="grammar-token-val_bind"><span id="grammar-token-val-bind"></span>val_bind            </strong> ::=  pat &quot;=&quot; expr (&quot;where&quot; val_decl_where_body)?
+<strong id="grammar-token-val_decl_where_body"><span id="grammar-token-val-decl-where-body"></span>val_decl_where_body </strong> ::=  lopen val_decl_where_items lclose
 <strong id="grammar-token-val_decl_where_items"><span id="grammar-token-val-decl-where-items"></span>val_decl_where_items</strong> ::=  (val_decl_where_item lsemis)* val_decl_where_item?
 <strong id="grammar-token-val_decl_where_item"><span id="grammar-token-val-decl-where-item"></span>val_decl_where_item </strong> ::=  let_bind_item
 </pre>
@@ -413,16 +411,14 @@
                         simplecon &quot;&lt;-&quot; pat
 </pre>
 <pre>
-<strong id="grammar-token-trait_decl"><span id="grammar-token-trait-decl"></span>trait_decl      </strong> ::=  &quot;trait&quot; simpletype (&quot;&lt;=&quot; context)* &quot;where&quot; trait_decl_body
+<strong id="grammar-token-trait_decl"><span id="grammar-token-trait-decl"></span>trait_decl      </strong> ::=  &quot;trait&quot; simpletype (&quot;&lt;=&quot; context)* (&quot;where&quot; trait_decl_body)?
 <strong id="grammar-token-trait_decl_body"><span id="grammar-token-trait-decl-body"></span>trait_decl_body </strong> ::=  lopen trait_decl_items lclose
 <strong id="grammar-token-trait_decl_items"><span id="grammar-token-trait-decl-items"></span>trait_decl_items</strong> ::=  (trait_decl_item lsemis)* trait_decl_item?
 <strong id="grammar-token-trait_decl_item"><span id="grammar-token-trait-decl-item"></span>trait_decl_item </strong> ::=  sig_item
                       fixity_decl
 </pre>
 <pre>
-<strong id="grammar-token-impl_decl"><span id="grammar-token-impl-decl"></span>impl_decl      </strong> ::=  &quot;impl&quot; impl_decl_type (&quot;&lt;=&quot; context)* (&quot;for&quot; con)? &quot;where&quot; impl_decl_body
-<strong id="grammar-token-impl_decl_type"><span id="grammar-token-impl-decl-type"></span>impl_decl_type </strong> ::=  con type_qualified*
-                     type_qualified conop type_qualified
+<strong id="grammar-token-impl_decl"><span id="grammar-token-impl-decl"></span>impl_decl      </strong> ::=  &quot;impl&quot; impltype (&quot;&lt;=&quot; context)* (&quot;of&quot; con)? (&quot;where&quot; impl_decl_body)?
 <strong id="grammar-token-impl_decl_body"><span id="grammar-token-impl-decl-body"></span>impl_decl_body </strong> ::=  lopen impl_decl_items lclose
 <strong id="grammar-token-impl_decl_items"><span id="grammar-token-impl-decl-items"></span>impl_decl_items</strong> ::=  (impl_decl_item lsemis)* impl_decl_item?
 <strong id="grammar-token-impl_decl_item"><span id="grammar-token-impl-decl-item"></span>impl_decl_item </strong> ::=  module_decl_item
@@ -434,9 +430,9 @@
 </pre>
 <pre>
 <strong id="grammar-token-use_clause"><span id="grammar-token-use-clause"></span>use_clause</strong> ::=  &quot;use&quot; (string &quot;:&quot;)?  (con &quot;.&quot;)* use_body
-<strong id="grammar-token-use_items"><span id="grammar-token-use-items"></span>use_items </strong> ::=  use_item
+<strong id="grammar-token-use_body"><span id="grammar-token-use-body"></span>use_body  </strong> ::=  &quot;(&quot; &quot;..&quot; &quot;)&quot;
                 &quot;(&quot; (use_item &quot;,&quot;)* use_item? &quot;)&quot;
-                &quot;(&quot; &quot;..&quot; &quot;)&quot;
+                use_item
 <strong id="grammar-token-use_item"><span id="grammar-token-use-item"></span>use_item  </strong> ::=  con (&quot;as&quot; con)?
                 conop (&quot;as&quot; conop)?
                 var (&quot;as&quot; var)?
@@ -445,13 +441,15 @@
 <pre>
 <strong id="grammar-token-simpletype">simpletype</strong> ::=  con bind_var*
                 bind_var conop bind_var
+<strong id="grammar-token-impltype">impltype  </strong> ::=  con type_qualified*
+                type_qualified conop type_qualified
 <strong id="grammar-token-simplecon">simplecon </strong> ::=  con bind_var*
                 bind_var conop bind_var
 <strong id="grammar-token-simpleval">simpleval </strong> ::=  var bind_var*
                 bind_var op bind_var
 </pre>
 <pre>
-<strong id="grammar-token-type">type                  </strong> ::=  &quot;\\/&quot; bind_var* &quot;.&quot; type
+<strong id="grammar-token-type">type                  </strong> ::=  &quot;\\/&quot; bind_var* &quot;=&gt;&quot; type
                             context &quot;=&gt;&quot; type
                             type_expr
 <strong id="grammar-token-context">context               </strong> ::=  type_unit
@@ -460,8 +458,8 @@
 <strong id="grammar-token-type_unit"><span id="grammar-token-type-unit"></span>type_unit             </strong> ::=  type_infix
 <strong id="grammar-token-type_infix"><span id="grammar-token-type-infix"></span>type_infix            </strong> ::=  type_apps (qual_conop type_apps)*
 <strong id="grammar-token-type_apps"><span id="grammar-token-type-apps"></span>type_apps             </strong> ::=  type_qualified type_app*
-<strong id="grammar-token-type_app"><span id="grammar-token-type-app"></span>type_app              </strong> ::=  type_qualified
-                            &quot;&#64;&quot; type_qualified
+<strong id="grammar-token-type_app"><span id="grammar-token-type-app"></span>type_app              </strong> ::=  &quot;&#64;&quot; type_qualified
+                            type_qualified
 <strong id="grammar-token-type_qualified"><span id="grammar-token-type-qualified"></span>type_qualified        </strong> ::=  (con &quot;.&quot;)* type_atomic (&quot;.&quot; type_atomic)*
 <strong id="grammar-token-type_atomic"><span id="grammar-token-type-atomic"></span>type_atomic           </strong> ::=  &quot;(&quot; type (&quot;:&quot; type)? &quot;)&quot;
                             con
