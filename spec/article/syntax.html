@@ -460,7 +460,7 @@
 <strong id="grammar-token-type_apps"><span id="grammar-token-type-apps"></span>type_apps             </strong> ::=  type_qualified type_app*
 <strong id="grammar-token-type_app"><span id="grammar-token-type-app"></span>type_app              </strong> ::=  &quot;&#64;&quot; type_qualified
                             type_qualified
-<strong id="grammar-token-type_qualified"><span id="grammar-token-type-qualified"></span>type_qualified        </strong> ::=  (con &quot;.&quot;)* type_atomic (&quot;.&quot; type_atomic)*
+<strong id="grammar-token-type_qualified"><span id="grammar-token-type-qualified"></span>type_qualified        </strong> ::=  (con &quot;.&quot;)* (type_atomic &quot;.&quot;)* type_atomic
 <strong id="grammar-token-type_atomic"><span id="grammar-token-type-atomic"></span>type_atomic           </strong> ::=  &quot;(&quot; type (&quot;:&quot; type)? &quot;)&quot;
                             con
                             var
@@ -493,12 +493,13 @@
 <strong id="grammar-token-expr_apps"><span id="grammar-token-expr-apps"></span>expr_apps             </strong> ::=  expr_qualified expr_app*
 <strong id="grammar-token-expr_app"><span id="grammar-token-expr-app"></span>expr_app              </strong> ::=  expr_qualified
                             &quot;&#64;&quot; type_qualified
-<strong id="grammar-token-expr_qualified"><span id="grammar-token-expr-qualified"></span>expr_qualified        </strong> ::=  (con &quot;.&quot;)* expr_block (&quot;.&quot; expr_block)*
+<strong id="grammar-token-expr_qualified"><span id="grammar-token-expr-qualified"></span>expr_qualified        </strong> ::=  (con &quot;.&quot;)* (expr_block &quot;.&quot;)* expr_block
 <strong id="grammar-token-expr_block"><span id="grammar-token-expr-block"></span>expr_block            </strong> ::=  &quot;\\&quot; &quot;case&quot; case_body
                             &quot;\\&quot; &quot;when&quot; guarded_alt_body
                             &quot;\\&quot; lambda_body
-                            (&quot;let&quot; | &quot;letrec&quot;) let_binds &quot;in&quot; expr
-                            &quot;case&quot; (expr &quot;,&quot;)* expr? &quot;of&quot; case_body
+                            &quot;letrec&quot; let_body
+                            &quot;let&quot; let_body
+                            &quot;case&quot; (expr &quot;,&quot;)* expr? &quot;of&quot; case_alt_body
                             &quot;do&quot; do_body
                             expr_atomic
 <strong id="grammar-token-expr_atomic"><span id="grammar-token-expr-atomic"></span>expr_atomic           </strong> ::=  &quot;(&quot; expr &quot;)&quot;
@@ -549,6 +550,7 @@
 <strong id="grammar-token-lambda_body"><span id="grammar-token-lambda-body"></span>lambda_body</strong> ::=  pat_atomic* &quot;-&gt;&quot; expr
 </pre>
 <pre>
+<strong id="grammar-token-let_body"><span id="grammar-token-let-body"></span>let_body      </strong> ::=  let_binds &quot;in&quot; expr
 <strong id="grammar-token-let_binds"><span id="grammar-token-let-binds"></span>let_binds     </strong> ::=  lopen let_bind_items lclose
 <strong id="grammar-token-let_bind_items"><span id="grammar-token-let-bind-items"></span>let_bind_items</strong> ::=  (let_bind_item lsemis)* let_bind_item?
 <strong id="grammar-token-let_bind_item"><span id="grammar-token-let-bind-item"></span>let_bind_item </strong> ::=  sig_item
@@ -566,7 +568,7 @@
                     derive_clause
 </pre>
 <pre>
-<strong id="grammar-token-case_body"><span id="grammar-token-case-body"></span>case_body        </strong> ::=  lopen case_alt_items lclose
+<strong id="grammar-token-case_alt_body"><span id="grammar-token-case-alt-body"></span>case_alt_body    </strong> ::=  lopen case_alt_items lclose
 <strong id="grammar-token-case_alt_items"><span id="grammar-token-case-alt-items"></span>case_alt_items   </strong> ::=  (case_alt_item lsemis)* case_alt_item?
 <strong id="grammar-token-case_alt_item"><span id="grammar-token-case-alt-item"></span>case_alt_item    </strong> ::=  (pat &quot;,&quot;)* pat? guarded_alt
 <strong id="grammar-token-guarded_alt"><span id="grammar-token-guarded-alt"></span>guarded_alt      </strong> ::=  &quot;-&gt;&quot; expr
