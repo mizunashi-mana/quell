@@ -7,9 +7,10 @@ Quell Specification
    :glob:
 
    article/syntax
-   article/module_semantics
    article/typing_semantics
+   article/module_semantics
    article/evaluate_semantics
+   article/implement_guide
    article/knowledge
 
 
