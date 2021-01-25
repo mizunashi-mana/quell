@@ -27,7 +27,10 @@ author = 'Mizunashi Mana'
 extensions = [
     'sphinx.ext.githubpages',
     'sphinxcontrib.katex',
+    'sphinxcontrib.bibtex',
 ]
+
+bibtex_bibfiles = ['reference.bib']
 
 templates_path = ['_templates']
 

@@ -9,6 +9,7 @@ verify_ssl = true
 sphinx = "*"
 sphinx-autobuild = "*"
 sphinxcontrib-katex = "*"
+sphinxcontrib-bibtex = "*"
 
 [requires]
 python_version = "3"
