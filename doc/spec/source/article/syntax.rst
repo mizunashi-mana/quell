@@ -431,7 +431,7 @@ Grammar
     type_apps: type_qualified type_app*
     type_app: "@" type_qualified
             : type_qualified
-    type_qualified: (con ".")* type_atomic ("." type_atomic)*
+    type_qualified: (con ".")* (type_atomic ".")* type_atomic
     type_atomic : "(" type (":" type)? ")"
                 : con
                 : var
@@ -464,12 +464,13 @@ Grammar
     expr_apps: expr_qualified expr_app*
     expr_app: expr_qualified
             : "@" type_qualified
-    expr_qualified: (con ".")* expr_block ("." expr_block)*
+    expr_qualified: (con ".")* (expr_block ".")* expr_block
     expr_block  : "\\" "case" case_body
                 : "\\" "when" guarded_alt_body
                 : "\\" lambda_body
-                : ("let" | "letrec") let_binds "in" expr
-                : "case" (expr ",")* expr? "of" case_body
+                : "letrec" let_body
+                : "let" let_body
+                : "case" (expr ",")* expr? "of" case_alt_body
                 : "do" do_body
                 : expr_atomic
     expr_atomic : "(" expr ")"
@@ -520,6 +521,7 @@ Grammar
     lambda_body : pat_atomic* "->" expr
 
 .. productionlist::
+    let_body: let_binds "in" expr
     let_binds   : lopen let_bind_items lclose
     let_bind_items: (let_bind_item lsemis)* let_bind_item?
     let_bind_item   : sig_item
@@ -537,7 +539,7 @@ Grammar
                     : derive_clause
 
 .. productionlist::
-    case_body  : lopen case_alt_items lclose
+    case_alt_body: lopen case_alt_items lclose
     case_alt_items: (case_alt_item lsemis)* case_alt_item?
     case_alt_item: (pat ",")* pat? guarded_alt
     guarded_alt : "->" expr

@@ -57,6 +57,11 @@ import qualified Language.Quell.Parsing.Spanned as Spanned
     INTEGER    { S (Token.LitInteger _) }
     RATIONAL   { S (Token.LitRational _) }
 
+    INTERP_STRING_WITHOUT_INTERP    { S (Token.LitInterpStringWithoutInterp _) }
+    INTERP_STRING_START             { S (Token.LitInterpStringStart _) }
+    INTERP_STRING_CONTINUE          { S (Token.LitInterpStringContinue _) }
+    INTERP_STRING_END               { S (Token.LitInterpStringEnd _) }
+
 %monad { ParserWithL }{ >>= }{ return }
 %lexer { lexer }{ S Token.EndOfSource }
 %tokentype { Spanned.T Token.T }
@@ -415,6 +420,173 @@ type_atomic :: { () }
     | type_literal                  { () }
 
 type_literal :: { () }
+    : literal                           { () }
+    | '(' type_tuple_items ')'          { () }
+    | '[' type_array_items ']'          { () }
+    | '{' type_simplrecord_items '}'    { () }
+    | 'record' type_record_body         { () }
+    | 'signature' sig_body              { () }
+
+type_tuple_items :: { () }
+    : type_tuple_items_commas type ','   { () }
+    | type_tuple_items_commas type       { () }
+
+type_tuple_items_commas :: { () }
+    : type_tuple_items_commas type ','  { () }
+    | type ','                          { () }
+
+type_array_items :: { () }
+    : type_array_items_commas type  { () }
+    | type_array_items_commas       { () }
+
+type_array_items_commas :: { () }
+    : type_array_items_commas type ','  { () }
+    | {- empty -}                       { () }
+
+type_simplrecord_items :: { () }
+    : type_simplrecord_items_semis type_simplrecord_item    { () }
+    | type_simplrecord_items_semis                          { () }
+
+type_simplrecord_items_semis :: { () }
+    : type_simplrecord_items_semis type_simplrecord_item ','    { () }
+    | {- empty -}                                               { () }
+
+type_simplrecord_item :: { () }
+    : var ':' type      { () }
+
+type_record_body :: { () }
+    : lopen type_record_items lclose    { () }
+
+type_record_items :: { () }
+    : type_record_items_semis type_record_item  { () }
+    | type_record_items_semis                   { () }
+
+type_record_items_semis :: { () }
+    : type_record_items_semis type_record_item lsemis   { () }
+    | {- empty -}                                       { () }
+
+type_record_item :: { () }
+    : valsig_decl   { () }
+
+sig_body :: { () }
+    : lopen sig_items lclose    { () }
+
+sig_items :: { () }
+    : sig_items_semis sig_item  { () }
+    | sig_items_semis           { () }
+
+sig_items_semis :: { () }
+    : sig_items_semis sig_item lsemis   { () }
+    | {- empty -}                       { () }
+
+sig_item :: { () }
+    : typesig_decl      { () }
+    | valsig_decl       { () }
+    | consig_decl       { () }
+    | patternsig_decl   { () }
+    | use_clause        { () }
+
+
+expr :: { () }
+    : expr_infix ':' type       { () }
+    | expr_infix                { () }
+
+expr_infix :: { () }
+    : expr_infix qual_conop expr_apps   { () }
+    | expr_infix qual_op expr_apps      { () }
+    | expr_apps                         { () }
+
+expr_apps :: { () }
+    : expr_qualified expr_apps_args     { () }
+
+expr_apps_args :: { () }
+    : expr_apps_args expr_app           { () }
+    | {- empty -}                       { () }
+
+expr_app :: { () }
+    : '@' expr_qualified        { () }
+    | expr_qualified            { () }
+
+expr_qualified :: { () }
+    : qualified_cons expr_qualifieds expr_block { () }
+
+expr_qualifieds :: { () }
+    : expr_qualifieds expr_block '.'    { () }
+    | {- empty -}                       { () }
+
+expr_block :: { () }
+    : '\\' 'case' case_body
+    | '\\' 'when' guarded_alt_body
+    | '\\' lambda_body
+    | 'let' let_body
+    | 'letrec' let_body
+    | 'case' case_body
+    | 'do' do_body
+    | expr_atomic
+
+expr_atomic :: { () }
+    : '(' expr ')'                  { () }
+    | con                           { () }
+    | var                           { () }
+    | expr_literal                  { () }
+
+expr_literal :: { () }
+    : literal                           { () }
+    | expr_interp_string                { () }
+    | '(' expr_tuple_items ')'          { () }
+    | '[' expr_array_items ']'          { () }
+    | '{' expr_simplrecord_items '}'    { () }
+    | 'record' expr_record_body         { () }
+
+expr_interp_string :: { () }
+    : INTERP_STRING_WITHOUT_INTERP                                          { () }
+    | INTERP_STRING_START expr expr_interp_string_conts INTERP_STRING_END   { () }
+
+expr_interp_string_conts :: { () }
+    : expr_interp_string_conts INTERP_STRING_CONTINUE expr  { () }
+    | {- empty -}                                           { () }
+
+expr_tuple_items :: { () }
+    : expr_tuple_items_commas expr ','   { () }
+    | expr_tuple_items_commas expr       { () }
+
+expr_tuple_items_commas :: { () }
+    : expr_tuple_items_commas expr ','  { () }
+    | expr ','                          { () }
+
+expr_array_items :: { () }
+    : expr_array_items_commas expr  { () }
+    | expr_array_items_commas       { () }
+
+expr_array_items_commas :: { () }
+    : expr_array_items_commas expr ','  { () }
+    | {- empty -}                       { () }
+
+expr_simplrecord_items :: { () }
+    : expr_simplrecord_items_semis expr_simplrecord_item    { () }
+    | expr_simplrecord_items_semis                          { () }
+
+expr_simplrecord_items_semis :: { () }
+    : expr_simplrecord_items_semis expr_simplrecord_item ','    { () }
+    | {- empty -}                                               { () }
+
+expr_simplrecord_item :: { () }
+    : var '=' type      { () }
+
+expr_record_body :: { () }
+    : lopen expr_record_items lclose    { () }
+
+expr_record_items :: { () }
+    : expr_record_items_semis expr_record_item  { () }
+    | expr_record_items_semis                   { () }
+
+expr_record_items_semis :: { () }
+    : expr_record_items_semis expr_record_item lsemis   { () }
+    | {- empty -}                                       { () }
+
+expr_record_item :: { () }
+    : valsig_decl       { () }
+    | val_decl          { () }
 
 
 qualified_cons :: { () }

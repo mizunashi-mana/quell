@@ -6,7 +6,12 @@ https://mizunashi-mana.github.io/quell/
 
 ## Road Map
 
-1. Implement sublanguage with polymorphic types and higher-order functions, modules.
+1. Implement sub-language with polymorphic types and higher-order functions, modules by `Haskell`.
+2. Implement runtime by `Rust`.
+3. Implement full-language without macros by `Haskell`.
+4. Bootstrapping compiler by `Quell`.
+5. Implement standard libraries.
+6. Implement macros.
 
 ## License
 
