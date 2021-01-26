@@ -410,6 +410,18 @@ Grammar
             : op ("as" op)?
 
 .. productionlist::
+    export_clause: "export" export_body
+    export_body : "(" (export_item ",")* export_item? ")"
+                : export_item
+    export_item : con ("as" con)?
+                : conop ("as" conop)?
+                : var ("as" var)?
+                : op ("as" op)?
+
+.. productionlist::
+    derive_clause: "derive" impltype ("<=" context)* ("of" con)?
+
+.. productionlist::
     simpletype  : con bind_var*
                 : bind_var conop bind_var
     impltype    : con type_qualified*
@@ -465,7 +477,7 @@ Grammar
     expr_app: expr_qualified
             : "@" type_qualified
     expr_qualified: (con ".")* (expr_block ".")* expr_block
-    expr_block  : "\\" "case" case_body
+    expr_block  : "\\" "case" case_alt_body
                 : "\\" "when" guarded_alt_body
                 : "\\" lambda_body
                 : "letrec" let_body
@@ -495,12 +507,11 @@ Grammar
                     : val_decl
 
 .. productionlist::
-    pat : pat_unit ("|" pat_unit)*
-        : pat_unit ":" type
+    pat : pat_unit ":" type
         : pat_unit
-    pat_unit: pat_infix
+    pat_unit: pat_infix ("|" pat_infix)*
     pat_infix: pat_apps (qual_conop  pat_apps)*
-    pat_apps: type_qualified type_app*
+    pat_apps: pat_qualified pat_app*
     pat_app : pat_qualified
             : "@" pat_qualified
     pat_qualified: (con ".")* pat_atomic
@@ -574,8 +585,10 @@ Grammar
         : "`" var_id "`"
     qual_conop: (con ".")* conop
     qual_op: (con ".")* op
-    vopen: '{' lsemis?
-    vclose: lsemis? '}'
+
+.. productionlist::
+    lopen: '{' lsemis?
+    lclose: lsemis? '}'
     lsemis: ';'+
 
 Note:

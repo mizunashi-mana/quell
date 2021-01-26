@@ -182,7 +182,7 @@ library
         Language.Quell.Parsing.Lexer.Lexing
         Language.Quell.Parsing.Lexer.Lexing.CharEsc
         Language.Quell.Parsing.Lexer.Error
-        -- Language.Quell.Parsing.Parser
+        Language.Quell.Parsing.Parser
     other-modules:
         Language.Quell.Prelude.Core
         Language.Quell.Prelude.Literal
