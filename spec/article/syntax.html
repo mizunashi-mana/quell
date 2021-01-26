@@ -438,6 +438,18 @@
                 op (&quot;as&quot; op)?
 </pre>
 <pre>
+<strong id="grammar-token-export_clause"><span id="grammar-token-export-clause"></span>export_clause</strong> ::=  &quot;export&quot; export_body
+<strong id="grammar-token-export_body"><span id="grammar-token-export-body"></span>export_body  </strong> ::=  &quot;(&quot; (export_item &quot;,&quot;)* export_item? &quot;)&quot;
+                   export_item
+<strong id="grammar-token-export_item"><span id="grammar-token-export-item"></span>export_item  </strong> ::=  con (&quot;as&quot; con)?
+                   conop (&quot;as&quot; conop)?
+                   var (&quot;as&quot; var)?
+                   op (&quot;as&quot; op)?
+</pre>
+<pre>
+<strong id="grammar-token-derive_clause"><span id="grammar-token-derive-clause"></span>derive_clause</strong> ::=  &quot;derive&quot; impltype (&quot;&lt;=&quot; context)* (&quot;of&quot; con)?
+</pre>
+<pre>
 <strong id="grammar-token-simpletype">simpletype</strong> ::=  con bind_var*
                 bind_var conop bind_var
 <strong id="grammar-token-impltype">impltype  </strong> ::=  con type_qualified*
@@ -493,7 +505,7 @@
 <strong id="grammar-token-expr_app"><span id="grammar-token-expr-app"></span>expr_app              </strong> ::=  expr_qualified
                             &quot;&#64;&quot; type_qualified
 <strong id="grammar-token-expr_qualified"><span id="grammar-token-expr-qualified"></span>expr_qualified        </strong> ::=  (con &quot;.&quot;)* (expr_block &quot;.&quot;)* expr_block
-<strong id="grammar-token-expr_block"><span id="grammar-token-expr-block"></span>expr_block            </strong> ::=  &quot;\\&quot; &quot;case&quot; case_body
+<strong id="grammar-token-expr_block"><span id="grammar-token-expr-block"></span>expr_block            </strong> ::=  &quot;\\&quot; &quot;case&quot; case_alt_body
                             &quot;\\&quot; &quot;when&quot; guarded_alt_body
                             &quot;\\&quot; lambda_body
                             &quot;letrec&quot; let_body
@@ -523,12 +535,11 @@
                             val_decl
 </pre>
 <pre>
-<strong id="grammar-token-pat">pat                  </strong> ::=  pat_unit (&quot;|&quot; pat_unit)*
-                           pat_unit &quot;:&quot; type
+<strong id="grammar-token-pat">pat                  </strong> ::=  pat_unit &quot;:&quot; type
                            pat_unit
-<strong id="grammar-token-pat_unit"><span id="grammar-token-pat-unit"></span>pat_unit             </strong> ::=  pat_infix
+<strong id="grammar-token-pat_unit"><span id="grammar-token-pat-unit"></span>pat_unit             </strong> ::=  pat_infix (&quot;|&quot; pat_infix)*
 <strong id="grammar-token-pat_infix"><span id="grammar-token-pat-infix"></span>pat_infix            </strong> ::=  pat_apps (qual_conop  pat_apps)*
-<strong id="grammar-token-pat_apps"><span id="grammar-token-pat-apps"></span>pat_apps             </strong> ::=  type_qualified type_app*
+<strong id="grammar-token-pat_apps"><span id="grammar-token-pat-apps"></span>pat_apps             </strong> ::=  pat_qualified pat_app*
 <strong id="grammar-token-pat_app"><span id="grammar-token-pat-app"></span>pat_app              </strong> ::=  pat_qualified
                            &quot;&#64;&quot; pat_qualified
 <strong id="grammar-token-pat_qualified"><span id="grammar-token-pat-qualified"></span>pat_qualified        </strong> ::=  (con &quot;.&quot;)* pat_atomic
@@ -602,9 +613,11 @@
                      &quot;`&quot; var_id &quot;`&quot;
 <strong id="grammar-token-qual_conop"><span id="grammar-token-qual-conop"></span>qual_conop     </strong> ::=  (con &quot;.&quot;)* conop
 <strong id="grammar-token-qual_op"><span id="grammar-token-qual-op"></span>qual_op        </strong> ::=  (con &quot;.&quot;)* op
-<strong id="grammar-token-vopen">vopen          </strong> ::=  '{' lsemis?
-<strong id="grammar-token-vclose">vclose         </strong> ::=  lsemis? '}'
-<strong id="grammar-token-lsemis">lsemis         </strong> ::=  ';'+
+</pre>
+<pre>
+<strong id="grammar-token-lopen">lopen </strong> ::=  '{' lsemis?
+<strong id="grammar-token-lclose">lclose</strong> ::=  lsemis? '}'
+<strong id="grammar-token-lsemis">lsemis</strong> ::=  ';'+
 </pre>
 <p>Note:</p>
 <ul>
