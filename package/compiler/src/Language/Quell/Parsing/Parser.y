@@ -83,7 +83,7 @@ import qualified Language.Quell.Parsing.Spanned as Spanned
 
 %name parseLiteral literal
 %%
-
+{-
 program :: { () }
     : module_decl_body   { $1 }
 
@@ -120,7 +120,7 @@ module_decl_item :: { () }
     | foreign_val_decl      { () }
     | export_clause         { () }
     | derive_clause         { () }
-
+-}
 
 typesig_decl :: { () }
     : 'type' con ':' type   { () }
@@ -160,7 +160,7 @@ type_decl_where_item :: { () }
     : type_decl     { () }
     | use_clause    { () }
 
-
+{-
 type_family_decl :: { () }
     : 'type' 'family' con may_type_sig 'where' ctypefam_decl_body   { () }
     | 'type' 'family' con may_type_sig                              { () }
@@ -349,7 +349,7 @@ infix_ops :: { () }
 infix_ops_commas :: { () }
     : infix_ops_commas op ','   { () }
     | {- empty -}               { () }
-
+-}
 
 use_clause :: { () }
     : 'use' use_package_name qualified_cons use_body        { () }
@@ -407,18 +407,23 @@ export_item :: { () }
     | op 'as' op                    { () }
     | op                            { () }
 
-
+{-
 derive_clause :: { () }
     : 'derive' impltype type_left_contexts impl_decl_name   { () }
-
+-}
 
 simpletype :: { () }
     : con bind_vars                 { () }
     | bind_var conop bind_var       { () }
 
 impltype :: { () }
-    : con type_apps_args                        { () }
+    : con_type_apps                             { () }
     | type_qualified conop type_qualified       { () }
+
+con_type_apps :: { () }
+    : con_type_apps '@' type_qualified  { () }
+    | con_type_apps type_qualified      { () }
+    | con                               { () }
 
 simplecon :: { () }
     : con bind_vars                 { () }
@@ -449,22 +454,13 @@ type_infix :: { () }
     | type_apps                         { () }
 
 type_apps :: { () }
-    : type_qualified type_apps_args     { () }
-
-type_apps_args :: { () }
-    : type_apps_args type_app           { () }
-    | {- empty -}                       { () }
-
-type_app :: { () }
-    : '@' type_qualified        { () }
-    | type_qualified            { () }
+    : type_apps '@' type_qualified      { () }
+    | type_apps type_qualified          { () }
+    | type_qualified                    { () }
 
 type_qualified :: { () }
-    : qualified_cons type_qualifieds type_atomic { () }
-
-type_qualifieds :: { () }
-    : type_qualifieds type_atomic '.'   { () }
-    | {- empty -}                       { () }
+    : type_qualified '.' type_atomic    { () }
+    | type_atomic                       { () }
 
 type_atomic :: { () }
     : '(' type may_type_sig ')'     { () }
@@ -539,7 +535,7 @@ sig_item :: { () }
     | patternsig_decl   { () }
     | use_clause        { () }
 
-
+{-
 expr :: { () }
     : expr_infix ':' type       { () }
     | expr_infix                { () }
@@ -817,7 +813,7 @@ do_stmt_item :: { () }
     | pat '=' expr          { () }
     | 'letrec' let_binds    { () }
     | 'let' let_binds       { () }
-
+-}
 
 bind_var :: { () }
     : simple_bind_var                       { () }
@@ -836,8 +832,7 @@ con :: { () }
     | '(' CONSYM ')'    { () }
 
 conop :: { () }
-    : '->'              { () }
-    | CONSYM            { () }
+    : CONSYM            { () }
     | '`' CONID '`'     { () }
 
 var :: { () }
