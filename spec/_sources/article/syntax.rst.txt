@@ -443,7 +443,7 @@ Grammar
     type_apps: type_qualified type_app*
     type_app: "@" type_qualified
             : type_qualified
-    type_qualified: (con ".")* (type_atomic ".")* type_atomic
+    type_qualified: (type_atomic ".")* type_atomic
     type_atomic : "(" type (":" type)? ")"
                 : con
                 : var
@@ -476,7 +476,7 @@ Grammar
     expr_apps: expr_qualified expr_app*
     expr_app: expr_qualified
             : "@" type_qualified
-    expr_qualified: (con ".")* (expr_block ".")* expr_block
+    expr_qualified: (expr_block ".")* expr_block
     expr_block  : "\\" "case" case_alt_body
                 : "\\" "when" guarded_alt_body
                 : "\\" lambda_body

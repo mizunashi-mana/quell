@@ -471,7 +471,7 @@
 <strong id="grammar-token-type_apps"><span id="grammar-token-type-apps"></span>type_apps             </strong> ::=  type_qualified type_app*
 <strong id="grammar-token-type_app"><span id="grammar-token-type-app"></span>type_app              </strong> ::=  &quot;&#64;&quot; type_qualified
                             type_qualified
-<strong id="grammar-token-type_qualified"><span id="grammar-token-type-qualified"></span>type_qualified        </strong> ::=  (con &quot;.&quot;)* (type_atomic &quot;.&quot;)* type_atomic
+<strong id="grammar-token-type_qualified"><span id="grammar-token-type-qualified"></span>type_qualified        </strong> ::=  (type_atomic &quot;.&quot;)* type_atomic
 <strong id="grammar-token-type_atomic"><span id="grammar-token-type-atomic"></span>type_atomic           </strong> ::=  &quot;(&quot; type (&quot;:&quot; type)? &quot;)&quot;
                             con
                             var
@@ -504,7 +504,7 @@
 <strong id="grammar-token-expr_apps"><span id="grammar-token-expr-apps"></span>expr_apps             </strong> ::=  expr_qualified expr_app*
 <strong id="grammar-token-expr_app"><span id="grammar-token-expr-app"></span>expr_app              </strong> ::=  expr_qualified
                             &quot;&#64;&quot; type_qualified
-<strong id="grammar-token-expr_qualified"><span id="grammar-token-expr-qualified"></span>expr_qualified        </strong> ::=  (con &quot;.&quot;)* (expr_block &quot;.&quot;)* expr_block
+<strong id="grammar-token-expr_qualified"><span id="grammar-token-expr-qualified"></span>expr_qualified        </strong> ::=  (expr_block &quot;.&quot;)* expr_block
 <strong id="grammar-token-expr_block"><span id="grammar-token-expr-block"></span>expr_block            </strong> ::=  &quot;\\&quot; &quot;case&quot; case_alt_body
                             &quot;\\&quot; &quot;when&quot; guarded_alt_body
                             &quot;\\&quot; lambda_body
