@@ -104,7 +104,7 @@ Lexical Syntax
             : ","
             : "["
             : "]"
-            : "`"
+            : "`" -- `
             : ";"
     brace   : "{{" | "}}" : "❴" | "❵"
             : "{" | "}"
@@ -307,7 +307,7 @@ Grammar
     program: module_decl_body
 
 .. productionlist::
-    module_decl: "module" simplecon ("where" module_decl_body)?
+    module_decl: "module" declconexpr ("where" module_decl_body)?
     module_decl_body: lopen module_decl_items lclose
     module_decl_items: (module_decl_item lsemis)* module_decl_item?
     module_decl_item: sig_item
@@ -333,7 +333,7 @@ Grammar
     foreign_val_decl: "foreign" string var ":" type
 
 .. productionlist::
-    type_decl: "type" simpletype "=" type ("where" type_decl_where_body)?
+    type_decl: "type" decltype "=" type ("where" type_decl_where_body)?
     type_decl_where_body : lopen type_decl_where_items lclose
     type_decl_where_items: (type_decl_where_item lsemis)* type_decl_where_item?
     type_decl_where_item: type_decl
@@ -360,13 +360,13 @@ Grammar
 
 .. productionlist::
     data_decl   : "data" con (":" type)? ("where" data_decl_body)?
-                : "newtype" simpletype "=" type ("where" type_decl_where_body)?
+                : "newtype" decltype "=" type ("where" type_decl_where_body)?
     data_decl_body  : lopen data_decl_items lclose
     data_decl_items: (data_decl_item lsemis)* data_decl_item?
     data_decl_item: consig_decl
 
 .. productionlist::
-    val_decl: simpleval "=" expr ("where" val_decl_where_body)?
+    val_decl: declvarexpr "=" expr ("where" val_decl_where_body)?
     val_bind: pat "=" expr ("where" val_decl_where_body)?
     val_decl_where_body : lopen val_decl_where_items lclose
     val_decl_where_items: (val_decl_where_item lsemis)* val_decl_where_item?
@@ -374,15 +374,15 @@ Grammar
 
 .. productionlist::
     pattern_decl: "pattern" "_" (":" type)? "of" pattern_decl_body
-                : "pattern" simplecon "=" pat
-                : "pattern" simplecon "<-" pat
+                : "pattern" declpat "=" pat
+                : "pattern" declpat "<-" pat
     pattern_decl_body   : lopen pattern_decl_items lclose
     pattern_decl_items: (pattern_decl_item lsemis)* pattern_decl_item?
-    pattern_decl_item   : simplecon "=" pat
-                        : simplecon "<-" pat
+    pattern_decl_item   : declpat "=" pat
+                        : declpat "<-" pat
 
 .. productionlist::
-    trait_decl: "trait" simpletype ("<=" context)* ("where" trait_decl_body)?
+    trait_decl: "trait" decltype ("<=" context)* ("where" trait_decl_body)?
     trait_decl_body : lopen trait_decl_items lclose
     trait_decl_items: (trait_decl_item lsemis)* trait_decl_item?
     trait_decl_item : sig_item
@@ -401,13 +401,13 @@ Grammar
 
 .. productionlist::
     use_clause: "use" (string ":")?  (con ".")* use_body
-    use_body    : "(" ".." ")"
-                : "(" (use_item ",")* use_item? ")"
+    use_body    : "{" ".." "}"
+                : "{" (use_item ",")* use_item? "}"
                 : use_item
-    use_item: con ("as" con)?
-            : conop ("as" conop)?
-            : var ("as" var)?
-            : op ("as" op)?
+    use_item    : con_id_ext ("as" con)?
+                : con_sym_ext ("as" conop)?
+                : var_id_ext ("as" var)?
+                : var_sym_ext ("as" op)?
 
 .. productionlist::
     export_clause: "export" export_body
@@ -422,14 +422,16 @@ Grammar
     derive_clause: "derive" impltype ("<=" context)* ("of" con)?
 
 .. productionlist::
-    simpletype  : con bind_var*
-                : bind_var conop bind_var
+    decltype    : declcon bind_var*
+                : bind_var declconop bind_var
     impltype    : con type_qualified*
                 : type_qualified conop type_qualified
-    simplecon   : con bind_var*
-                : bind_var conop bind_var
-    simpleval   : var bind_var*
-                : bind_var op bind_var
+    declconexpr : declcon bind_var*
+                : bind_var declconop bind_var
+    declvarexpr : declvar bind_var*
+                : bind_var declop bind_var
+    declpat     : declcon bind_var*
+                : bind_var declconop bind_var
 
 .. productionlist::
     type: "\\/" bind_var* "=>" type
@@ -439,7 +441,12 @@ Grammar
     type_expr   : type_unit "->" type
                 : type_unit
     type_unit: type_infix
-    type_infix: type_apps (qual_conop type_apps)*
+    type_infix: type_apps (type_op type_apps)*
+    type_op : con_sym
+            : var_sym_ext
+            : "`" type_qualified_op "`"
+    type_qualified_op   : (type_atomic ".")* sym_ext
+                        : type_qualified
     type_apps: type_qualified type_app*
     type_app: "@" type_qualified
             : type_qualified
@@ -562,33 +569,48 @@ Grammar
 
 .. productionlist::
     do_body : lopen do_stmt_items lclose
-    do_stmt_items   : (do_stmt_item lsemis)* expr
+    do_stmt_items   : (do_stmt_item lsemis)* expr lsemis?
     do_stmt_item    : expr
                     : pat "<-" expr
                     : pat "=" expr
                     : ("let" | "letrec") let_binds
 
 .. productionlist::
-    bind_var: simple_bind_var
-            : "(" simple_bind_var ":" type ")"
-            : "@" simple_bind_var
-            : "@" "(" simple_bind_var ":" type ")"
-    simple_bind_var : var_id
-                    : "_"
-    con : con_id | "(" ")"
-        : "(" ( "->" | con_sym ) ")"
-    conop   : "->" | con_sym
+    bind_var: "@" simple_bind_var
+            : simple_bind_var
+    simple_bind_var : var_id_ext
+                    : "(" var_id_ext ":" type ")"
+    con : con_id_ext
+        : "(" con_sym_ext ")"
+    conop   : con_sym_ext
+            : "`" con_id_ext "`"
+    var : var_id_ext
+        : "(" var_sym_ext ")"
+    op  : var_sym_ext
+        : "`" var_id_ext "`"
+    sym_ext : con_sym_ext
+            : var_sym_ext
+
+.. productionlist::
+    declcon : con_id
+            : "(" con_sym ")"
+    declconop   : con_sym
+                : "`" con_id "`"
+    con_id_ext  : con_id
+                : "(" ")"
+    con_sym_ext : con_sym
+                : "->"
+    declvar : con_id
+            : "(" con_sym ")"
+    declop  : con_sym
             : "`" con_id "`"
-    var : var_id | "_"
-        : "(" var_sym ")"
-    op  : var_sym
-        : "`" var_id "`"
-    qual_conop: (con ".")* conop
-    qual_op: (con ".")* op
+    var_id_ext  : var_id
+                : "_"
+    var_sym_ext : var_sym
 
 .. productionlist::
     lopen: '{' lsemis?
-    lclose: lsemis? '}'
+    lclose: '}'
     lsemis: ';'+
 
 Note:
