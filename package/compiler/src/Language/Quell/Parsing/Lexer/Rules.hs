@@ -165,7 +165,6 @@ conOpP = chP ':' <> Tlex.manyP do
 
 reservedIdRules :: ScannerBuilder ()
 reservedIdRules = do
-    initialRule (stringP "alias")     [||WithToken do Token.KwAlias||]
     initialRule (stringP "as")        [||WithToken do Token.KwAs||]
     initialRule (stringP "case")      [||WithToken do Token.KwCase||]
     initialRule (stringP "data")      [||WithToken do Token.KwData||]
@@ -181,7 +180,6 @@ reservedIdRules = do
     initialRule (stringP "let")       [||WithToken do Token.KwLet||]
     initialRule (stringP "module")    [||WithToken do Token.KwModule||]
     initialRule (stringP "newtype")   [||WithToken do Token.KwNewtype||]
-    initialRule (stringP "none")      [||WithToken do Token.KwNone||]
     initialRule (stringP "of")        [||WithToken do Token.KwOf||]
     initialRule (stringP "pattern")   [||WithToken do Token.KwPattern||]
     initialRule (stringP "record")    [||WithToken do Token.KwRecord||]

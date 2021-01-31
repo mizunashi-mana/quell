@@ -8,6 +8,8 @@ import qualified Language.Quell.Type.Token as Token
 import qualified Language.Quell.Parsing.Spanned as Spanned
 }
 
+%expect 0
+
 %token
     'as'            { S Token.KwAs }
     'case'          { S Token.KwCase }
@@ -26,6 +28,7 @@ import qualified Language.Quell.Parsing.Spanned as Spanned
     'newtype'       { S Token.KwNewtype }
     'of'            { S Token.KwOf }
     'pattern'       { S Token.KwPattern }
+    'rec'           { S Token.KwRec }
     'record'        { S Token.KwRecord }
     'signature'     { S Token.KwSignature }
     'trait'         { S Token.KwTrait }
@@ -48,17 +51,20 @@ import qualified Language.Quell.Parsing.Spanned as Spanned
     '<-'        { S Token.SymLeftArrow }
     '|'         { S Token.SymOr }
 
-    '{'         { S Token.SpBraceOpen }
-    '}'         { S Token.SpBraceClose }
-    VOBRACE     { S Token.SpVBraceOpen }
-    VCBRACE     { S Token.SpVBraceClose }
+    '`'         { S Token.SpBackquote }
     '['         { S Token.SpBrackOpen }
     ']'         { S Token.SpBrackClose }
+    ','         { S Token.SpComma }
+    '{'         { S Token.SpBraceOpen }
+    '}'         { S Token.SpBraceClose }
+    '{{'        { S Token.SpDBraceOpen }
+    '}}'        { S Token.SpDBraceClose }
     '('         { S Token.SpParenOpen }
     ')'         { S Token.SpParenClose }
-    '`'         { S Token.SpBackquote }
-    ','         { S Token.SpComma }
-    VSEMI       { S Token.SpSemi }
+    ';'         { S Token.SpSemi }
+    VOBRACE     { S Token.SpVBraceOpen }
+    VCBRACE     { S Token.SpVBraceClose }
+    VSEMI       { S Token.SpVSemi }
 
     CONID       { S (Token.IdConId _) }
     CONSYM      { S (Token.IdConOp _) }
@@ -84,7 +90,7 @@ import qualified Language.Quell.Parsing.Spanned as Spanned
 %name parseProgram          program
 %name parseModuleDeclItem   module_decl_item
 %name parseType             type
--- %name parseExpr             expr
+%name parseExpr             expr
 %name parsePat              pat
 %name parseLiteral          literal
 %%
@@ -116,7 +122,7 @@ module_decl_item :: { () }
     | type_family_decl      { () }
     | type_impl_decl        { () }
     | data_decl             { () }
-    {-| val_decl              { () }-}
+    | val_decl              { () }
     | module_decl           { () }
     | pattern_decl          { () }
     | trait_decl            { () }
@@ -135,6 +141,9 @@ valsig_decl :: { () }
 
 consig_decl :: { () }
     : declcon ':' type      { () }
+
+modulesig_decl :: { () }
+    : 'module' declcon ':' type     { () }
 
 patternsig_decl :: { () }
     : 'pattern' declcon ':' type    { () }
@@ -237,7 +246,7 @@ data_decl_items_semis :: { () }
 data_decl_item :: { () }
     : consig_decl       { () }
 
-{-
+
 val_decl :: { () }
     : declvarexpr '=' expr val_decl_where     { () }
 
@@ -261,7 +270,7 @@ val_decl_where_items_semis :: { () }
 
 val_decl_where_item :: { () }
     : let_bind_item     { () }
--}
+
 
 pattern_decl :: { () }
     : 'pattern' '_' may_type_sig 'of' pattern_decl_body     { () }
@@ -290,6 +299,9 @@ trait_decl :: { () }
 type_left_contexts :: { () }
     : type_left_contexts '<=' context   { () }
     | {- empty -}                       { () }
+
+context :: { () }
+    : type_unit     { () }
 
 trait_decl_where :: { () }
     : 'where' trait_decl_body       { () }
@@ -411,8 +423,8 @@ derive_clause :: { () }
 
 
 decltype :: { () }
-    : declcon bind_vars                 { () }
-    | bind_var declconop bind_var       { () }
+    : declcon bind_vars                         { () }
+    | simple_bind_var declconop simple_bind_var { () }
 
 impltype :: { () }
     : con_type_apps                     { () }
@@ -423,36 +435,30 @@ con_type_apps :: { () }
     | con                               { () }
 
 declconexpr :: { () }
-    : declcon bind_vars                 { () }
-    | bind_var declconop bind_var       { () }
+    : declcon bind_vars                         { () }
+    | simple_bind_var declconop simple_bind_var { () }
 
 declvarexpr :: { () }
-    : declvar bind_vars                 { () }
-    | bind_var declop bind_var          { () }
+    : declvar bind_vars                         { () }
+    | simple_bind_var declop simple_bind_var    { () }
 
 declpat :: { () }
-    : declcon bind_vars                 { () }
-    | bind_var declconop bind_var       { () }
+    : declcon bind_vars                         { () }
+    | simple_bind_var declconop simple_bind_var { () }
 
 
 type :: { () }
     : '\\/' bind_vars '=>' type     { () }
-    | context '=>' type             { () }
-    | type_expr                     { () }
-
-context :: { () }
-    : type_unit         { () }
-
-type_expr :: { () }
-    : type_unit '->' type       { () }
-    | type_unit                 { () }
+    | type_unit '->' type           { () }
+    | type_unit '=>' type           { () }
+    | type_unit %shift              { () }
 
 type_unit :: { () }
-    : type_infix                { () }
+    : type_infix %shift             { () }
 
 type_infix :: { () }
-    : type_infix type_op type_apps      { () }
-    | type_apps                         { () }
+    : type_infix type_op type_apps %shift   { () }
+    | type_apps %shift                      { () }
 
 type_op :: { () }
     : CONSYM                        { () }
@@ -460,8 +466,12 @@ type_op :: { () }
     | '`' type_qualified_op '`'     { () }
 
 type_qualified_op :: { () }
-    : type_qualified_dots sym_ext   { () }
-    | type_qualified                { () }
+    : type_qualified_dots sym_ext       { () }
+    | type_qualified_dots type_block    { () }
+
+type_qualified_dots :: { () }
+    : type_qualified_dots type_block '.'    { () }
+    | {- empty -}                           { () }
 
 type_apps :: { () }
     : type_apps type_app        { () }
@@ -472,11 +482,13 @@ type_app :: { () }
     | type_qualified        { () }
 
 type_qualified :: { () }
-    : type_qualified_dots type_atomic   { () }
+    : type_block '.' type_qualified     { () }
+    | type_block %shift                 { () }
 
-type_qualified_dots :: { () }
-    : type_qualified_dots type_atomic '.'   { () }
-    | {- empty -}                           { () }
+type_block :: { () }
+    : 'record' type_record_body         { () }
+    | 'signature' sig_body              { () }
+    | type_atomic                       { () }
 
 type_atomic :: { () }
     : '(' type may_type_sig ')'         { () }
@@ -486,8 +498,6 @@ type_atomic :: { () }
     | '(' type_tuple_items ')'          { () }
     | '[' type_array_items ']'          { () }
     | '{' type_simplrecord_items '}'    { () }
-    | 'record' type_record_body         { () }
-    | 'signature' sig_body              { () }
 
 type_tuple_items :: { () }
     : type_tuple_items_commas type ','   { () }
@@ -544,40 +554,41 @@ sig_items_semis :: { () }
 sig_item :: { () }
     : typesig_decl      { () }
     | valsig_decl       { () }
-    | consig_decl       { () }
+    | modulesig_decl    { () }
     | patternsig_decl   { () }
     | use_clause        { () }
 
-{-
+
 expr :: { () }
-    : expr_infix ':' type       { () }
-    | expr_infix                { () }
+    : expr_unit may_type_sig    { () }
+
+expr_unit :: { () }
+    : expr_infix %shift         { $1 }
 
 expr_infix :: { () }
-    : expr_infix expr_op expr_apps      { () }
-    | expr_apps                         { () }
+    : expr_infix expr_op expr_apps %shift   { () }
+    | expr_apps %shift                      { () }
 
 expr_op :: { () }
-    : sym_ext                       { () }
+    : CONSYM                        { () }
+    | var_sym_ext                   { () }
     | '`' expr_qualified_op '`'     { () }
 
 expr_qualified_op :: { () }
-    : expr_qualified_dots sym_ext   { () }
-    | expr_qualified                { () }
+    : expr_qualified_dots sym_ext           { () }
+    | expr_qualified_dots expr_block        { () }
 
 expr_apps :: { () }
-    : expr_qualified expr_apps_args     { () }
-
-expr_apps_args :: { () }
-    : expr_apps_args expr_app           { () }
-    | {- empty -}                       { () }
+    : expr_apps expr_app        { () }
+    | expr_qualified            { () }
 
 expr_app :: { () }
     : '@' expr_qualified        { () }
     | expr_qualified            { () }
 
 expr_qualified :: { () }
-    : expr_qualified_dots expr_block    { () }
+    : expr_block '.' expr_qualified     { () }
+    | expr_block %shift                 { () }
 
 expr_qualified_dots :: { () }
     : expr_qualified_dots expr_block '.'    { () }
@@ -586,11 +597,12 @@ expr_qualified_dots :: { () }
 expr_block :: { () }
     : '\\' 'case' case_alt_body             { () }
     | '\\' 'when' guarded_alt_body          { () }
-    | '\\' lambda_body                      { () }
-    | 'let' let_body                        { () }
-    | 'letrec' let_body                     { () }
+    | '\\' lambda_body                      { () } -- conflict with expr
+    | 'let' let_body                        { () } -- conflict with expr
+    | 'letrec' let_body                     { () } -- conflict with expr
     | 'case' case_body                      { () }
     | 'do' do_body                          { () }
+    | 'record' expr_record_body             { () }
     | expr_atomic                           { () }
 
 expr_atomic :: { () }
@@ -605,7 +617,6 @@ expr_literal :: { () }
     | '(' expr_tuple_items ')'          { () }
     | '[' expr_array_items ']'          { () }
     | '{' expr_simplrecord_items '}'    { () }
-    | 'record' expr_record_body         { () }
 
 expr_interp_string :: { () }
     : INTERP_STRING_WITHOUT_INTERP                                          { () }
@@ -656,11 +667,10 @@ expr_record_items_semis :: { () }
 expr_record_item :: { () }
     : valsig_decl       { () }
     | val_decl          { () }
--}
+
 
 pat :: { () }
-    : pat_unit ':' type         { () }
-    | pat_unit                  { () }
+    : pat_unit may_type_sig     { () }
 
 pat_unit :: { () }
     : pat_unit '|' pat_infix        { () }
@@ -671,7 +681,8 @@ pat_infix :: { () }
     | pat_apps                          { () }
 
 pat_op :: { () }
-    : sym_ext                       { () }
+    : CONSYM                        { () }
+    | var_sym_ext                   { () }
     | '`' pat_qualified_op '`'      { () }
 
 pat_qualified_op :: { () }
@@ -731,7 +742,7 @@ pat_simplrecord_items_semis :: { () }
 pat_simplrecord_item :: { () }
     : var '=' pat       { () }
 
-{-
+
 lambda_body :: { () }
     : lambda_pat_args '->' expr     { () }
 
@@ -741,7 +752,7 @@ lambda_pat_args :: { () }
 
 
 let_body :: { () }
-    : let_binds 'in' expr       { () }
+    : let_binds 'in' expr           { () }
 
 let_binds :: { () }
     : lopen let_bind_items lclose   { () }
@@ -760,7 +771,7 @@ let_bind_item :: { () }
     | type_family_decl          { () }
     | type_impl_decl            { () }
     | data_decl                 { () }
-    | val_bind                  { () }
+    | val_bind                  { () } -- conflict with valsig_decl
     | module_decl               { () }
     | pattern_decl              { () }
     | trait_decl                { () }
@@ -796,8 +807,8 @@ case_alt_item :: { () }
     : case_pats guarded_alt     { () }
 
 case_pats :: { () }
-    : case_pats_commas pat      { () }
-    | case_pats_commas          { () }
+    : case_pats_commas pat_unit     { () }
+    | case_pats_commas              { () }
 
 case_pats_commas :: { () }
     : case_pats_commas pat ','      { () }
@@ -822,26 +833,26 @@ guarded_alt_item :: { () }
     : guard_qual '->' expr      { () }
 
 guard_qual :: { () }
-    : expr      { () }
+    : expr_unit         { () }
 
 
 do_body :: { () }
     : lopen do_stmt_items lclose        { () }
 
 do_stmt_items :: { () }
-    : do_stmt_items_semis expr          { () }
+    : do_stmt_items_semis expr                  { () }
+    | do_stmt_items_semis do_stmt_item lsemis   { () } -- do_stmt_items_semis expr lsemis
 
 do_stmt_items_semis :: { () }
     : do_stmt_items_semis do_stmt_item lsemis   { () }
     | {- empty -}                               { () }
 
 do_stmt_item :: { () }
-    : expr                  { () }
-    | pat '<-' expr         { () }
-    | pat '=' expr          { () }
-    | 'letrec' let_binds    { () }
-    | 'let' let_binds       { () }
--}
+    : expr                          { () }
+    | expr '<-' expr                { () } -- pat '<-' expr
+    | expr '=' expr                 { () } -- pat '=' expr
+    | 'rec' let_binds               { () }
+
 
 bind_var :: { () }
     : '@' simple_bind_var           { () }
@@ -908,18 +919,23 @@ var_sym_ext :: { () }
 
 lopen :: { () }
     : lopen VSEMI   { () }
+    | '{'           { () }
+    | '{{'          { () }
     | VOBRACE       { () }
 
 lclose :: { () }
-    : VCBRACE       { () }
-
-vclose :: { () }
-    : VCBRACE   { () }
-    | error     { () }
+    : '}'           { () }
+    | '}}'          { () }
+    | VCBRACE       { () }
+    | error         { () }
 
 lsemis :: { () }
-    : lsemis VSEMI  { () }
-    | VSEMI         { () }
+    : lsemis semi   { () }
+    | semi          { () }
+
+semi :: { () }
+    : ';'       { () }
+    | VSEMI     { () }
 
 
 literal :: { () }
@@ -932,11 +948,11 @@ literal :: { () }
 
 qualified_con_dots :: { () }
     : qualified_con_dots con '.'    { () }
-    | {- empty -}                   { () }
+    | {- empty -} %shift            { () }
 
 may_type_sig :: { () }
-    : ':' type      { () }
-    | {- empty -}   { () }
+    : ':' type              { () }
+    | {- empty -} %shift    { () }
 
 bind_vars :: { () }
     : bind_vars bind_var    { () }

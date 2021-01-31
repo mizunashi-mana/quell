@@ -15,7 +15,6 @@ type T = Token
 data Token
     = EndOfSource
 
-    | KwAlias
     | KwAs
     | KwCase
     | KwData
@@ -32,7 +31,6 @@ data Token
     | KwLetrec
     | KwModule
     | KwNewtype
-    | KwNone
     | KwOf
     | KwPattern
     | KwRec
@@ -43,10 +41,10 @@ data Token
     | KwStatic
     | KwTrait
     | KwType
-    | KwUnderscore
     | KwUse
     | KwWhen
     | KwWhere
+    | KwUnderscore
 
     | LKwDefault
     | LKwSelf
@@ -56,7 +54,6 @@ data Token
     | SymBang
     | SymColon
     | SymDArrow
-    | SymDColon
     | SymDLeftArrow
     | SymDot
     | SymDots
@@ -108,7 +105,6 @@ data Token
 instance Pretty Token where
     pretty = \case
         EndOfSource                     -> mempty
-        KwAlias                         -> pretty "alias"
         KwAs                            -> pretty "as"
         KwCase                          -> pretty "case"
         KwData                          -> pretty "data"
@@ -125,7 +121,6 @@ instance Pretty Token where
         KwLetrec                        -> pretty "letrec"
         KwModule                        -> pretty "module"
         KwNewtype                       -> pretty "newtype"
-        KwNone                          -> pretty "none"
         KwOf                            -> pretty "of"
         KwPattern                       -> pretty "pattern"
         KwRec                           -> pretty "rec"
@@ -147,7 +142,6 @@ instance Pretty Token where
         SymBang                         -> pretty "!"
         SymColon                        -> pretty ":"
         SymDArrow                       -> pretty "=>"
-        SymDColon                       -> pretty "::"
         SymDLeftArrow                   -> pretty "<="
         SymDot                          -> pretty "."
         SymDots                         -> pretty ".."
