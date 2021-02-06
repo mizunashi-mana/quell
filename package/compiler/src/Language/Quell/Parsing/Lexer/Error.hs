@@ -11,8 +11,7 @@ import           Language.Quell.Prelude
 type T = Error
 
 data Error
-    = UnexpectedCodeUnits -- FIXME: split more detail
-    | UnclosedByteStringLiteral
+    = UnclosedByteStringLiteral
     | NonAsciiCharInByteStringLiteral
     | NonGraphicInByteStringLiteral
     | UniEscapeInByteStringLiteral
@@ -41,16 +40,3 @@ data Error
     | UnclosedPragmaComment
     | NonGraphicInPragmaComment
     deriving (Eq, Show)
-
-data CommentBlockKind
-    = CommentBlockMultiline
-    | CommentBlockDoc
-    | CommentBlockPragma
-    deriving (Eq, Ord, Show, Enum, Bounded)
-
-data LayoutBlockKind
-    = LayoutBlockBrace
-    | LayoutBlockDBrace
-    | LayoutBlockVBrace
-    | LayoutBlockVDBrace
-    deriving (Eq, Ord, Show, Enum, Bounded)

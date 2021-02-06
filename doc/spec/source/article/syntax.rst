@@ -389,7 +389,7 @@ Grammar
                     : fixity_decl
 
 .. productionlist::
-    impl_decl: "impl" impltype ("<=" context)* ("of" con)? ("where" impl_decl_body)?
+    impl_decl: "impl" impltype ("<=" context)* ("as" con)? ("where" impl_decl_body)?
     impl_decl_body  : lopen impl_decl_items lclose
     impl_decl_items: (impl_decl_item lsemis)* impl_decl_item?
     impl_decl_item: module_decl_item
@@ -419,7 +419,7 @@ Grammar
                 : op ("as" op)?
 
 .. productionlist::
-    derive_clause: "derive" impltype ("<=" context)* ("of" con)?
+    derive_clause: "derive" impltype ("<=" context)* ("as" con)?
 
 .. productionlist::
     decltype    : declcon bind_var*
@@ -485,7 +485,6 @@ Grammar
             : "@" type_qualified
     expr_qualified: (expr_block ".")* expr_block
     expr_block  : "\\" "case" case_alt_body
-                : "\\" "when" guarded_alt_body
                 : "\\" lambda_body
                 : "letrec" let_body
                 : "let" let_body
@@ -536,9 +535,6 @@ Grammar
     pat_simplrecord_item: var "=" pat
 
 .. productionlist::
-    lambda_body : pat_atomic* "->" expr
-
-.. productionlist::
     let_body: let_binds "in" expr
     let_binds   : lopen let_bind_items lclose
     let_bind_items: (let_bind_item lsemis)* let_bind_item?
@@ -566,6 +562,9 @@ Grammar
     guarded_alt_items: (guarded_alt_item lsemis)* guarded_alt_item?
     guarded_alt_item: guard_qual "->" expr
     guard_qual: expr
+
+.. productionlist::
+    lambda_body : pat_atomic* guarded_alt
 
 .. productionlist::
     do_body : lopen do_stmt_items lclose
@@ -611,7 +610,7 @@ Grammar
 .. productionlist::
     lopen: '{' lsemis?
     lclose: '}'
-    lsemis: ';'+
+    lsemis: (';' | ";")+
 
 Note:
 
@@ -653,106 +652,170 @@ Layout
 
 .. code-block:: haskell
 
-    withL p ts ms = case ts of
-        [] -> tryEnd p ms
-        t:ts
-            | isWhiteSpaceWithNewline t ->
-                startNewline p ts ms
+    data TokenWithL
+        = Token Int String
+        | ExpectBrace
+        | Newline Int
+
+    preParse ts = go ts 0 isLayoutKeyword where
+        go ts pl isL = skipWhiteSpace ts pl \(c,t) ts l -> case t of
+            "\\" ->
+                Token c t:go ts l isLayoutKeywordLam
+            _ | isL t ->
+                Token c t:ExpectBrace:go ts l isLayoutKeyword
+            _ ->
+                Token c t:go ts l isLayoutKeyword
+
+    skipWhiteSpace ts pl cont = case ts of
+        [] -> []
+        (l,c,t):ts
             | isWhiteSpace t ->
-                withL p ts ms
-            | otherwise -> p t \r -> case r of
-                ParseOk p
-                    | isOpen t  -> withL p ts (<>:ms)
-                    | isClose t -> case ms of
-                        <>:ms -> withL p ts ms
-                        _     -> tryClose p ts ms
-                    | t match interp_string_continue -> case ms of
-                        <>:ms -> withL p ts (<>:ms)
-                        _     -> ParseError
-                    | otherwise -> withL p ts ms
-                ParseError -> errorRecover p t ts ms
-
-    errorRecover p t ts ms = case ms of
-        [] -> errorRecover2 p t ts ms
-        m:ms -> p '}' \r -> case r of
-            ParseOk p -> case (t, m) of
-                ("}", <>)      -> withL p ts ms
-                ("}}", <{{,_>) -> withL p ts ms
-                (_, <{,_>)     -> withL p (t:ts) ms
-            ParseError -> errorRecover2 p t ts (m:ms)
-
-    errorRecover2 p t ts ms = p '{' \r -> case r of
-        ParseOk p -> case t of
-            "{"  -> withL p ts (<>:ms)
-            "{{" -> openDBrace p ts ms
-            _    -> openVBrace p (t:ts) ms
-        ParseError -> case t of
-            ";" -> p ';' \r -> case r of
-                ParseOk p -> withL p ts ms
-                ParseError -> ParseError
-            _   -> ParseError
-
-    tryClose p ts ms = case ms of
-        []       -> withL p ts ms
-        <{,_>:ms -> p '}' \r -> case r of
-            ParseOk p  -> tryClose p ts ms
-            ParseError -> ParseError
-        <>:ms    -> withL p ts ms
-        <{{,_>:_ -> ParseError
-
-    tryEnd p ms = case ms of
-        []       -> ParseOk p
-        <{,_>:ms -> p '}' \r -> case r of
-            ParseOk p  -> tryEnd p ms
-            ParseError -> ParseError
-        _        -> ParseError
-
-    startNewline p ts ms = case ts of
-        [] -> withL p ts ms
-        t:ts
-            | isWhiteSpace t ->
-                startNewline p ts ms
+                skipWhiteSpace ts pl cont
+            | pl < l ->
+                Newline c:cont (c,t) ts l
             | otherwise ->
-                resolveL (PosToken t) p (t:ts) ms
-
-    resolveL n p ts ms = case ms of
-        []       -> withL p ts ms
-        <>:_     -> withL p ts ms
-        <{,m>:ms
-            | n < m -> p '}' \r -> case r of
-                ParseOk p  -> resolveL n p ts ms
-                ParseError -> ParseError
-            | otherwise -> p ';' \r -> case r of
-                ParseOk p  -> withL p ts (<{,m>:ms)
-                ParseError -> ParseError
-        <{{,m>:ms
-            | n < m -> ParseError
-            | otherwise -> p ';' \r -> case r of
-                ParseOk p  -> withL p ts (<{{,m>:ms)
-                ParseError -> ParseError
-
-    openDBrace p ts ms = case ts of
-        [] -> withL p ts (<{{,0>:ms)
-        t:ts
-            | isWhiteSpace t ->
-                openDBrace p ts ms
-            | otherwise ->
-                withL p (t:ts) (<{{,PosToken(t)>:ms)
-
-    openVBrace p ts ms = case ts of
-        [] -> withL p ts (<{,0>:ms)
-        t:ts
-            | isWhiteSpace t ->
-                openVBrace p ts ms
-            | otherwise ->
-                withL p (t:ts) (<{,PosToken(t)>:ms)
+                cont (c,t) ts l
 
     isWhiteSpace t =
         t match whitespace
 
-    isWhiteSpaceWithNewline t =
-        isWhiteSpace t &&
-        t match ANY* newline ANY*
+    isLayoutKeyword t = case t of
+        "when"      -> True
+        "let"       -> True
+        "letrec"    -> True
+        "of"        -> True
+        "when"      -> True
+        _           -> False
+
+    isLayoutKeywordLam t = case t of
+        "case"  -> True
+        _       -> isLayoutKeyword t
+
+.. code-block:: haskell
+
+    data Layout
+        = NoLayout
+        | ExplicitBrace
+        | ExplicitDBrace Int
+        | VirtualBrace Int
+
+    parseWithL p ts = withL p ts []
+
+    parseWithoutL p ts = case ts of
+        [] ->
+            ParseOk p
+        Token _ t:ts -> parse p t \r -> case r of
+            ParseOk p ->
+                parseWithoutL p ts
+            ParseError ->
+                ParseError
+        _:ts ->
+            parseWithoutL p ts
+
+    withL p ts ms = case ts of
+        [] ->
+            tryEnd p ms
+        Token _ t:ts
+            | isOpen t ->
+                runParserL p t ts ms \p ts ms ->
+                    withL p ts (NoLayout:ms)
+            | isClose t || t match interp_string_continue ->
+                tryClose p t ts ms
+            | otherwise ->
+                runParserL p t ts ms withL
+        ExpectBrace:ts ->
+            resolveBraceOpen p ts ms
+        Newline n:ts ->
+            resolveNewline n ts ms
+
+    runParserL p t ts ms cont = parse p t \r -> case r of
+        ParseOk p ->
+            cont p ts ms
+        ParseError ->
+            errorRecover p t ts ms cont
+
+    runSimpleParserL p t cont = parse p t \r -> case r of
+        ParseOk p ->
+            cont p
+        ParseError ->
+            ParseError
+
+    errorRecover p t ts ms cont = case ms of
+        VirtualBrace _:ms -> parse p '}' \r -> case r of
+            ParseOk p ->
+                runParserL p t ts ms cont
+            ParseError ->
+                ParseError
+        _ ->
+            ParseError
+
+    tryClose p t ts ms = case ms of
+        []   -> ParseError
+        m:ms -> case m of
+            VirtualBrace _ -> runSimpleParserL p '}' \p ->
+                tryClose p t ts ms
+            ExplicitBrace -> case t of
+                "}" -> runSimpleParserL p '}' \p ->
+                    withL p ts ms
+                _ ->
+                    ParseError
+            ExplicitDBrace _ -> case t of
+                t == "}}" -> runSimpleParserL p '}' \p ->
+                    withL p ts ms
+                _ ->
+                    ParseError
+            NoLayout
+                | t match interp_string_continue -> runSimpleParserL p t \p ->
+                    withL p ts (NoLayout:ms)
+                | otherwise -> runSimpleParserL p t ts \p ts ->
+                    withL p ts ms
+
+    tryEnd p ms = case ms of
+        [] ->
+            ParseOk p
+        m:ms -> case m of
+            VirtualBrace _ -> runSimpleParserL p '}' \p ->
+                tryEnd p ms
+            _ ->
+                ParseError
+
+    resolveBraceOpen p ts ms = case ts of
+        ts0@(Token _ t:ts) -> case t of
+            "{" -> runParserL p '{' ts ms \p ts ms ->
+                withL p ts (ExplicitBrace:ms)
+            "{{" -> runParserL p '{' ts ms \p ts ms ->
+                let m = calcLayoutPos ts
+                in withL p ts (ExplicitDBrace m:ms)
+            _ -> runParserL p '{' ts0 ms \p ts ms ->
+                let m = calcLayoutPos ts
+                in withL p ts (VirtualBrace m:ms)
+        _ -> runParserL p '{' ts ms \p ts ms ->
+            let m = calcLayoutPos ts
+            in withL p ts (VirtualBrace m:ms)
+
+    resolveNewline n p ts ms = case ms of
+        ExplicitDBrace m:_ ->
+            | n < m ->
+                ParseError
+            | n == m -> runSimpleParserL p ';' \p ->
+                withL p ts ms
+            | otherwise ->
+                withL p ts ms
+        VirtualBrace m:ms1
+            | n < m -> runSimpleParserL p '}' \p ->
+                resolveNewline n p ts ms1
+            | n == m -> runSimpleParserL p ';' \p ->
+                withL p ts ms
+            | otherwise ->
+                withL p ts ms
+        _ ->
+            withL p ts ms
+
+    calcLayoutPos ts = case ts of
+        []              -> 0
+        Token m _:_     -> m
+        Newline m:_     -> m
+        ExpectBrace:ts  -> calcLayoutPos ts
 
     isOpen t = case t of
         "("     -> True

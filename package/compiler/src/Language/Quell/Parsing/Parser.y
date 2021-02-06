@@ -5,6 +5,8 @@ import Language.Quell.Prelude
 
 import qualified Prelude
 import qualified Language.Quell.Type.Token as Token
+import qualified Language.Quell.Parsing.Parser.Layout as Layout
+import qualified Language.Quell.Data.Bag as Bag
 import qualified Language.Quell.Parsing.Spanned as Spanned
 }
 
@@ -922,6 +924,7 @@ lopen :: { () }
     | '{'           { () }
     | '{{'          { () }
     | VOBRACE       { () }
+    | error         { () }
 
 lclose :: { () }
     : '}'           { () }
@@ -965,7 +968,12 @@ pattern S t <- Spanned.Spanned
         unSpanned = t
     }
 
-type ParserWithL = Identity
+type ParserWithL = State ParseContext
+
+data ParseContext = ParseContext
+    {
+        layoutStack :: [Layout.T]
+    }
 
 lexer = undefined
 
