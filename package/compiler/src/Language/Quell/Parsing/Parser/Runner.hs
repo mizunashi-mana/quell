@@ -37,7 +37,8 @@ data RunnerContext = RunnerContext
         nextToken :: Maybe (Spanned.T Token.T),
         expectNextBrace :: Bool,
         openBraceCont :: Maybe (Int -> Layout.T),
-        layoutStack :: Layout.LayoutStack
+        layoutStack :: [Layout.T],
+        isOpenBraceKeyword :: Token.T -> Bool
     }
     deriving (Eq, Show)
 
@@ -53,7 +54,8 @@ initialContext = RunnerContext
         nextToken = Nothing,
         expectNextBrace = False,
         openBrace = Nothing,
-        layoutStack = Layout.empty
+        layoutStack = [],
+        isOpenBraceKeyword = Layout.isLayoutKeyword
     }
 
 lexer :: (Spanned.T Token.T -> Runner a) -> Runner a
@@ -68,8 +70,7 @@ lexer cont = do
 pushLayout :: Layout.T -> Runner
 pushLayout l = runnerModify' \ctx -> ctx
     {
-        layoutStack = Layout.pushLayout l
-            do layoutStack ctx
+        layoutStack = l:layoutStack ctx
     }
 
 pushVBraceLayout :: Runner
@@ -175,4 +176,3 @@ consumeNextToken = do
                 | otherwise -> do
                     runnerPut ctx2
                     pure do Just spt
-

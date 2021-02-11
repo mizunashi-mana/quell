@@ -1,9 +1,12 @@
-module Language.Quell.Parser.Layout (
+module Language.Quell.Parsing.Parser.Layout (
     T,
     Layout (..),
 
-    LayoutStack (..),
-    empty,
+    isLayoutKeyword,
+    isLayoutKeywordLam,
+
+    isOpen,
+    isClose,
 ) where
 
 import Language.Quell.Prelude
@@ -16,26 +19,39 @@ type T = Layout
 
 data Layout
     = NoLayout
-    | DBraceLayout Int
-    | VBraceLayout Int
+    | ExplicitBrace
+    | ExplicitDBrace Int
+    | VirtualBrace Int
     deriving (Eq, Show)
 
-newtype LayoutStack = LayoutStack [Layout]
-    deriving (Eq, Show)
+isLayoutKeyword :: Token.T -> Bool
+isLayoutKeyword = \case
+    Token.KwLet     -> True
+    Token.KwLetrec  -> True
+    Token.KwOf      -> True
+    Token.KwWhen    -> True
+    Token.KwWhere   -> True
+    _               -> False
 
-data LParseResult
-    = LParseCont Token.T
-    | LParseOk
-    | LParseError Error.T
-    deriving (Eq, Show)
+isLayoutKeywordLam :: Token.T -> Bool
+isLayoutKeywordLam = \case
+    Token.KwCase    -> True
+    t               -> isLayoutKeyword t
 
-empty :: LayoutStack
-empty = LayoutStack []
+isOpen :: Token.T -> Bool
+isOpen = \case
+    Token.SpParenOpen               -> True
+    Token.SpBrackOpen               -> True
+    Token.SpBraceOpen               -> True
+    Token.SpDBraceOpen              -> True
+    Token.LitInterpStringStart{}    -> True
+    _                               -> False
 
-pushLayout :: Layout -> LayoutStack -> LayoutStack
-pushLayout l (LayoutStack ls) = LayoutStack do l:ls
-
-popLayout :: LayoutStack -> LayoutStack
-popLayout = \case
-    LayoutStack (_:ls)  -> LayoutStack ls
-    LayoutStack []      -> LayoutStack []
+isClose :: Token.T -> Bool
+isClose = \case
+    Token.SpParenClose              -> True
+    Token.SpBrackClose              -> True
+    Token.SpBraceClose              -> True
+    Token.SpDBraceClose             -> True
+    Token.LitInterpStringEnd{}      -> True
+    _                               -> False
