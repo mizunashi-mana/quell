@@ -617,21 +617,27 @@ Note:
 * ``if`` 式はいれない．以下の標準関数で代用::
 
     if : \/a. Bool -> { then: a, else: a } -> a
-    if = \with
+    if = \case
         True,  e -> e.then
         False, e -> e.else
 
 * multi way if は lambda case で代替::
 
     func1 : \/a. Int -> a -> Maybe a
-    func1 = \with
+    func1 = \case
         0, x -> Just x
         i, x when
             i > 10 -> Just x
             else   -> Nothing
 
     func2 : Int -> a -> Maybe a
-    func2 = \i x -> \when
+    func2 = \i x when
+        i == 0 -> Just x
+        i > 10 -> Just x
+        else   -> Nothing
+
+    func3 :: Int -> a -> Maybe a
+    func3 i x = \when
         i == 0 -> Just x
         i > 10 -> Just x
         else   -> Nothing
@@ -680,11 +686,11 @@ Layout
         t match whitespace
 
     isLayoutKeyword t = case t of
-        "when"      -> True
         "let"       -> True
         "letrec"    -> True
         "of"        -> True
         "when"      -> True
+        "where"     -> True
         _           -> False
 
     isLayoutKeywordLam t = case t of
@@ -749,36 +755,6 @@ Layout
         _ ->
             ParseError
 
-    tryClose p t ts ms = case ms of
-        []   -> ParseError
-        m:ms -> case m of
-            VirtualBrace _ -> runSimpleParserL p '}' \p ->
-                tryClose p t ts ms
-            ExplicitBrace -> case t of
-                "}" -> runSimpleParserL p '}' \p ->
-                    withL p ts ms
-                _ ->
-                    ParseError
-            ExplicitDBrace _ -> case t of
-                t == "}}" -> runSimpleParserL p '}' \p ->
-                    withL p ts ms
-                _ ->
-                    ParseError
-            NoLayout
-                | t match interp_string_continue -> runSimpleParserL p t \p ->
-                    withL p ts (NoLayout:ms)
-                | otherwise -> runSimpleParserL p t ts \p ts ->
-                    withL p ts ms
-
-    tryEnd p ms = case ms of
-        [] ->
-            ParseOk p
-        m:ms -> case m of
-            VirtualBrace _ -> runSimpleParserL p '}' \p ->
-                tryEnd p ms
-            _ ->
-                ParseError
-
     resolveBraceOpen p ts ms = case ts of
         ts0@(Token _ t:ts) -> case t of
             "{" -> runParserL p '{' ts ms \p ts ms ->
@@ -810,6 +786,36 @@ Layout
                 withL p ts ms
         _ ->
             withL p ts ms
+
+    tryClose p t ts ms = case ms of
+        []   -> ParseError
+        m:ms -> case m of
+            VirtualBrace _ -> runSimpleParserL p '}' \p ->
+                tryClose p t ts ms
+            ExplicitBrace -> case t of
+                "}" -> runSimpleParserL p '}' \p ->
+                    withL p ts ms
+                _ ->
+                    ParseError
+            ExplicitDBrace _ -> case t of
+                t == "}}" -> runSimpleParserL p '}' \p ->
+                    withL p ts ms
+                _ ->
+                    ParseError
+            NoLayout
+                | t match interp_string_continue -> runSimpleParserL p t \p ->
+                    withL p ts (NoLayout:ms)
+                | otherwise -> runSimpleParserL p t ts \p ts ->
+                    withL p ts ms
+
+    tryEnd p ms = case ms of
+        [] ->
+            ParseOk p
+        m:ms -> case m of
+            VirtualBrace _ -> runSimpleParserL p '}' \p ->
+                tryEnd p ms
+            _ ->
+                ParseError
 
     calcLayoutPos ts = case ts of
         []              -> 0
