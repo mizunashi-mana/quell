@@ -2,6 +2,9 @@ module Language.Quell.Parsing.Parser.Layout (
     T,
     Layout (..),
 
+    TokenWithL (..),
+    preParse,
+
     isLayoutKeyword,
     isLayoutKeywordLam,
 
@@ -11,7 +14,9 @@ module Language.Quell.Parsing.Parser.Layout (
 
 import Language.Quell.Prelude
 
+import qualified Conduit
 import qualified Language.Quell.Type.Token as Token
+import qualified Language.Quell.Parsing.Parser.Spanned as Spanned
 import qualified Language.Quell.Parsing.Parser.Error as Error
 
 
@@ -23,6 +28,46 @@ data Layout
     | ExplicitDBrace Int
     | VirtualBrace Int
     deriving (Eq, Show)
+
+data TokenWithL
+    = Token (Spanned.T Token.T)
+    | ExpectBrace
+    | Newline Int
+    deriving (Eq, Show)
+
+type WithLConduit = Conduit.ConduitT (Spanned.T Token.T) TokenWithL
+
+preParse :: Monad m => WithLConduit m ()
+preParse = go 0 isLayoutKeyword where
+    go pl isL = resolveNewline pl \spt l -> case Spanned.unSpanned spt of
+        Tok.SymLambda -> do
+            Conduit.yield do Token spt
+            go l isLayoutKeywordLam
+        t | isL t -> do
+            Conduit.yield do Token spt
+            Conduit.yield ExpectBrace
+            go l isLayoutKeyword
+        _ -> do
+            Conduit.yield do Token spt
+            go l isLayoutKeyword
+
+resolveNewline :: Monad m
+    => Int -> (Spanned.T Token.T -> Int -> WithLConduit m ())
+    -> WithLConduit m ()
+resolveNewline pl cont = Conduit.await >>= \case
+    Nothing ->
+        pure ()
+    Just spt -> do
+        let sp = Spanned.getSpan spt
+            l1 = Spanned.locLine do Spanned.beginLoc sp
+            c1 = Spanned.locCol do Spanned.beginLoc sp
+            l2 = Spanned.locLine do Spanned.endLoc sp
+        if
+            | pl < l1 -> do
+                Conduit.yield do Newline c1
+                cont spt l2
+            | otherwise ->
+                cont spt l2
 
 isLayoutKeyword :: Token.T -> Bool
 isLayoutKeyword = \case

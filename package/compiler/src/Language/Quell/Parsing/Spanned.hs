@@ -1,11 +1,15 @@
 module Language.Quell.Parsing.Spanned (
     T,
     Spanned (..),
+    spannedFromLoc,
     appendSpan,
     prependSpan,
+
     Span (..),
     BytesSpan (..),
+
     Loc (..),
+    initialLoc
 ) where
 
 import           Language.Quell.Prelude
@@ -26,6 +30,17 @@ instance Semigroup a => Semigroup (Spanned a) where
             getSpan = getSpan sx1 <> getSpan sx2,
             unSpanned = unSpanned sx1 <> unSpanned sx2
         }
+
+spannedFromLoc :: Loc -> a -> Spanned a
+spannedFromLoc l x = Spanned
+    {
+        getSpan = Span
+            {
+                beginLoc = l,
+                endLoc = l
+            },
+        unSpanned = x
+    }
 
 appendSpan :: Spanned a -> Span -> Spanned a
 appendSpan sx sp = Spanned
@@ -73,3 +88,11 @@ data Loc = Loc
         locCol      :: Int
     }
     deriving (Eq, Ord, Show)
+
+initialLoc :: Loc
+initialLoc = Loc
+    {
+        locBytesPos = 0,
+        locLine = 0,
+        locCol = 0
+    }
