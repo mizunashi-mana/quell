@@ -749,12 +749,12 @@ Layout
     parseWithL p ts = withL p ts False []
 
     withL p ts expB ms = case ts of
-        [] ->
-            tryEnd p b ms
-        Token isN c t:ts -> case isN of
-            True ->
+        [] -> resolveEmptyBrace p expB \p ->
+            tryEnd p ms
+        Token isN c t:ts
+            | isN ->
                 resolveNewline p c t ts expB ms
-            False ->
+            | otherwise ->
                 resolveToken p t ts expB ms
         ExpectBrace:ts ->
             withL ts True ms
@@ -787,7 +787,7 @@ Layout
         "{{" | expB ->
             runParserL p "{{" ts ms \p ts ms ->
                 let m = calcLayoutPos ts
-                in withL p ts (ExplicitDBrace m:ms)
+                in withL p ts False (ExplicitDBrace m:ms)
         _ | expB ->
             runParserL p '{' ts0 ms \p ts ms ->
                 let m = calcLayoutPos ts
@@ -801,35 +801,38 @@ Layout
             runParserL p t ts ms \p ts ms ->
                 withL p ts False ms
 
-    resolveNewline p c t ts expB ms = case ms of
-        ExplicitDBrace m:_ ->
+    resolveNewline p c t ts expB ms0 = case ms of
+        ExplicitDBrace m:ms1 ->
             | c < m -> case t of
-                "}}" -> resolveEmptyBrace p \p ->
+                "}}" -> resolveEmptyBrace p expB \p ->
                     runSimpleParserL p "}}" \p ->
-                        withL p ts False ms
+                        withL p ts False ms1
                 _ ->
                     ParseError
-            | c == m -> resolveEmptyBrace p \p ->
+            | c == m -> resolveEmptyBrace p expB \p ->
                 runSimpleParserL p ';' \p ->
-                    resolveToken p t ts False ms
+                    resolveToken p t ts False ms0
             | otherwise ->
-                resolveToken p t ts expB ms
+                resolveToken p t ts expB ms0
         VirtualBrace m:ms1
-            | c < m -> resolveEmptyBrace p \p ->
+            | c < m -> resolveEmptyBrace p expB \p ->
                 runSimpleParserL p '}' \p ->
                     resolveNewline p c t ts False ms1
-            | c == m -> resolveEmptyBrace p \p ->
+            | c == m -> resolveEmptyBrace p expB \p ->
                 runSimpleParserL p ';' \p ->
-                    resolveToken p t ts False ms
+                    resolveToken p t ts False ms0
             | otherwise ->
-                resolveToken p t ts expB ms
+                resolveToken p t ts expB ms0
         _ ->
             resolveToken p t ts expB ms
 
-    resolveEmptyBrace p cont =
-        runSimpleParserL p '{' \p ->
-            runSimpleParserL p '}' \p ->
-                cont p
+    resolveEmptyBrace p expB cont = case expB of
+        False ->
+            cont p
+        True ->
+            runSimpleParserL p '{' \p ->
+                runSimpleParserL p '}' \p ->
+                    cont p
 
     tryClose p t ts ms = case ms of
         []   ->

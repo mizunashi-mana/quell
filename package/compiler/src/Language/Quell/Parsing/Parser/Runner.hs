@@ -32,29 +32,29 @@ newtype Runner a = Runner
             (StateT RunnerContext Maybe)
 
 
-type RunnerContinue a = Maybe (Spanned.T Token.T) -> Runner a
+type RunnerCont a = Spanned.T Token.T -> Runner a
 
 data RunnerContext = RunnerContext
     {
-        withLCont :: Maybe (RunnerContinue a -> Runner a),
+        withLCont :: forall a. RunnerCont a -> Runner a,
         lastSpan :: Spanned.Span,
         tokenStack :: [Layout.TokenWithL],
-        layoutStack :: [Layout.T],
-        errors :: Bag.T Error.T
+        parseErrors :: Bag.T Error.T
     }
 
 initialContext :: RunnerContext
 initialContext = RunnerContext
     {
-        withLCont = Nothing,
+        withLCont = \cont -> withL cont False [],
         lastSpan = Spanned.Span
             {
                 Spanned.beginLoc = lastLoc,
                 Spanned.endLoc = lastLoc
             },
+        expectBrace = False,
         tokenStack = [],
         layoutStack = [],
-        errors = mempty
+        parseErrors = mempty
     }
     where
         lastLoc = Spanned.Loc
@@ -64,99 +64,92 @@ initialContext = RunnerContext
                 Spanned.locBytesPos = 0
             }
 
-lexer :: (Spanned.T Token.T -> Runner a) -> Runner a
+lexer :: RunnerCont a -> Runner a
 lexer cont0 = do
     ctx0 <- runnerGet
-    runnerPut do
-        ctx0
-            {
-                withLCont = Nothing
-            }
-    case withLCont ctx0 of
-        Nothing ->
-            go
-        Just lcont -> do
-            lcont cont1
-    where
-        cont1 = \case
-            Just spt ->
-                cont0 spt
-            Nothing ->
-                go
+    withLCont ctx0 cont0
 
-withL :: (Spanned.T Token.T -> Runner a) -> Runner a
-withL cont = consumeToken >>= \case
-    Nothing ->
-        tryEnd cont
+withL :: RunnerCont a -> Bool -> [Layout.T] -> Runner a
+withL cont0 expB ms = consumeToken >>= \case
+    Nothing -> resolveEmptyBrace cont0 expB \cont1 ->
+        tryEnd cont1 ms
     Just twl -> case twl of
-        Layout.Token spt -> case Spanned.unSpanned spt of
-            t | Layout.isOpen t -> do
-                runnerModify' \ctx -> ctx
-                    {
-                        layoutStack = Layout.NoLayout:layoutStack ctx
-                    }
-                cont spt
-            t | Layout.isClose t ->
-                tryClose cont spt
-            Token.LitInterpStringContinue{} ->
-                tryClose cont spt
-            _ ->
-                cont spt
+        Layout.Token isN spt
+            | isN ->
+                resolveNewline cont0 spt expB ms
+            | otherwise ->
+                resolveToken cont0 spt expB ms
         Layout.ExpectBrace ->
-            resolveBraceOpen cont
-        Layout.Newline n ->
-            resolveNewline n cont
+            withL cont0 True ms
 
 errorRecover :: Runner a
 errorRecover = undefined
 
-resolveBraceOpen :: (Spanned.T Token.T -> Runner a) -> Runner a
-resolveBraceOpen cont = consumeToken >>= \case
-    Nothing -> do
-        ctx0 <- runnerGet
-        openVBrace do Spanned.endLoc do lastSpan ctx0
-    Just twl -> case twl of
-        Layout.Token spt -> case Spanned.unSpanned spt of
-            Token.SpBraceOpen -> do
-                runnerModify' \ctx ->
-                    ctx
-                        {
-                            layoutStack = Layout.ExplicitBrace:layoutStack ctx
-                        }
-                cont spt
-            Token.SpDBraceOpen -> do
+resolveToken :: RunnerCont a -> Spanned.T Token.T -> Bool -> [Layout.T] -> Runner a
+resolveToken cont0 spt expB ms = do
+    case Spanned.unSpanned spt of
+        Token.SpBraceOpen | expB ->
+            runParserL cont0 spt \cont1 ->
+                withL cont1 False do Layout.ExplicitBrace:ms
+        Token.SpDBraceOpen | expB ->
+            runParserL cont0 spt \cont1 -> do
                 m <- calcLayoutPos
-                runnerModify' \ctx ->
-                    ctx
-                        {
-                            layoutStack = Layout.ExplicitDBrace m:layoutStack ctx
-                        }
-                cont spt
-            _ -> do
-                restoreToken twl
-                openVBrace do Spanned.endLoc do Spanned.getSpan spt
-        _ -> do
-            ctx0 <- runnerGet
-            openVBrace do Spanned.endLoc do lastSpan ctx0
-    where
-        openVBrace l = do
-            m <- calcLayoutPos
-            runnerPut do
-                ctx0
-                    {
-                        layoutStack = Layout.VirtualBrace m:layoutStack ctx
-                    }
-            cont do Spanned.spannedFromLoc l Token.SpVBraceOpen
+                withL cont1 False do Layout.ExplicitDBrace m:ms
+        _ | expB -> do
+            let vbOp = Spanned.spannedFromLoc
+                    do Spanned.beginLoc do Spanned.getSpan spt
+                    do Token.SpVBraceOpen
+            runParserL cont0 vbOp \cont1 -> do
+                m <- calcLayoutPos
+                resolveToken cont1 spt False do Layout.VirtualBrace m:ms
+        t | Layout.isOpen t ->
+            runParserL cont0 spt \cont1 -> do
+                withL cont1 False do Layout.NoLayout:ms
+        t | Layout.isClose t ->
+            tryClose cont0 spt ms
+        Token.LitInterpStringContinue{} ->
+            tryClose cont0 spt ms
+        _ ->
+            runParserL cont0 spt \cont1 -> do
+                withL cont1 False ms
 
-resolveNewline :: Int -> (Spanned.T Token.T -> Runner a) -> Runner a
-resolveNewline n cont = do
-    ctx0 <- runnerGet
-    case layoutStack ctx0 of
-        Layout.ExplicitDBrace m:_
-            | n < m ->
+resolveNewline :: RunnerCont a -> Spanned.T Token.T -> Bool -> [Layout.T] -> Runner a
+resolveNewline cont0 spt expB ms0 = do
+    let bl = Spanned.beginLoc do Spanned.getSpan spt
+        c = Spanned.locCol bl
+    case ms0 of
+        Layout.ExplicitDBrace m:ms1
+            | c < m -> case Spanned.unSpanned spt of
+                Token.SpDBraceClose ->
+                    resolveEmptyBrace cont0 expB bl \cont1 ->
+                        runParserL cont1 spt \cont2 ->
+                            withL cont2 False ms1
+                _ -> error "parse error"
+            | c == m ->
+                resolveEmptyBrace cont0 bl \cont1 -> do
+                    let vsemi = Spanned.spannedFromLoc bl
+                            Token.SpVSemi
+                    runParserL cont1 vsemi \cont2 ->
+                        resolveToken cont2 spt False ms0
+            | otherwise ->
+                resolveToken cont2 spt False ms0
+        Layout.VirtualBrace m:ms1
+            | c < m -> resolveEmptyBrace cont0 expB bl \cont1 -> do
+                let vbClose = Spanned.spannedFromLoc bl
+                        Token.SpVBraceClose
+                runParserL cont1 vbClose \cont2 ->
+                    resolveNewline cont2 spt False ms1
+            | c == m ->
 
-        [] ->
 
+runParserL :: RunnerCont a -> Spanned.T Token.T
+    -> (forall a. RunnerCont a -> Runner a) -> Runner a
+runParserL spt cont lcont = do
+    runnerModify' \ctx -> ctx
+        {
+            withLCont = lcont
+        }
+    cont spt
 
 consumeToken :: Runner (Maybe Layout.TokenWithL)
 consumeToken = do

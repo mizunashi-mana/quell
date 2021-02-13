@@ -30,25 +30,24 @@ data Layout
     deriving (Eq, Show)
 
 data TokenWithL
-    = Token (Spanned.T Token.T)
+    = Token Bool (Spanned.T Token.T)
     | ExpectBrace
-    | Newline Int
     deriving (Eq, Show)
 
 type WithLConduit = Conduit.ConduitT (Spanned.T Token.T) TokenWithL
 
 preParse :: Monad m => WithLConduit m ()
 preParse = go 0 isLayoutKeyword where
-    go pl isL = resolveNewline pl \spt l -> case Spanned.unSpanned spt of
+    go pl isL = resolveNewline pl \isN spt l -> case Spanned.unSpanned spt of
         Tok.SymLambda -> do
-            Conduit.yield do Token spt
+            Conduit.yield do Token isN spt
             go l isLayoutKeywordLam
         t | isL t -> do
-            Conduit.yield do Token spt
+            Conduit.yield do Token isN spt
             Conduit.yield ExpectBrace
             go l isLayoutKeyword
         _ -> do
-            Conduit.yield do Token spt
+            Conduit.yield do Token isN spt
             go l isLayoutKeyword
 
 resolveNewline :: Monad m
@@ -64,10 +63,9 @@ resolveNewline pl cont = Conduit.await >>= \case
             l2 = Spanned.locLine do Spanned.endLoc sp
         if
             | pl < l1 -> do
-                Conduit.yield do Newline c1
-                cont spt l2
+                cont True spt l2
             | otherwise ->
-                cont spt l2
+                cont False spt l2
 
 isLayoutKeyword :: Token.T -> Bool
 isLayoutKeyword = \case
