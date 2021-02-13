@@ -308,8 +308,10 @@ Grammar
 
 .. productionlist::
     module_decl: "module" declconexpr ("where" module_decl_body)?
-    module_decl_body: lopen module_decl_items lclose
-    module_decl_items: (module_decl_item lsemis)* module_decl_item?
+    module_decl_body: "{" module_decl_items "}"
+                    | "{{" module_decl_items "}}"
+                    | '{' module_decl_items '}'
+    module_decl_items: lsemis? (module_decl_item lsemis)* module_decl_item?
     module_decl_item: sig_item
                     : type_decl
                     : type_family_decl
@@ -334,20 +336,26 @@ Grammar
 
 .. productionlist::
     type_decl: "type" decltype "=" type ("where" type_decl_where_body)?
-    type_decl_where_body : lopen type_decl_where_items lclose
-    type_decl_where_items: (type_decl_where_item lsemis)* type_decl_where_item?
+    type_decl_where_body: "{" type_decl_where_items "}"
+                        | "{{" type_decl_where_items "}}"
+                        | '{' type_decl_where_items '}'
+    type_decl_where_items: lsemis? (type_decl_where_item lsemis)* type_decl_where_item?
     type_decl_where_item: type_decl
                         : use_clause
 
 .. productionlist::
     type_family_decl: "type" "family" con (":" type)? ("where" ctypefam_decl_body)?
                     : "data" "family" con (":" type)? ("where" cdatafam_decl_body)?
-    ctypefam_decl_body  : lopen ctypefam_decl_items lclose
-    ctypefam_decl_items: (ctypefam_decl_item lsemis)* ctypefam_decl_item?
+    ctypefam_decl_body  : "{" ctypefam_decl_items "}"
+                        | "{{" ctypefam_decl_items "}}"
+                        | '{' ctypefam_decl_items '}'
+    ctypefam_decl_items: lsemis? (ctypefam_decl_item lsemis)* ctypefam_decl_item?
     ctypefam_decl_item  : typefam_impl_decl
                         : type_decl_where_item
-    cdatafam_decl_body  : lopen cdatafam_decl_items lclose
-    cdatafam_decl_items: (cdatafam_decl_item lsemis)* cdatafam_decl_item?
+    cdatafam_decl_body  : "{" cdatafam_decl_items "}"
+                        | "{{" cdatafam_decl_items "}}"
+                        | '{' cdatafam_decl_items '}'
+    cdatafam_decl_items: lsemis? (cdatafam_decl_item lsemis)* cdatafam_decl_item?
     cdatafam_decl_item  : datafam_impl_decl
                         : type_decl_where_item
 
@@ -361,37 +369,47 @@ Grammar
 .. productionlist::
     data_decl   : "data" con (":" type)? ("where" data_decl_body)?
                 : "newtype" decltype "=" type ("where" type_decl_where_body)?
-    data_decl_body  : lopen data_decl_items lclose
-    data_decl_items: (data_decl_item lsemis)* data_decl_item?
+    data_decl_body  : "{" data_decl_items "}"
+                    | "{{" data_decl_items "}}"
+                    | '{' data_decl_items '}'
+    data_decl_items: lsemis? (data_decl_item lsemis)* data_decl_item?
     data_decl_item: consig_decl
 
 .. productionlist::
     val_decl: declvarexpr "=" expr ("where" val_decl_where_body)?
     val_bind: pat "=" expr ("where" val_decl_where_body)?
-    val_decl_where_body : lopen val_decl_where_items lclose
-    val_decl_where_items: (val_decl_where_item lsemis)* val_decl_where_item?
+    val_decl_where_body : "{" val_decl_where_items "}"
+                        | "{{" val_decl_where_items "}}"
+                        | '{' val_decl_where_items '}'
+    val_decl_where_items: lsemis? (val_decl_where_item lsemis)* val_decl_where_item?
     val_decl_where_item: let_bind_item
 
 .. productionlist::
     pattern_decl: "pattern" "_" (":" type)? "of" pattern_decl_body
                 : "pattern" declpat "=" pat
                 : "pattern" declpat "<-" pat
-    pattern_decl_body   : lopen pattern_decl_items lclose
-    pattern_decl_items: (pattern_decl_item lsemis)* pattern_decl_item?
+    pattern_decl_body   : "{" pattern_decl_items "}"
+                        | "{{" pattern_decl_items "}}"
+                        | '{' pattern_decl_items '}'
+    pattern_decl_items: lsemis? (pattern_decl_item lsemis)* pattern_decl_item?
     pattern_decl_item   : declpat "=" pat
                         : declpat "<-" pat
 
 .. productionlist::
     trait_decl: "trait" decltype ("<=" context)* ("where" trait_decl_body)?
-    trait_decl_body : lopen trait_decl_items lclose
-    trait_decl_items: (trait_decl_item lsemis)* trait_decl_item?
+    trait_decl_body : "{" trait_decl_items "}"
+                    | "{{" trait_decl_items "}}"
+                    | '{' trait_decl_items '}'
+    trait_decl_items: lsemis? (trait_decl_item lsemis)* trait_decl_item?
     trait_decl_item : sig_item
                     : fixity_decl
 
 .. productionlist::
     impl_decl: "impl" impltype ("<=" context)* ("as" con)? ("where" impl_decl_body)?
-    impl_decl_body  : lopen impl_decl_items lclose
-    impl_decl_items: (impl_decl_item lsemis)* impl_decl_item?
+    impl_decl_body  : "{" impl_decl_items "}"
+                    | "{{" impl_decl_items "}}"
+                    | '{' impl_decl_items '}'
+    impl_decl_items: lsemis? (impl_decl_item lsemis)* impl_decl_item?
     impl_decl_item: module_decl_item
 
 .. productionlist::
@@ -465,11 +483,15 @@ Grammar
     type_array_items: (type ",")* type?
     type_simplrecord_items: (type_simplrecord_item ",")* type_simplrecord_item?
     type_simplrecord_item: var ":" type
-    type_record_body: lopen type_record_items lclose
-    type_record_items: (type_record_item lsemis)* type_record_item?
+    type_record_body: "{" type_record_items "}"
+                    | "{{" type_record_items "}}"
+                    | '{' type_record_items '}'
+    type_record_items: lsemis? (type_record_item lsemis)* type_record_item?
     type_record_item: valsig_decl
-    sig_body: lopen sig_items lclose
-    sig_items: (sig_item lsemis)* sig_item?
+    sig_body: "{" sig_items "}"
+            | "{{" sig_items "}}"
+            | '{' sig_items '}'
+    sig_items: lsemis? (sig_item lsemis)* sig_item?
     sig_item: typesig_decl
             : valsig_decl
             : consig_decl
@@ -507,8 +529,10 @@ Grammar
     expr_array_items: (expr ",")* expr?
     expr_simplrecord_items: (expr_simplrecord_item ",")* expr_simplrecord_item?
     expr_simplrecord_item: var "=" expr
-    expr_record_body: lopen expr_record_items lclose
-    expr_record_items: (expr_record_item lsemis)* expr_record_item?
+    expr_record_body: "{" expr_record_items "}"
+                    | "{{" expr_record_items "}}"
+                    | '{' expr_record_items '}'
+    expr_record_items: lsemis? (expr_record_item lsemis)* expr_record_item?
     expr_record_item: valsig_decl
                     : val_decl
 
@@ -536,8 +560,10 @@ Grammar
 
 .. productionlist::
     let_body: let_binds "in" expr
-    let_binds   : lopen let_bind_items lclose
-    let_bind_items: (let_bind_item lsemis)* let_bind_item?
+    let_binds   : "{" let_bind_items "}"
+                | "{{" let_bind_items "}}"
+                | '{' let_bind_items '}'
+    let_bind_items: lsemis? (let_bind_item lsemis)* let_bind_item?
     let_bind_item   : sig_item
                     : type_decl
                     : type_family_decl
@@ -553,13 +579,17 @@ Grammar
                     : derive_clause
 
 .. productionlist::
-    case_alt_body: lopen case_alt_items lclose
-    case_alt_items: (case_alt_item lsemis)* case_alt_item?
+    case_alt_body   : "{" case_alt_items "}"
+                    | "{{" case_alt_items "}}"
+                    | '{' case_alt_items '}'
+    case_alt_items: lsemis? (case_alt_item lsemis)* case_alt_item?
     case_alt_item: (pat ",")* pat? guarded_alt
     guarded_alt : "->" expr
                 : "when" guarded_alt_body
-    guarded_alt_body: lopen guarded_alt_items lclose
-    guarded_alt_items: (guarded_alt_item lsemis)* guarded_alt_item?
+    guarded_alt_body: "{" guarded_alt_items "}"
+                    | "{{" guarded_alt_items "}}"
+                    | '{' guarded_alt_items '}'
+    guarded_alt_items: lsemis? (guarded_alt_item lsemis)* guarded_alt_item?
     guarded_alt_item: guard_qual "->" expr
     guard_qual: expr
 
@@ -567,12 +597,14 @@ Grammar
     lambda_body : pat_atomic* guarded_alt
 
 .. productionlist::
-    do_body : lopen do_stmt_items lclose
-    do_stmt_items   : (do_stmt_item lsemis)* expr lsemis?
+    do_body : "{" do_stmt_items "}"
+            | "{{" do_stmt_items "}}"
+            | '{' do_stmt_items '}'
+    do_stmt_items   : lsemis? (do_stmt_item lsemis)* expr lsemis?
     do_stmt_item    : expr
                     : pat "<-" expr
                     : pat "=" expr
-                    : ("let" | "letrec") let_binds
+                    : "rec" let_binds
 
 .. productionlist::
     bind_var: "@" simple_bind_var
@@ -608,8 +640,6 @@ Grammar
     var_sym_ext : var_sym
 
 .. productionlist::
-    lopen: '{' lsemis?
-    lclose: '}'
     lsemis: (';' | ";")+
 
 Note:
@@ -659,28 +689,27 @@ Layout
 .. code-block:: haskell
 
     data TokenWithL
-        = Token Int String
+        = Token Bool Int String
         | ExpectBrace
-        | Newline Int
 
     preParse ts = go ts 0 isLayoutKeyword where
-        go ts pl isL = skipWhiteSpace ts pl \(c,t) ts l -> case t of
+        go ts pl isL = skipWhiteSpace ts pl \(b,c,t) ts l -> case t of
             "\\" ->
-                Token c t:go ts l isLayoutKeywordLam
+                Token b c t:go ts l isLayoutKeywordLam
             _ | isL t ->
-                Token c t:ExpectBrace:go ts l isLayoutKeyword
+                Token b c t:ExpectBrace:go ts l isLayoutKeyword
             _ ->
-                Token c t:go ts l isLayoutKeyword
+                Token b c t:go ts l isLayoutKeyword
 
     skipWhiteSpace ts pl cont = case ts of
         [] -> []
-        (l,c,t):ts
+        ((l1,c1),(l2,c2),t):ts
             | isWhiteSpace t ->
                 skipWhiteSpace ts pl cont
-            | pl < l ->
-                Newline c:cont (c,t) ts l
+            | pl < l1 ->
+                cont (True,c1,t) ts l2
             | otherwise ->
-                cont (c,t) ts l
+                cont (False,c1,t) ts l2
 
     isWhiteSpace t =
         t match whitespace
@@ -699,40 +728,36 @@ Layout
 
 .. code-block:: haskell
 
+    parseWithoutL p ts = case ts of
+        [] -> []
+        Token _ _ t:ts -> parse p t \r -> case r of
+            ParseOk p ->
+                parseWithoutL p ts
+            ParseError ->
+                ParseError
+        ExpectBrace:ts ->
+            parseWithoutL p ts
+
+.. code-block:: haskell
+
     data Layout
         = NoLayout
         | ExplicitBrace
         | ExplicitDBrace Int
         | VirtualBrace Int
 
-    parseWithL p ts = withL p ts []
+    parseWithL p ts = withL p ts False []
 
-    parseWithoutL p ts = case ts of
+    withL p ts expB ms = case ts of
         [] ->
-            ParseOk p
-        Token _ t:ts -> parse p t \r -> case r of
-            ParseOk p ->
-                parseWithoutL p ts
-            ParseError ->
-                ParseError
-        _:ts ->
-            parseWithoutL p ts
-
-    withL p ts ms = case ts of
-        [] ->
-            tryEnd p ms
-        Token _ t:ts
-            | isOpen t ->
-                runParserL p t ts ms \p ts ms ->
-                    withL p ts (NoLayout:ms)
-            | isClose t || t match interp_string_continue ->
-                tryClose p t ts ms
-            | otherwise ->
-                runParserL p t ts ms withL
+            tryEnd p b ms
+        Token isN c t:ts -> case isN of
+            True ->
+                resolveNewline p c t ts expB ms
+            False ->
+                resolveToken p t ts expB ms
         ExpectBrace:ts ->
-            resolveBraceOpen p ts ms
-        Newline n:ts ->
-            resolveNewline n ts ms
+            withL ts True ms
 
     runParserL p t ts ms cont = parse p t \r -> case r of
         ParseOk p ->
@@ -755,57 +780,77 @@ Layout
         _ ->
             ParseError
 
-    resolveBraceOpen p ts ms = case ts of
-        ts0@(Token _ t:ts) -> case t of
-            "{" -> runParserL p '{' ts ms \p ts ms ->
-                withL p ts (ExplicitBrace:ms)
-            "{{" -> runParserL p '{' ts ms \p ts ms ->
+    resolveToken p t ts expB ms = case t of
+        "{" | expB ->
+            runParserL p "{" ts ms \p ts ms ->
+                withL p ts False (ExplicitBrace:ms)
+        "{{" | expB ->
+            runParserL p "{{" ts ms \p ts ms ->
                 let m = calcLayoutPos ts
                 in withL p ts (ExplicitDBrace m:ms)
-            _ -> runParserL p '{' ts0 ms \p ts ms ->
+        _ | expB ->
+            runParserL p '{' ts0 ms \p ts ms ->
                 let m = calcLayoutPos ts
-                in withL p ts (VirtualBrace m:ms)
-        _ -> runParserL p '{' ts ms \p ts ms ->
-            let m = calcLayoutPos ts
-            in withL p ts (VirtualBrace m:ms)
-
-    resolveNewline n p ts ms = case ms of
-        ExplicitDBrace m:_ ->
-            | n < m ->
-                ParseError
-            | n == m -> runSimpleParserL p ';' \p ->
-                withL p ts ms
-            | otherwise ->
-                withL p ts ms
-        VirtualBrace m:ms1
-            | n < m -> runSimpleParserL p '}' \p ->
-                resolveNewline n p ts ms1
-            | n == m -> runSimpleParserL p ';' \p ->
-                withL p ts ms
-            | otherwise ->
-                withL p ts ms
+                in resolveToken p t ts False (VirtualBrace m:ms)
+        _ | isOpen t ->
+            runParserL p t ts ms \p ts ms ->
+                withL p ts False (NoLayout:ms)
+        _ | isClose t || t match interp_string_continue ->
+            tryClose p t ts ms
         _ ->
-            withL p ts ms
+            runParserL p t ts ms \p ts ms ->
+                withL p ts False ms
+
+    resolveNewline p c t ts expB ms = case ms of
+        ExplicitDBrace m:_ ->
+            | c < m -> case t of
+                "}}" -> resolveEmptyBrace p \p ->
+                    runSimpleParserL p "}}" \p ->
+                        withL p ts False ms
+                _ ->
+                    ParseError
+            | c == m -> resolveEmptyBrace p \p ->
+                runSimpleParserL p ';' \p ->
+                    resolveToken p t ts False ms
+            | otherwise ->
+                resolveToken p t ts expB ms
+        VirtualBrace m:ms1
+            | c < m -> resolveEmptyBrace p \p ->
+                runSimpleParserL p '}' \p ->
+                    resolveNewline p c t ts False ms1
+            | c == m -> resolveEmptyBrace p \p ->
+                runSimpleParserL p ';' \p ->
+                    resolveToken p t ts False ms
+            | otherwise ->
+                resolveToken p t ts expB ms
+        _ ->
+            resolveToken p t ts expB ms
+
+    resolveEmptyBrace p cont =
+        runSimpleParserL p '{' \p ->
+            runSimpleParserL p '}' \p ->
+                cont p
 
     tryClose p t ts ms = case ms of
-        []   -> ParseError
+        []   ->
+            ParseError
         m:ms -> case m of
             VirtualBrace _ -> runSimpleParserL p '}' \p ->
                 tryClose p t ts ms
             ExplicitBrace -> case t of
-                "}" -> runSimpleParserL p '}' \p ->
+                "}" -> runSimpleParserL p "}" \p ->
                     withL p ts ms
                 _ ->
                     ParseError
             ExplicitDBrace _ -> case t of
-                t == "}}" -> runSimpleParserL p '}' \p ->
+                "}}" -> runSimpleParserL p "}}" \p ->
                     withL p ts ms
                 _ ->
                     ParseError
             NoLayout
                 | t match interp_string_continue -> runSimpleParserL p t \p ->
                     withL p ts (NoLayout:ms)
-                | otherwise -> runSimpleParserL p t ts \p ts ->
+                | otherwise -> runSimpleParserL p t \p ->
                     withL p ts ms
 
     tryEnd p ms = case ms of
@@ -840,6 +885,23 @@ Layout
         _ | t match interp_string_end
                 -> True
         _       -> False
+
+Note:
+
+::
+
+    do
+        rec
+        rec
+
+is
+
+::
+
+    do {
+        rec {}
+        ;rec {}
+    }
 
 Fixity Resolution
 -----------------
