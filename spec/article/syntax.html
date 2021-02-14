@@ -669,12 +669,12 @@
 <span class="nf">parseWithL</span> <span class="n">p</span> <span class="n">ts</span> <span class="ow">=</span> <span class="n">withL</span> <span class="n">p</span> <span class="n">ts</span> <span class="kt">False</span> <span class="kt">[]</span>
 
 <span class="nf">withL</span> <span class="n">p</span> <span class="n">ts</span> <span class="n">expB</span> <span class="n">ms</span> <span class="ow">=</span> <span class="kr">case</span> <span class="n">ts</span> <span class="kr">of</span>
-    <span class="kt">[]</span> <span class="ow">-&gt;</span>
-        <span class="n">tryEnd</span> <span class="n">p</span> <span class="n">b</span> <span class="n">ms</span>
-    <span class="kt">Token</span> <span class="n">isN</span> <span class="n">c</span> <span class="n">t</span><span class="kt">:</span><span class="n">ts</span> <span class="ow">-&gt;</span> <span class="kr">case</span> <span class="n">isN</span> <span class="kr">of</span>
-        <span class="kt">True</span> <span class="ow">-&gt;</span>
+    <span class="kt">[]</span> <span class="ow">-&gt;</span> <span class="n">resolveEmptyBrace</span> <span class="n">p</span> <span class="n">expB</span> <span class="nf">\</span><span class="n">p</span> <span class="ow">-&gt;</span>
+        <span class="n">tryEnd</span> <span class="n">p</span> <span class="n">ms</span>
+    <span class="kt">Token</span> <span class="n">isN</span> <span class="n">c</span> <span class="n">t</span><span class="kt">:</span><span class="n">ts</span>
+        <span class="o">|</span> <span class="n">isN</span> <span class="ow">-&gt;</span>
             <span class="n">resolveNewline</span> <span class="n">p</span> <span class="n">c</span> <span class="n">t</span> <span class="n">ts</span> <span class="n">expB</span> <span class="n">ms</span>
-        <span class="kt">False</span> <span class="ow">-&gt;</span>
+        <span class="o">|</span> <span class="n">otherwise</span> <span class="ow">-&gt;</span>
             <span class="n">resolveToken</span> <span class="n">p</span> <span class="n">t</span> <span class="n">ts</span> <span class="n">expB</span> <span class="n">ms</span>
     <span class="kt">ExpectBrace:</span><span class="n">ts</span> <span class="ow">-&gt;</span>
         <span class="n">withL</span> <span class="n">ts</span> <span class="kt">True</span> <span class="n">ms</span>
@@ -707,7 +707,7 @@
     <span class="s">&quot;{{&quot;</span> <span class="o">|</span> <span class="n">expB</span> <span class="ow">-&gt;</span>
         <span class="n">runParserL</span> <span class="n">p</span> <span class="s">&quot;{{&quot;</span> <span class="n">ts</span> <span class="n">ms</span> <span class="nf">\</span><span class="n">p</span> <span class="n">ts</span> <span class="n">ms</span> <span class="ow">-&gt;</span>
             <span class="kr">let</span> <span class="n">m</span> <span class="ow">=</span> <span class="n">calcLayoutPos</span> <span class="n">ts</span>
-            <span class="kr">in</span> <span class="n">withL</span> <span class="n">p</span> <span class="n">ts</span> <span class="p">(</span><span class="kt">ExplicitDBrace</span> <span class="n">m</span><span class="kt">:</span><span class="n">ms</span><span class="p">)</span>
+            <span class="kr">in</span> <span class="n">withL</span> <span class="n">p</span> <span class="n">ts</span> <span class="kt">False</span> <span class="p">(</span><span class="kt">ExplicitDBrace</span> <span class="n">m</span><span class="kt">:</span><span class="n">ms</span><span class="p">)</span>
     <span class="kr">_</span> <span class="o">|</span> <span class="n">expB</span> <span class="ow">-&gt;</span>
         <span class="n">runParserL</span> <span class="n">p</span> <span class="sc">&#39;{&#39;</span> <span class="n">ts0</span> <span class="n">ms</span> <span class="nf">\</span><span class="n">p</span> <span class="n">ts</span> <span class="n">ms</span> <span class="ow">-&gt;</span>
             <span class="kr">let</span> <span class="n">m</span> <span class="ow">=</span> <span class="n">calcLayoutPos</span> <span class="n">ts</span>
@@ -721,35 +721,38 @@
         <span class="n">runParserL</span> <span class="n">p</span> <span class="n">t</span> <span class="n">ts</span> <span class="n">ms</span> <span class="nf">\</span><span class="n">p</span> <span class="n">ts</span> <span class="n">ms</span> <span class="ow">-&gt;</span>
             <span class="n">withL</span> <span class="n">p</span> <span class="n">ts</span> <span class="kt">False</span> <span class="n">ms</span>
 
-<span class="nf">resolveNewline</span> <span class="n">p</span> <span class="n">c</span> <span class="n">t</span> <span class="n">ts</span> <span class="n">expB</span> <span class="n">ms</span> <span class="ow">=</span> <span class="kr">case</span> <span class="n">ms</span> <span class="kr">of</span>
-    <span class="kt">ExplicitDBrace</span> <span class="n">m</span><span class="kt">:</span><span class="kr">_</span> <span class="ow">-&gt;</span>
+<span class="nf">resolveNewline</span> <span class="n">p</span> <span class="n">c</span> <span class="n">t</span> <span class="n">ts</span> <span class="n">expB</span> <span class="n">ms0</span> <span class="ow">=</span> <span class="kr">case</span> <span class="n">ms</span> <span class="kr">of</span>
+    <span class="kt">ExplicitDBrace</span> <span class="n">m</span><span class="kt">:</span><span class="n">ms1</span> <span class="ow">-&gt;</span>
         <span class="o">|</span> <span class="n">c</span> <span class="o">&lt;</span> <span class="n">m</span> <span class="ow">-&gt;</span> <span class="kr">case</span> <span class="n">t</span> <span class="kr">of</span>
-            <span class="s">&quot;}}&quot;</span> <span class="ow">-&gt;</span> <span class="n">resolveEmptyBrace</span> <span class="n">p</span> <span class="nf">\</span><span class="n">p</span> <span class="ow">-&gt;</span>
+            <span class="s">&quot;}}&quot;</span> <span class="ow">-&gt;</span> <span class="n">resolveEmptyBrace</span> <span class="n">p</span> <span class="n">expB</span> <span class="nf">\</span><span class="n">p</span> <span class="ow">-&gt;</span>
                 <span class="n">runSimpleParserL</span> <span class="n">p</span> <span class="s">&quot;}}&quot;</span> <span class="nf">\</span><span class="n">p</span> <span class="ow">-&gt;</span>
-                    <span class="n">withL</span> <span class="n">p</span> <span class="n">ts</span> <span class="kt">False</span> <span class="n">ms</span>
+                    <span class="n">withL</span> <span class="n">p</span> <span class="n">ts</span> <span class="kt">False</span> <span class="n">ms1</span>
             <span class="kr">_</span> <span class="ow">-&gt;</span>
                 <span class="kt">ParseError</span>
-        <span class="o">|</span> <span class="n">c</span> <span class="o">==</span> <span class="n">m</span> <span class="ow">-&gt;</span> <span class="n">resolveEmptyBrace</span> <span class="n">p</span> <span class="nf">\</span><span class="n">p</span> <span class="ow">-&gt;</span>
+        <span class="o">|</span> <span class="n">c</span> <span class="o">==</span> <span class="n">m</span> <span class="ow">-&gt;</span> <span class="n">resolveEmptyBrace</span> <span class="n">p</span> <span class="n">expB</span> <span class="nf">\</span><span class="n">p</span> <span class="ow">-&gt;</span>
             <span class="n">runSimpleParserL</span> <span class="n">p</span> <span class="sc">&#39;;&#39;</span> <span class="nf">\</span><span class="n">p</span> <span class="ow">-&gt;</span>
-                <span class="n">resolveToken</span> <span class="n">p</span> <span class="n">t</span> <span class="n">ts</span> <span class="kt">False</span> <span class="n">ms</span>
+                <span class="n">resolveToken</span> <span class="n">p</span> <span class="n">t</span> <span class="n">ts</span> <span class="kt">False</span> <span class="n">ms0</span>
         <span class="o">|</span> <span class="n">otherwise</span> <span class="ow">-&gt;</span>
-            <span class="n">resolveToken</span> <span class="n">p</span> <span class="n">t</span> <span class="n">ts</span> <span class="n">expB</span> <span class="n">ms</span>
+            <span class="n">resolveToken</span> <span class="n">p</span> <span class="n">t</span> <span class="n">ts</span> <span class="n">expB</span> <span class="n">ms0</span>
     <span class="kt">VirtualBrace</span> <span class="n">m</span><span class="kt">:</span><span class="n">ms1</span>
-        <span class="o">|</span> <span class="n">c</span> <span class="o">&lt;</span> <span class="n">m</span> <span class="ow">-&gt;</span> <span class="n">resolveEmptyBrace</span> <span class="n">p</span> <span class="nf">\</span><span class="n">p</span> <span class="ow">-&gt;</span>
+        <span class="o">|</span> <span class="n">c</span> <span class="o">&lt;</span> <span class="n">m</span> <span class="ow">-&gt;</span> <span class="n">resolveEmptyBrace</span> <span class="n">p</span> <span class="n">expB</span> <span class="nf">\</span><span class="n">p</span> <span class="ow">-&gt;</span>
             <span class="n">runSimpleParserL</span> <span class="n">p</span> <span class="sc">&#39;}&#39;</span> <span class="nf">\</span><span class="n">p</span> <span class="ow">-&gt;</span>
                 <span class="n">resolveNewline</span> <span class="n">p</span> <span class="n">c</span> <span class="n">t</span> <span class="n">ts</span> <span class="kt">False</span> <span class="n">ms1</span>
-        <span class="o">|</span> <span class="n">c</span> <span class="o">==</span> <span class="n">m</span> <span class="ow">-&gt;</span> <span class="n">resolveEmptyBrace</span> <span class="n">p</span> <span class="nf">\</span><span class="n">p</span> <span class="ow">-&gt;</span>
+        <span class="o">|</span> <span class="n">c</span> <span class="o">==</span> <span class="n">m</span> <span class="ow">-&gt;</span> <span class="n">resolveEmptyBrace</span> <span class="n">p</span> <span class="n">expB</span> <span class="nf">\</span><span class="n">p</span> <span class="ow">-&gt;</span>
             <span class="n">runSimpleParserL</span> <span class="n">p</span> <span class="sc">&#39;;&#39;</span> <span class="nf">\</span><span class="n">p</span> <span class="ow">-&gt;</span>
-                <span class="n">resolveToken</span> <span class="n">p</span> <span class="n">t</span> <span class="n">ts</span> <span class="kt">False</span> <span class="n">ms</span>
+                <span class="n">resolveToken</span> <span class="n">p</span> <span class="n">t</span> <span class="n">ts</span> <span class="kt">False</span> <span class="n">ms0</span>
         <span class="o">|</span> <span class="n">otherwise</span> <span class="ow">-&gt;</span>
-            <span class="n">resolveToken</span> <span class="n">p</span> <span class="n">t</span> <span class="n">ts</span> <span class="n">expB</span> <span class="n">ms</span>
+            <span class="n">resolveToken</span> <span class="n">p</span> <span class="n">t</span> <span class="n">ts</span> <span class="n">expB</span> <span class="n">ms0</span>
     <span class="kr">_</span> <span class="ow">-&gt;</span>
         <span class="n">resolveToken</span> <span class="n">p</span> <span class="n">t</span> <span class="n">ts</span> <span class="n">expB</span> <span class="n">ms</span>
 
-<span class="nf">resolveEmptyBrace</span> <span class="n">p</span> <span class="n">cont</span> <span class="ow">=</span>
-    <span class="n">runSimpleParserL</span> <span class="n">p</span> <span class="sc">&#39;{&#39;</span> <span class="nf">\</span><span class="n">p</span> <span class="ow">-&gt;</span>
-        <span class="n">runSimpleParserL</span> <span class="n">p</span> <span class="sc">&#39;}&#39;</span> <span class="nf">\</span><span class="n">p</span> <span class="ow">-&gt;</span>
-            <span class="n">cont</span> <span class="n">p</span>
+<span class="nf">resolveEmptyBrace</span> <span class="n">p</span> <span class="n">expB</span> <span class="n">cont</span> <span class="ow">=</span> <span class="kr">case</span> <span class="n">expB</span> <span class="kr">of</span>
+    <span class="kt">False</span> <span class="ow">-&gt;</span>
+        <span class="n">cont</span> <span class="n">p</span>
+    <span class="kt">True</span> <span class="ow">-&gt;</span>
+        <span class="n">runSimpleParserL</span> <span class="n">p</span> <span class="sc">&#39;{&#39;</span> <span class="nf">\</span><span class="n">p</span> <span class="ow">-&gt;</span>
+            <span class="n">runSimpleParserL</span> <span class="n">p</span> <span class="sc">&#39;}&#39;</span> <span class="nf">\</span><span class="n">p</span> <span class="ow">-&gt;</span>
+                <span class="n">cont</span> <span class="n">p</span>
 
 <span class="nf">tryClose</span> <span class="n">p</span> <span class="n">t</span> <span class="n">ts</span> <span class="n">ms</span> <span class="ow">=</span> <span class="kr">case</span> <span class="n">ms</span> <span class="kr">of</span>
     <span class="kt">[]</span>   <span class="ow">-&gt;</span>
