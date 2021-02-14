@@ -868,7 +868,6 @@ Layout
     calcLayoutPos ts = case ts of
         []              -> 0
         Token m _:_     -> m
-        Newline m:_     -> m
         ExpectBrace:ts  -> calcLayoutPos ts
 
     isOpen t = case t of
