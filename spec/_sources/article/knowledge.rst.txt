@@ -38,6 +38,16 @@ Type Checking
 
 * Vytiniotis, D., Peyton Jones, S., Schrijvers, T., & Sulzmann, M. (2011). OutsideIn(X): Modular type inference with local assumptions. Journal of Functional Programming, 21(4–5), 333–412. https://doi.org/10.1017/S0956796811000098
 * Eekelen, V., & Leer, V. (2004). The Essence of ML Type Inference. In Advanced Topics in Types and Programming Languages. https://doi.org/10.7551/mitpress/1104.003.0016
+* Milner, R. (1978). A theory of type polymorphism in programming. Journal of Computer and System Sciences, 17(3), 348–375. https://doi.org/10.1016/0022-0000(78)90014-4
+
+Gabage Collection
+:::::::::::::::::
+
+I/O Management
+::::::::::::::
+
+Code Generation
+:::::::::::::::
 
 Reading Lists
 -------------
