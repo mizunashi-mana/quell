@@ -134,13 +134,22 @@ resolveNewline cont0 spt expB ms0 = do
             | otherwise ->
                 resolveToken cont2 spt False ms0
         Layout.VirtualBrace m:ms1
-            | c < m -> resolveEmptyBrace cont0 expB bl \cont1 -> do
-                let vbClose = Spanned.spannedFromLoc bl
-                        Token.SpVBraceClose
-                runParserL cont1 vbClose \cont2 ->
-                    resolveNewline cont2 spt False ms1
+            | c < m ->
+                resolveEmptyBrace cont0 expB bl \cont1 -> do
+                    let vbClose = Spanned.spannedFromLoc bl
+                            Token.SpVBraceClose
+                    runParserL cont1 vbClose \cont2 ->
+                        resolveNewline cont2 spt False ms1
             | c == m ->
-
+                resolveEmptyBrace cont0 bl \cont1 -> do
+                    let vsemi = Spanned.spannedFromLoc bl
+                            Token.SpVSemi
+                    runParserL cont1 vsemi \cont2 ->
+                        resolveToken cont2 spt False ms0
+            | otherwise ->
+                resolveToken cont0 spt expB ms0
+        _ ->
+            resolveToken cont0 spt expB ms0
 
 runParserL :: RunnerCont a -> Spanned.T Token.T
     -> (forall a. RunnerCont a -> Runner a) -> Runner a
