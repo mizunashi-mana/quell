@@ -16,8 +16,7 @@ import Language.Quell.Prelude
 
 import qualified Conduit
 import qualified Language.Quell.Type.Token as Token
-import qualified Language.Quell.Parsing.Parser.Spanned as Spanned
-import qualified Language.Quell.Parsing.Parser.Error as Error
+import qualified Language.Quell.Parsing.Spanned as Spanned
 
 
 type T = Layout
@@ -39,7 +38,7 @@ type WithLConduit = Conduit.ConduitT (Spanned.T Token.T) TokenWithL
 preParse :: Monad m => WithLConduit m ()
 preParse = go 0 isLayoutKeyword where
     go pl isL = resolveNewline pl \isN spt l -> case Spanned.unSpanned spt of
-        Tok.SymLambda -> do
+        Token.SymLambda -> do
             Conduit.yield do Token isN spt
             go l isLayoutKeywordLam
         t | isL t -> do
@@ -51,7 +50,8 @@ preParse = go 0 isLayoutKeyword where
             go l isLayoutKeyword
 
 resolveNewline :: Monad m
-    => Int -> (Spanned.T Token.T -> Int -> WithLConduit m ())
+    => Int
+    -> (Bool -> Spanned.T Token.T -> Int -> WithLConduit m ())
     -> WithLConduit m ()
 resolveNewline pl cont = Conduit.await >>= \case
     Nothing ->
@@ -59,7 +59,6 @@ resolveNewline pl cont = Conduit.await >>= \case
     Just spt -> do
         let sp = Spanned.getSpan spt
             l1 = Spanned.locLine do Spanned.beginLoc sp
-            c1 = Spanned.locCol do Spanned.beginLoc sp
             l2 = Spanned.locLine do Spanned.endLoc sp
         if
             | pl < l1 -> do

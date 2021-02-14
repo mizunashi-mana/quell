@@ -184,6 +184,8 @@ library
         Language.Quell.Parsing.Lexer.Error
         Language.Quell.Parsing.Parser
         Language.Quell.Parsing.Parser.Layout
+        Language.Quell.Parsing.Parser.Runner
+        Language.Quell.Parsing.Parser.Error
     other-modules:
         Language.Quell.Prelude.Core
         Language.Quell.Prelude.Literal

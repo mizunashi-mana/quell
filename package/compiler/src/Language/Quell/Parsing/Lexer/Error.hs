@@ -1,8 +1,6 @@
 module Language.Quell.Parsing.Lexer.Error (
     T,
     Error (..),
-    CommentBlockKind (..),
-    LayoutBlockKind (..),
 ) where
 
 import           Language.Quell.Prelude
@@ -11,7 +9,8 @@ import           Language.Quell.Prelude
 type T = Error
 
 data Error
-    = UnclosedByteStringLiteral
+    = UnexpectedCodeUnits
+    | UnclosedByteStringLiteral
     | NonAsciiCharInByteStringLiteral
     | NonGraphicInByteStringLiteral
     | UniEscapeInByteStringLiteral

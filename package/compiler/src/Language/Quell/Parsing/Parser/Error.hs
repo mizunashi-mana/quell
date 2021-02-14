@@ -9,5 +9,5 @@ import           Language.Quell.Prelude
 type T = Error
 
 data Error
-    =
+    = ParseError
     deriving (Eq, Show)
