@@ -4,7 +4,8 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17: http://docutils.sourceforge.net/" />
+
     <title>Module Semantics &#8212; quell-spec  documentation</title>
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
@@ -37,9 +38,9 @@
 
           <div class="body" role="main">
             
-  <div class="section" id="module-semantics">
+  <section id="module-semantics">
 <h1>Module Semantics<a class="headerlink" href="#module-semantics" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="signatures">
+<section id="signatures">
 <h2>Signatures<a class="headerlink" href="#signatures" title="Permalink to this headline">¶</a></h2>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">signature</span> <span class="n">EqDict</span> <span class="n">a</span> <span class="n">where</span>
   <span class="p">(</span><span class="o">==</span><span class="p">):</span> <span class="n">a</span> <span class="o">-&gt;</span> <span class="n">a</span> <span class="o">-&gt;</span> <span class="n">Bool</span>
@@ -52,8 +53,8 @@
   <span class="n">length</span><span class="p">:</span> <span class="n">Container</span> <span class="o">-&gt;</span> <span class="n">Int</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="modules-and-functors">
+</section>
+<section id="modules-and-functors">
 <h2>Modules and Functors<a class="headerlink" href="#modules-and-functors" title="Permalink to this headline">¶</a></h2>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">BoolList</span><span class="p">:</span> <span class="n">MonoListLike</span>
 <span class="n">module</span> <span class="n">BoolList</span> <span class="n">where</span>
@@ -87,8 +88,8 @@
       <span class="n">_</span><span class="p">,</span>           <span class="n">_</span>           <span class="o">-&gt;</span> <span class="kc">False</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="traits">
+</section>
+<section id="traits">
 <h2>Traits<a class="headerlink" href="#traits" title="Permalink to this headline">¶</a></h2>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>{-!
 | ::
@@ -107,11 +108,11 @@ impl default: Eq (List a) &lt;= Eq a where
     _,           _           -&gt; False
 </pre></div>
 </div>
-</div>
-<div class="section" id="automatic-derive">
+</section>
+<section id="automatic-derive">
 <h2>Automatic Derive<a class="headerlink" href="#automatic-derive" title="Permalink to this headline">¶</a></h2>
-</div>
-</div>
+</section>
+</section>
 
 
           </div>
@@ -137,7 +138,7 @@ impl default: Eq (List a) &lt;= Eq a where
 
 
 <h3>Navigation</h3>
-<p class="caption"><span class="caption-text">Contents:</span></p>
+<p><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="syntax.html">Syntax</a></li>
 <li class="toctree-l1"><a class="reference internal" href="typing_semantics.html">Typing Semantics</a></li>

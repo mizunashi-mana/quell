@@ -4,7 +4,8 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17: http://docutils.sourceforge.net/" />
+
     <title>Syntax &#8212; quell-spec  documentation</title>
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
@@ -37,9 +38,9 @@
 
           <div class="body" role="main">
             
-  <div class="section" id="syntax">
+  <section id="syntax">
 <h1>Syntax<a class="headerlink" href="#syntax" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="notational-conventions">
+<section id="notational-conventions">
 <h2>Notational Conventions<a class="headerlink" href="#notational-conventions" title="Permalink to this headline">¶</a></h2>
 <dl class="glossary simple">
 <dt id="term-pattern"><code class="docutils literal notranslate"><span class="pre">pattern?</span></code></dt><dd><p>optional</p>
@@ -61,8 +62,8 @@
 <dt id="term-EOS"><code class="docutils literal notranslate"><span class="pre">EOS</span></code></dt><dd><p>end of source</p>
 </dd>
 </dl>
-</div>
-<div class="section" id="lexical-syntax">
+</section>
+<section id="lexical-syntax">
 <h2>Lexical Syntax<a class="headerlink" href="#lexical-syntax" title="Permalink to this headline">¶</a></h2>
 <pre>
 <strong id="grammar-token-lexical_program"><span id="grammar-token-lexical-program"></span>lexical_program</strong> ::=  (lexeme | whitespace)* EOS?
@@ -270,7 +271,7 @@
 <strong id="grammar-token-other_graphic"><span id="grammar-token-other-graphic"></span>other_graphic     </strong> ::=  other_graphic_char&lt;symbolchar | special | other_special&gt;
 <strong id="grammar-token-other_graphic_char"><span id="grammar-token-other-graphic-char"></span>other_graphic_char</strong> ::=  &quot;\p{General_Category=Punctuation}&quot;
 </pre>
-<div class="section" id="specifications-for-lexical-nonterminals">
+<section id="specifications-for-lexical-nonterminals">
 <h3>Specifications for Lexical Nonterminals<a class="headerlink" href="#specifications-for-lexical-nonterminals" title="Permalink to this headline">¶</a></h3>
 <p>These nonterminals must be disjoint:</p>
 <ul class="simple">
@@ -313,9 +314,9 @@
 <li><p><code class="docutils literal notranslate"><span class="pre">(multiline_comment</span> <span class="pre">|</span> <span class="pre">doc_comment</span> <span class="pre">|</span> <span class="pre">pragma_comment)&lt;doc_comment</span> <span class="pre">|</span> <span class="pre">nested_comment&gt;</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">(&quot;\p{General_Category=Letter}&quot;</span> <span class="pre">|</span> <span class="pre">&quot;\p{General_Category=Mark}&quot;</span> <span class="pre">|</span> <span class="pre">&quot;\p{General_Category=Number}&quot;</span> <span class="pre">|</span> <span class="pre">&quot;\p{General_Category=Punctuation}&quot;</span> <span class="pre">|</span> <span class="pre">&quot;\p{General_Category=Symbol}&quot;</span> <span class="pre">|</span> <span class="pre">&quot;\p{General_Category=Separator}&quot;</span> <span class="pre">|</span> <span class="pre">&quot;\p{General_Category=Format}&quot;)&lt;graphic</span> <span class="pre">|</span> <span class="pre">whitechar&gt;</span></code></p></li>
 </ul>
-</div>
-</div>
-<div class="section" id="aliases">
+</section>
+</section>
+<section id="aliases">
 <h2>Aliases<a class="headerlink" href="#aliases" title="Permalink to this headline">¶</a></h2>
 <pre>
 <strong id="grammar-token">"->" </strong> ::=  &quot;-&gt;&quot; | &quot;→&quot;
@@ -328,8 +329,8 @@
 <strong id="grammar-token--5">"{{" </strong> ::=  &quot;{{&quot; | &quot;❴&quot;
 <strong id="grammar-token--6">"}}" </strong> ::=  &quot;}}&quot; | &quot;❵&quot;
 </pre>
-</div>
-<div class="section" id="grammar">
+</section>
+<section id="grammar">
 <h2>Grammar<a class="headerlink" href="#grammar" title="Permalink to this headline">¶</a></h2>
 <pre>
 <strong id="grammar-token-program">program</strong> ::=  module_decl_body
@@ -604,8 +605,8 @@
 <li><p>プラグマの名前をちゃんと取るように</p></li>
 <li><p>ドキュメントコメントの lexical syntax 定義</p></li>
 </ul>
-</div>
-<div class="section" id="layout">
+</section>
+<section id="layout">
 <h2>Layout<a class="headerlink" href="#layout" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
 <li><p>パーサは layout context を持つ</p></li>
@@ -822,18 +823,18 @@
 <span class="p">}</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="fixity-resolution">
+</section>
+<section id="fixity-resolution">
 <h2>Fixity Resolution<a class="headerlink" href="#fixity-resolution" title="Permalink to this headline">¶</a></h2>
-</div>
-<div class="section" id="reference">
+</section>
+<section id="reference">
 <h2>Reference<a class="headerlink" href="#reference" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
 <li><p><a class="reference external" href="https://unicode.org/reports/tr31/">Unicode Identifier and Pattern Syntax</a></p></li>
 <li><p><a class="reference external" href="http://www.unicode.org/reports/tr44/#General_Category_Values">Unicode Character Database - 5.7.1 General Category Values</a></p></li>
 </ul>
-</div>
-</div>
+</section>
+</section>
 
 
           </div>
@@ -859,7 +860,7 @@
 
 
 <h3>Navigation</h3>
-<p class="caption"><span class="caption-text">Contents:</span></p>
+<p><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Syntax</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#notational-conventions">Notational Conventions</a></li>

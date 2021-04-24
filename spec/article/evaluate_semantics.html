@@ -4,7 +4,8 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17: http://docutils.sourceforge.net/" />
+
     <title>Evaluate Semantics &#8212; quell-spec  documentation</title>
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
@@ -37,11 +38,11 @@
 
           <div class="body" role="main">
             
-  <div class="section" id="evaluate-semantics">
+  <section id="evaluate-semantics">
 <h1>Evaluate Semantics<a class="headerlink" href="#evaluate-semantics" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="desugaring">
+<section id="desugaring">
 <h2>Desugaring<a class="headerlink" href="#desugaring" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="do-block">
+<section id="do-block">
 <h3>Do Block<a class="headerlink" href="#do-block" title="Permalink to this headline">¶</a></h3>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">do</span> <span class="p">{</span> <span class="n">e</span> <span class="p">}</span>                <span class="o">=</span> <span class="n">e</span>
 <span class="n">do</span> <span class="p">{</span> <span class="n">e</span> <span class="p">;</span> <span class="n">stmts</span> <span class="p">}</span>        <span class="o">=</span> <span class="n">e</span> <span class="o">&gt;&gt;</span> <span class="n">do</span> <span class="p">{</span> <span class="n">stmts</span> <span class="p">}</span>
@@ -49,8 +50,8 @@
 <span class="n">do</span> <span class="p">{</span> <span class="n">let</span> <span class="n">decls</span><span class="p">;</span> <span class="n">stmts</span> <span class="p">}</span> <span class="o">=</span> <span class="n">let</span> <span class="n">decls</span> <span class="ow">in</span> <span class="n">do</span> <span class="p">{</span> <span class="n">stmts</span> <span class="p">}</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="integer-literal">
+</section>
+<section id="integer-literal">
 <h3>Integer Literal<a class="headerlink" href="#integer-literal" title="Permalink to this headline">¶</a></h3>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">fromIntegerLiteral</span> <span class="p">::</span> <span class="n">IntegerLiteral</span> <span class="o">-&gt;</span> <span class="n">a</span>
 </pre></div>
@@ -76,9 +77,9 @@
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Int8</span><span class="o">.</span><span class="mi">1</span> <span class="o">==</span> <span class="n">Int8</span><span class="o">.</span><span class="p">(</span><span class="n">fromIntegerLiteral</span> <span class="o">...</span><span class="p">)</span> <span class="o">--</span> <span class="mi">1</span> <span class="n">of</span> <span class="n">Int8</span>
 </pre></div>
 </div>
-</div>
-</div>
-</div>
+</section>
+</section>
+</section>
 
 
           </div>
@@ -104,7 +105,7 @@
 
 
 <h3>Navigation</h3>
-<p class="caption"><span class="caption-text">Contents:</span></p>
+<p><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="syntax.html">Syntax</a></li>
 <li class="toctree-l1"><a class="reference internal" href="typing_semantics.html">Typing Semantics</a></li>
